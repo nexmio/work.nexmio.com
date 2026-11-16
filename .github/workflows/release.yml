@@ -105,7 +105,7 @@ jobs:
     with:
       edition: preview
       release_id: ${{ needs.prepare.outputs.release_id }}
-      tag: ${{ env.TAG }}
+      tag: ${{ inputs.tag || github.ref_name }}
     secrets: inherit
 
   publish-preview:
