@@ -58,9 +58,8 @@ function chrome() {
       <div><h4>${T('Products', 'Produkter')}</h4><ul>${FOOTER_PRODUCTS.map(col).join('')}</ul></div>
       <div><h4>Nexmio</h4><ul>
         <li><a href="https://nexmio.com/#about">${T('About me', 'Om mig')}</a></li>
-        <li><a href="https://nexmio.com/#thinking">${T('Thinking', 'Tankegang')}</a></li>
-        <li><a href="https://nexmio.com/#principles">${T('Principles', 'Principper')}</a></li>
-        <li><a href="https://nexmio.com/#contact">${T('Contact', 'Kontakt')}</a></li></ul></div>
+        <li><a href="https://nexmio.com/#how">${T('How it works', 'Sådan går det til')}</a></li>
+        <li><a href="https://nexmio.com/#contact">${T('Support', 'Støtte')}</a></li></ul></div>
       <div><h4>${T('Project', 'Projekt')}</h4><ul><li><a href="https://github.com/nexmio/work.nexmio.com">GitHub</a></li><li><a href="privacy.html">${T('Privacy', 'Privatliv')}</a></li><li><a href="https://github.com/nexmio/work.nexmio.com/issues/new">${T('Report a bug', 'Rapportér en fejl')}</a></li></ul></div>
     </div>
     <p class="fine">${T('© Nexmio · Nexmio Work is free to use and change (Apache-2.0 with the Commons Clause).', '© Nexmio · Nexmio Work er gratis at bruge og ændre (Apache-2.0 med Commons Clause).')}</p>
