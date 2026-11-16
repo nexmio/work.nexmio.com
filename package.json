@@ -25,7 +25,8 @@
     "release:bump": "node scripts/release/bump.mjs bump",
     "release:tag": "node scripts/release/bump.mjs tag",
     "release:texts": "node scripts/release/notes.mjs",
-    "release:stable": "node scripts/release/bump.mjs stable"
+    "release:stable": "node scripts/release/bump.mjs stable",
+    "release:hotfix": "node scripts/release/bump.mjs hotfix"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

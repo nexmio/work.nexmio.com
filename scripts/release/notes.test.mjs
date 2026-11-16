@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   bullets,
   changelogSection,
+  listingBlock,
   listingPart,
   plain,
   storeListing,
@@ -69,9 +70,23 @@ describe("release texts", () => {
       "# T\n\n## Short description\n\nShort.\n\n## Description\n\n**Bold** words.\n\n\n\nMore.\n\n## Search terms (up to seven)\n\na, b, c\n\n## Links\n\nx";
     expect(listingPart(md, "Short description")).toBe("Short.");
     expect(storeListing(md)).toEqual({
+      notesForCertification: "",
       shortDescription: "Short.",
       description: "Bold words.\n\nMore.",
       keywords: ["a", "b", "c"],
     });
+  });
+
+  it("adds the fixed fields and the notes for certification, with the runFullTrust reason", () => {
+    const md =
+      '## Notes for certification (paste into "Notes for certification")\n\n```\nTry it like this.\n```\n\n## Why the app needs "runFullTrust" (if asked)\n\n```\nIt reads folders.\n```\n\n## Next\n\nx';
+    expect(listingBlock(md, "Notes for certification")).toBe("Try it like this.");
+    const out = storeListing(md, { about: "x", devStudio: "Nexmio", features: ["a"] });
+    expect(out.devStudio).toBe("Nexmio");
+    expect(out.features).toEqual(["a"]);
+    expect(out.about).toBeUndefined();
+    expect(out.notesForCertification).toBe(
+      "Try it like this.\n\nWhy the app needs runFullTrust:\nIt reads folders.",
+    );
   });
 });

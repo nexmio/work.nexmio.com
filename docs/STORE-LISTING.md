@@ -2,6 +2,10 @@
 
 Use this together with [docs/MSIX.md](MSIX.md). Everything below is in English, because the app is. Partner Center shows the exact size and length limits for each field, so trust it over this page if they differ.
 
+## What the release sends by itself
+
+Every release sends these fields to both Store products: the description, short description and search terms below; "What's new" from `CHANGELOG.md`; the notes for certification and the runFullTrust reason below; and the fixed fields in `docs/store/store-fields.json` (copyright and trademark, developed by, website, privacy policy, support contact, features, hardware). Change the text here or in that file and it goes out with the next release. Pictures, price, markets, visibility, category and age rating are **not** touched: they stay as they were set in Partner Center. A Preview product that is not hidden is never updated (the script stops).
+
 ## Files
 
 | What                      | File                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -79,14 +83,14 @@ markdown, pages, page taking, local ai, git history, wiki links, knowledge base
 
 - **Category:** Productivity.
 - **System requirements:** Windows 10 version 1809 or later (Windows 11 recommended: it includes the WebView2 runtime that Nexmio Work uses). 64-bit.
-- **Age rating:** answer the questionnaire honestly. Nexmio Work has no violent, sexual or gambling content of its own. Page that it lets the user chat with an AI model that the user chooses, so the "user-generated content / online interaction" questions may apply: the chat is private and goes only to the AI on the user's own computer.
+- **Age rating:** answer the questionnaire honestly. Nexmio Work has no violent, sexual or gambling content of its own. Note that it lets the user chat with an AI model that the user chooses, so the "user-generated content / online interaction" questions may apply: the chat is private and goes only to the AI on the user's own computer.
 
-## Pages for certification (paste into "Pages for certification")
+## Notes for certification (paste into "Notes for certification")
 
 ```
 Nexmio Work is a desktop pages app with open source code (Tauri, Rust and a WebView2 front end), packaged as a full-trust desktop app.
 
-How to try it: start the app, choose "Open folder as vault" and pick or create any empty folder. Create a note with Ctrl+N. No account or sign-in is needed.
+How to try it: start the app, choose "Open folder as vault" and pick or create any empty folder. Create a page with Ctrl+N. No account or sign-in is needed.
 
 The AI features use either the optional built-in AI (Foundry Local, see below) or a local AI server (LM Studio) that is not part of the package. Without either, the app is a normal Markdown editor with version history. No data is sent anywhere.
 
@@ -100,7 +104,13 @@ The app does not collect any data. Privacy policy: https://work.nexmio.com/priva
 ## Why the app needs "runFullTrust" (if asked)
 
 ```
-Nexmio Work is a classic desktop application. It reads and writes the Markdown files and Git repositories in folders the user opens anywhere on their disk (for example Documents or a synced folder), watches those folders for changes, and starts nothing else. These operations are not possible from a sandboxed UWP app, so the package uses the full-trust (desktop bridge) model.
+Nexmio Work is a classic desktop application (Tauri/Rust with a WebView2 front end), packaged with the desktop bridge. It needs full trust for these things, which a sandboxed UWP app cannot do:
+
+1. It reads and writes the Markdown files and the Git repositories (the version history) in folders that the user opens anywhere on their disk, for example Documents or a synced folder, and it watches those folders for changes made by other programs.
+2. It can make a backup copy of a vault in another folder the user chooses, for example on an external disk.
+3. It talks to an AI server on the user's own computer (for example LM Studio on localhost) and, for the built-in AI, runs Microsoft's Foundry Local runtime in a helper process. The helper is the same nexmio-work.exe started with the argument --foundry-helper. No other program is started.
+
+The app has no account, no telemetry and no background service, and it sends nothing from the user's pages anywhere. The source code is public: https://github.com/nexmio/work.nexmio.com
 ```
 
 ## Required for apps with AI content (Store policy 11.16, "Live Generative AI Content")

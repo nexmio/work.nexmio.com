@@ -77,7 +77,7 @@ export function storeNotes(section, max = 1500) {
 /** The text under a `## Heading` of the Store listing file, without the next heading. */
 export function listingPart(listing, heading) {
   const lines = listing.split("\n");
-  const start = lines.findIndex((l) => l === `## ${heading}`);
+  const start = lines.findIndex((l) => l === `## ${heading}` || l.startsWith(`## ${heading} (`));
   if (start === -1) return "";
   let end = lines.findIndex((l, i) => i > start && l.startsWith("## "));
   if (end === -1) end = lines.length;
@@ -87,10 +87,26 @@ export function listingPart(listing, heading) {
     .trim();
 }
 
+/** The first fenced block under a `## Heading`, without its fences ("" when there is none). */
+export function listingBlock(listing, heading) {
+  const m = /```[a-z]*\n([\s\S]*?)\n```/.exec(listingPart(listing, heading));
+  return m ? m[1].trim() : "";
+}
+
 /** The Store listing as the Store wants it: the plain text of the description and the search terms. */
-export function storeListing(listing) {
+export function storeListing(listing, fields = {}) {
   const text = (md) => md.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\n{3,}/g, "\n\n");
+  const justification = listingBlock(listing, 'Why the app needs "runFullTrust"');
+  const certification = listingBlock(listing, "Notes for certification");
+  const { about: _about, ...rest } = fields;
   return {
+    ...rest,
+    notesForCertification: [
+      certification,
+      justification && `Why the app needs runFullTrust:\n${justification}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
     shortDescription: listingPart(listing, "Short description"),
     description: text(listingPart(listing, "Description")),
     keywords: listingPart(listing, "Search terms (up to seven)")
@@ -123,7 +139,14 @@ if (
   fs.writeFileSync(path.join(outDir, "store-notes.txt"), `${storeNotes(section)}\n`);
   fs.writeFileSync(
     path.join(outDir, "store-listing.json"),
-    JSON.stringify(storeListing(fs.readFileSync("docs/STORE-LISTING.md", "utf8")), null, 2),
+    JSON.stringify(
+      storeListing(
+        fs.readFileSync("docs/STORE-LISTING.md", "utf8"),
+        JSON.parse(fs.readFileSync("docs/store/store-fields.json", "utf8")),
+      ),
+      null,
+      2,
+    ),
   );
   console.log(`Wrote the release texts for ${version} in ${outDir}.`);
 }

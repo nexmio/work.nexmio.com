@@ -7,27 +7,59 @@ name: Release
 #
 # Make as many Preview releases as you like. When one of them is good enough to be Nexmio Work, run
 # the workflow "Release Stable" for its tag (docs/RELEASING.md). Nothing waits for you in between.
+#
+# A tag that is NOT on main is a bug fix for Stable (made on a hotfix/ branch from the Stable tag, see
+# "Fixing a bug in Stable" in docs/RELEASING.md). Preview is not built for it, because Preview is
+# further ahead and the Store does not take an older version. Run "Release Stable" for that tag.
 on:
   push:
     tags:
       - "v*"
+  # Builds a tag that is already pushed again (for example after this workflow was fixed). Start it
+  # under Actions → Release → Run workflow, and type the tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to build, for example v0.26.0"
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.release.outputs.release_id }}
+      on_main: ${{ steps.where.outputs.on_main }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      # A tag on main is a Preview release. A tag on a hotfix branch is a fix for Stable.
+      - name: Is the tag on main?
+        id: where
+        shell: bash
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor "$(git rev-parse HEAD)" origin/main; then
+            echo "on_main=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "on_main=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$TAG is not on main: it is a fix for Stable. Preview is not built. Run the workflow Release Stable for this tag (pnpm release:stable $TAG)."
+          fi
 
       # The tag must be a version and the version in package.json, so a wrong tag stops here.
       - name: Check the tag
         shell: bash
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="${TAG}"
           if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "The tag $tag is not a version such as v0.26.0 or v1.0.0."; exit 1
           fi
@@ -43,7 +75,7 @@ jobs:
       # What's new, the GitHub text and the Store listing are made from CHANGELOG.md and
       # docs/STORE-LISTING.md, so nobody writes them twice.
       - name: Make the release texts
-        run: node scripts/release/notes.mjs "${GITHUB_REF_NAME#v}" release-texts
+        run: node scripts/release/notes.mjs "${TAG#v}" release-texts
 
       - uses: actions/upload-artifact@v4
         with:
@@ -53,22 +85,27 @@ jobs:
       # A draft release that the build adds its files to. It is published when Preview is done.
       - name: Make the draft release
         id: release
+        if: steps.where.outputs.on_main == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME" --draft --prerelease \
-              --title "Nexmio Work ${GITHUB_REF_NAME}" --notes-file release-texts/release-notes.md
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --draft --prerelease \
+              --title "Nexmio Work ${TAG}" --notes-file release-texts/release-notes.md
           fi
-          echo "release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)" >> "$GITHUB_OUTPUT"
+          # A draft is not found by its tag, so the id is looked up in the list of releases.
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name==\"$TAG\") | .id" | head -1)"
+          if [ -z "$id" ]; then echo "The release $TAG was not found."; exit 1; fi
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
 
   preview:
     needs: prepare
+    if: needs.prepare.outputs.on_main == 'true'
     uses: ./.github/workflows/build.yml
     with:
       edition: preview
       release_id: ${{ needs.prepare.outputs.release_id }}
-      tag: ${{ github.ref_name }}
+      tag: ${{ env.TAG }}
     secrets: inherit
 
   publish-preview:
@@ -78,4 +115,4 @@ jobs:
       - name: Publish the pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false

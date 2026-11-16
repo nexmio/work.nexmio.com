@@ -8,6 +8,7 @@ Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript front
 - The `CLAUDE.md` in an area's main folder: what the area does and its rules.
 - `docs/UX-GUIDE.md` and `docs/design-system/`: how every screen looks and works.
 - `docs/DECISIONS.md`: why things are as they are (newest at the bottom). Record every new decision there.
+- `docs/RELEASING.md`: how a release is made (Preview, Stable, a fix for Stable, the Microsoft Store). Read it before any release or tag.
 - `brand/LAYOUT.md`: the layout every Nexmio site and app follows.
 - `brand/preview/site/work.html`: a working reference page for this product.
 - `project.md` (if present): private handover pages from the Nexmio control repo. Never commit it to the public repo.
@@ -43,7 +44,12 @@ The skills `/feature` and `/release` in `.claude/skills/` walk through these ste
 - **No local paths, user names or environment details** in anything published (docs, artifacts, releases, commits).
 - **Secrets** (the Phi Silica token) are never pasted, logged or committed; they live only as GitHub secrets.
 - **Do not drive the owner's desktop** (mouse, keyboard) and never capture the full desktop; screenshots only of Nexmio Work, headless.
-- **English** in the app and the docs, sentence case in buttons and labels. The owner is answered in Danish.
+- **English** in the app, the docs and the website (the website has no Danish version). Sentence case in buttons and labels. The owner is answered in Danish.
+- **The word is "page", not "note"**, in everything a person reads (labels, messages, help, docs, site, Store text). Kept as "note": a note on a task, an idea or a meeting (the **Notes** section of a meeting), folder names in older vaults, file formats (`## Notes`), SQL names and all code names. A bulk rename of words needs a check of formats and tests: never change a string that is read back from a file.
+- **Reading rules** (dyslexia and a short attention): small headings in sentence case, a done item dimmed with its tick and never struck through, an icon always with a word (except a checkbox), one thing to do at a time where the screen can show it (the Now card in Tasks). Settings apply at once, with Undo.
+- **Tests are written with the change and are green before it is shown**: the frontend checks, `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test` (in the Rust distrobox). A flaky test is made reliable, not skipped. Look at headless pictures of a changed screen (`pnpm screenshots`, `scripts/e2e/`) before saying it looks right.
+- **Commit and push only when the owner asks.** Staging (`git add -A`) after the owner's ok is the checkpoint between phases of a big change. A pushed tag is never moved or deleted. Settings of the GitHub repository (Pages, environments, variables, secrets) are the owner's; say what to change and ask before changing one.
+- **Ask only when it is really needed.** Decide with what is written here and in `docs/DECISIONS.md`, work through the whole task, and report what was done, what was left out and why.
 
 ## Code
 
@@ -64,4 +70,13 @@ The skills `/feature` and `/release` in `.claude/skills/` walk through these ste
 
 ## Release
 
-On request only. Every tag builds **Nexmio Work Preview** at once (installers and the Microsoft Store package, private in the Store) and publishes a pre-release. A Preview that is good enough is made **Nexmio Work** with `pnpm release:stable` (the workflow "Release Stable": builds, sends to the Store, makes the release the latest). Nothing waits in a run. Steps (`docs/RELEASING.md`): finish `CHANGELOG.md` (`## [X.Y.Z] - date`), `pnpm release:bump X.Y.Z`, commit and merge to `main`, `pnpm release:tag`. The version is in `package.json`, `src-tauri/Cargo.toml`, the `nexmio-work` entry of `src-tauri/Cargo.lock`, `docs/MSIX.md` and the line at the top of this file (a test checks they match). The "What's new" for GitHub and the Store is made from the changelog; the owner never moves files by hand.
+On request only. The full guide is `docs/RELEASING.md`; the rules in short:
+
+- **Two lines.** `main` is **Preview**: features and changes, versions that end in `.0` (0.26.0, 0.27.0). **Stable** ("Nexmio Work") is a Preview that the owner has made Stable.
+- **Preview:** finish `CHANGELOG.md` (`## [X.Y.Z] - date`), `pnpm release:bump X.Y.Z`, commit and merge to `main`, `pnpm release:tag`. GitHub builds Nexmio Work Preview at once (Windows and Linux installers, the Store package "Nexmio Work Preview", private in the Store) and publishes a pre-release. Nothing waits in a run.
+- **Stable:** only when the owner asks for it by name: `pnpm release:stable vX.Y.Z` (the workflow Release Stable builds the same tag as "Nexmio Work", sends it to the Store and makes it the latest release).
+- **A bug in Stable** is never released from `main`. `pnpm release:hotfix X.Y.Z` makes `hotfix/X.Y.Z` from the Stable tag with only the fix (a patch version, its own changelog section); `pnpm release:tag` tags it (no Preview is built, the Store takes no older version); `pnpm release:stable vX.Y.Z` makes it Stable; the same fix is cherry-picked to `main` (`git cherry-pick -x`), and the hotfix branch is never merged.
+- **The version** is in `package.json`, `src-tauri/Cargo.toml`, the `nexmio-work` entry of `src-tauri/Cargo.lock`, `docs/MSIX.md` and the line at the top of this file (a test checks they match): change it only with `pnpm release:bump`.
+- **Texts are made, not written twice:** "What's new" for GitHub, the in-app list and the Store comes from the changelog bullets (write them for a person); the Store description and search terms come from `docs/STORE-LISTING.md`. The owner never moves files by hand.
+- **The Store:** Nexmio Work Preview is private (hidden, found only by its direct link); Nexmio Work is public. Each has its own GitHub environment (`preview`, `stable`) with the variables `MSIX_IDENTITY_NAME`, `MSIX_DISPLAY_NAME` and `STORE_APP_ID`; the shared `MSIX_PUBLISHER` and `MSIX_PUBLISHER_DISPLAY_NAME` are repository variables; the Azure keys are secrets (`docs/MSIX.md`).
+- **The website** (`site/`, English only) follows the GitHub releases by itself; nothing on it changes for a release. The custom domain is on hold: `site/CNAME.later` becomes `site/CNAME` when its DNS is ready.

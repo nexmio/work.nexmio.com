@@ -4,12 +4,15 @@
   Microsoft Store submission API (https://learn.microsoft.com/windows/uwp/monetize/create-and-manage-submissions-using-windows-store-services).
 
 .DESCRIPTION
-  Used by the release workflow (.github/workflows/release.yml), once for Nexmio Work Preview and once
-  for Nexmio Work after the owner approves. It:
+  Used by the release workflow (.github/workflows/build.yml), once for Nexmio Work Preview (on every
+  tag) and once for Nexmio Work (when the owner starts Release Stable). It:
     1. gets a token from Azure AD (an app registration that is linked to Partner Center),
     2. removes an unfinished submission of the app, if there is one,
-    3. starts a new submission, replaces the package, and sets the description, the short
-       description, the search terms and "What's new" (release notes) in every language of the listing,
+    3. starts a new submission, replaces the package, and sets every text field of the listing in every
+       language: description, short description, search terms, "What's new", copyright and trademark,
+       developed by, website, privacy policy, support contact, features, hardware, and the notes for
+       certification. Pictures, price, markets, visibility, category and age rating are not touched:
+       the new submission keeps them from the last one,
     4. uploads the package and commits the submission, and waits until the Store has accepted it.
   Microsoft then certifies it and publishes it (the submission is set to publish when certified).
 
@@ -18,7 +21,7 @@
   release still works before the Store is connected.
 
 .PARAMETER ListingJson
-  store-listing.json made by scripts/release/notes.mjs (description, shortDescription, keywords).
+  store-listing.json made by scripts/release/notes.mjs (all the fields of the listing).
 .PARAMETER NotesFile
   store-notes.txt made by scripts/release/notes.mjs ("What's new").
 #>
@@ -79,13 +82,37 @@ $fileName = [IO.Path]::GetFileName($PackagePath)
 $sub.applicationPackages += [pscustomobject]@{
   fileName = $fileName; fileStatus = "PendingUpload"; minimumDirectXVersion = "None"; minimumSystemRam = "None"
 }
+# Preview must never be public. A new submission keeps the visibility of the last one; if that is not
+# hidden, the new submission is removed and nothing is sent.
+if ($Edition -eq "Preview" -and $sub.visibility -notin @("Hidden", "Private")) {
+  Write-Host "::error::Nexmio Work Preview is not hidden in the Store (visibility: $($sub.visibility)). Set it to 'available by direct link' in Partner Center. Nothing was sent."
+  Call Delete "/applications/$AppId/submissions/$($sub.id)" | Out-Null
+  exit 1
+}
+
+function Set-Field($obj, [string]$name, $value) {
+  if ($null -eq $value) { return }
+  if ($obj.PSObject.Properties[$name]) { $obj.$name = $value }
+  else { Add-Member -InputObject $obj -NotePropertyName $name -NotePropertyValue $value }
+}
+
 foreach ($lang in $sub.listings.PSObject.Properties) {
   $bl = $lang.Value.baseListing
-  $bl.description = $description
-  $bl.shortDescription = $listing.shortDescription
-  $bl.releaseNotes = $notes
-  $bl.keywords = @($listing.keywords)
+  Set-Field $bl "description" $description
+  Set-Field $bl "shortDescription" $listing.shortDescription
+  Set-Field $bl "releaseNotes" $notes
+  Set-Field $bl "keywords" @($listing.keywords)
+  Set-Field $bl "features" @($listing.features)
+  Set-Field $bl "copyrightAndTrademarkInfo" $listing.copyrightAndTrademarkInfo
+  Set-Field $bl "licenseTerms" $listing.licenseTerms
+  Set-Field $bl "devStudio" $listing.devStudio
+  Set-Field $bl "websiteUrl" $listing.websiteUrl
+  Set-Field $bl "privacyPolicy" $listing.privacyPolicy
+  Set-Field $bl "supportContact" $listing.supportContact
+  Set-Field $bl "minimumHardware" @($listing.minimumHardware)
+  Set-Field $bl "recommendedHardware" @($listing.recommendedHardware)
 }
+Set-Field $sub "notesForCertification" $listing.notesForCertification
 $sub.targetPublishMode = "Immediate"
 
 # 4. Upload the package (a zip with the .msix in it) and commit

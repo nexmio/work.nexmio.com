@@ -1,0 +1,24 @@
+{
+  "about": "The fields of the Microsoft Store listing that do not change from version to version. The release workflow sends them with every Preview and Stable submission (scripts/store/Submit-Store.ps1), together with the description, short description and search terms from docs/STORE-LISTING.md, and What's new from CHANGELOG.md. Pictures, price, markets, visibility, category and age rating are not touched: they are kept from the last submission. When the website's own domain is ready, change privacyPolicy and websiteUrl to https://work.nexmio.com.",
+  "copyrightAndTrademarkInfo": "© 2026 Jesper Ahasverusen Kielsgaard. Nexmio and Nexmio Work are names used by the author.",
+  "licenseTerms": "",
+  "devStudio": "Nexmio",
+  "websiteUrl": "https://nexmio.github.io/work.nexmio.com",
+  "privacyPolicy": "https://nexmio.github.io/work.nexmio.com/privacy.html",
+  "supportContact": "https://github.com/nexmio/work.nexmio.com/issues",
+  "features": [
+    "Pages as plain Markdown files in ordinary folders",
+    "A built-in version history of every change",
+    "Tasks, epics and a Focus view that shows one thing at a time",
+    "Plans with an outline and a map",
+    "Meetings with an agenda, notes, decisions and actions",
+    "An AI that runs on your own computer and only suggests",
+    "Works the same without any AI",
+    "No account, no telemetry, no ads"
+  ],
+  "minimumHardware": [],
+  "recommendedHardware": [
+    "Windows 11 24H2 or later for the built-in AI",
+    "A neural processing unit (NPU) for faster built-in AI"
+  ]
+}

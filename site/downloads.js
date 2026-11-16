@@ -1,11 +1,13 @@
 /* The download buttons follow the GitHub releases by themselves, so nothing is changed here when a
    new version comes out:
-   - "Nexmio Work" is the newest release that is not a pre-release (the one the owner approved).
+   - "Nexmio Work" is the newest release that is not a pre-release (the highest version the owner made Nexmio Work).
    - "Nexmio Work Preview" is the newest release that has Preview files (every release has them).
    If GitHub cannot be reached, the buttons keep their links to the releases page. */
 (function () {
   const REPO = 'nexmio/work.nexmio.com';
   const store = window.NEXMIO_STORE || {};
+  const ver = r => r.tag_name.replace(/^v/, '').split('.').map(Number);
+  const newest = (a, b) => { const x = ver(a), y = ver(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i]; return 0; };
   const pick = (assets, preview, test) => assets.find(a => (/preview/i.test(a.name) === preview) && test.test(a.name));
   const WIN = /-setup\.exe$/i, LINUX = /\.AppImage$/i;
 
@@ -38,7 +40,7 @@
   fetch('https://api.github.com/repos/' + REPO + '/releases?per_page=20', { headers: { Accept: 'application/vnd.github+json' } })
     .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then(list => {
-      const published = list.filter(r => !r.draft);
+      const published = list.filter(r => !r.draft).sort(newest);
       const stable = published.find(r => !r.prerelease);
       const preview = published.find(r => (r.assets || []).some(a => /preview/i.test(a.name)));
       const card = document.querySelector('[data-edition="stable"]');

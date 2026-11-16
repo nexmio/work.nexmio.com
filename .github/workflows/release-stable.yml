@@ -52,13 +52,21 @@ jobs:
           name: release-texts
           path: release-texts
 
-      # The Preview release must be there already: Stable is a Preview that was good enough.
-      - name: Find the release
+      # A Preview release is there already when a Preview is made Stable. A fix for Stable (a tag that
+      # is not on main) has none yet, so it is made here.
+      - name: Find or make the release
         id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/${{ inputs.tag }}" --jq .id)" >> "$GITHUB_OUTPUT"
+          if ! gh release view "${{ inputs.tag }}" >/dev/null 2>&1; then
+            gh release create "${{ inputs.tag }}" --draft --prerelease \
+              --title "Nexmio Work ${{ inputs.tag }}" --notes-file release-texts/release-notes.md
+          fi
+          # A draft is not found by its tag, so the id is looked up in the list of releases.
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[] | select(.tag_name=="${{ inputs.tag }}") | .id' | head -1)"
+          if [ -z "$id" ]; then echo "The release ${{ inputs.tag }} was not found."; exit 1; fi
+          echo "release_id=$id" >> "$GITHUB_OUTPUT"
 
   stable:
     needs: prepare
@@ -76,4 +84,4 @@ jobs:
       - name: Make it the latest release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest
+        run: gh release edit "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false --latest
