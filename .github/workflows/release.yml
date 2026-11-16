@@ -1,0 +1,81 @@
+name: Release
+
+# Pushing a tag such as v0.26.0 (it must equal the version in package.json) builds Nexmio Work Preview
+# at once, with no questions: installers for Windows and Linux, and the Microsoft Store package
+# "Nexmio Work Preview", sent to the Store. The GitHub release is published as a pre-release, and the
+# website's Preview download follows it by itself.
+#
+# Make as many Preview releases as you like. When one of them is good enough to be Nexmio Work, run
+# the workflow "Release Stable" for its tag (docs/RELEASING.md). Nothing waits for you in between.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The tag must be a version and the version in package.json, so a wrong tag stops here.
+      - name: Check the tag
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "The tag $tag is not a version such as v0.26.0 or v1.0.0."; exit 1
+          fi
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "v$pkg" != "$tag" ]; then
+            echo "The tag $tag does not match the version $pkg in package.json."; exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # What's new, the GitHub text and the Store listing are made from CHANGELOG.md and
+      # docs/STORE-LISTING.md, so nobody writes them twice.
+      - name: Make the release texts
+        run: node scripts/release/notes.mjs "${GITHUB_REF_NAME#v}" release-texts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-texts
+          path: release-texts
+
+      # A draft release that the build adds its files to. It is published when Preview is done.
+      - name: Make the draft release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft --prerelease \
+              --title "Nexmio Work ${GITHUB_REF_NAME}" --notes-file release-texts/release-notes.md
+          fi
+          echo "release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)" >> "$GITHUB_OUTPUT"
+
+  preview:
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      edition: preview
+      release_id: ${{ needs.prepare.outputs.release_id }}
+      tag: ${{ github.ref_name }}
+    secrets: inherit
+
+  publish-preview:
+    needs: preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish the pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease --latest=false

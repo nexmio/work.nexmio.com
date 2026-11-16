@@ -1,0 +1,86 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeTask } from "@/test/taskFixtures";
+
+const apiMock = vi.hoisted(() => ({
+  listTasks: vi.fn(),
+  listEpics: vi.fn(),
+  getEpicOrder: vi.fn(() => Promise.resolve([])),
+}));
+vi.mock("@/lib/api", () => ({
+  api: apiMock,
+  toApiError: (e: unknown) => ({ code: "Unknown", message: String(e) }),
+}));
+vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
+
+import { TasksPanel } from "./TasksPanel";
+import { useTaskStore } from "@/stores/taskStore";
+import { useUiStore } from "@/stores/uiStore";
+
+describe("TasksPanel", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    apiMock.listTasks
+      .mockReset()
+      .mockResolvedValue([
+        makeTask({ path: "Tasks/A.md", title: "One" }),
+        makeTask({ path: "Tasks/A.md", line: 6, title: "Two", done: true }),
+        makeTask({ path: "Tasks/B.md", title: "Three", done: true }),
+      ]);
+    apiMock.listEpics.mockReset().mockResolvedValue([
+      { path: "Tasks/A.md", title: "Alpha", source: null },
+      { path: "Tasks/B.md", title: "Beta", source: null },
+    ]);
+    useTaskStore.setState({
+      tasks: [],
+      epics: [],
+      loaded: false,
+      epicPath: null,
+      chosenArea: null,
+    });
+    useUiStore.setState({ centerView: "tasks" });
+  });
+
+  it("lists the areas with how far each has come, finished ones folded away", async () => {
+    render(<TasksPanel />);
+    const user = userEvent.setup();
+    const alpha = await screen.findByRole("button", { name: /Alpha/ });
+    expect(alpha).toHaveTextContent("1 of 2");
+    expect(screen.getByText("Choose one area")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Beta/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Finished areas · 1" }));
+    expect(screen.getByRole("button", { name: /Beta/ })).toBeInTheDocument();
+  });
+
+  it("chooses an area, keeps the choice and shows the task list", async () => {
+    useUiStore.setState({ centerView: "epic" });
+    render(<TasksPanel />);
+    await userEvent.setup().click(await screen.findByRole("button", { name: /Alpha/ }));
+    expect(useTaskStore.getState().chosenArea).toBe("Tasks/A.md");
+    expect(localStorage.getItem("nexmio.tasksArea:")).toBe("Tasks/A.md");
+    expect(useUiStore.getState().centerView).toBe("tasks");
+  });
+
+  it("has a row for the loose tasks of pages that are not epics", async () => {
+    apiMock.listTasks.mockResolvedValue([
+      makeTask({ path: "Tasks/A.md", title: "One" }),
+      makeTask({ path: "Møder/Acme.md", title: "Loose one" }),
+      makeTask({ path: "Møder/Acme.md", line: 8, title: "Loose two" }),
+    ]);
+    render(<TasksPanel />);
+    const row = await screen.findByRole("button", { name: /Loose tasks/ });
+    expect(row).toHaveTextContent("2");
+    await userEvent.setup().click(row);
+    expect(useTaskStore.getState().chosenArea).toBe("__loose__");
+  });
+
+  it("has no filters and no box for writing a task", async () => {
+    render(<TasksPanel />);
+    await screen.findByRole("button", { name: /Alpha/ });
+    expect(screen.queryByLabelText("Add a task here")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /All open|Moved from earlier|This week/ }),
+    ).toBeNull();
+  });
+});

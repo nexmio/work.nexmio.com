@@ -1,0 +1,10 @@
+[package]
+name = "foundry-native-fetch"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Builds the Foundry Local SDK once so that its build step downloads the native libraries. Used by scripts/fetch-foundry-native.*; it is not part of Nexmio Work."
+
+[dependencies]
+# The same foundry-local-sdk that Nexmio Work uses.
+foundry-local-sdk = "2.4.1"

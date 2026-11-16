@@ -1,0 +1,449 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Project } from "@/bindings/Project";
+import type { TreeNode } from "@/bindings/TreeNode";
+
+vi.mock("@/lib/api", () => ({
+  api: { listSkills: () => Promise.resolve([]), listDailyDates: () => Promise.resolve([]) },
+  toApiError: (e: unknown) => ({ message: String(e) }),
+}));
+const actions = vi.hoisted(() => ({
+  newNoteInCurrentFolder: vi.fn(),
+  revealInTree: vi.fn(),
+  openFile: vi.fn(),
+  openInSplit: vi.fn(),
+}));
+vi.mock("@/lib/actions", () => actions);
+
+import { FilesPanel } from "./FilesPanel";
+import { useRecent } from "@/stores/recentStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import type { Settings } from "@/bindings/Settings";
+import { useUiStore } from "@/stores/uiStore";
+import { useTreeStore } from "@/stores/treeStore";
+import { useVaultStore } from "@/stores/vaultStore";
+import { makeSettings } from "@/test/settings";
+
+const file = (path: string, modified = 0): TreeNode => ({
+  name: path.split("/").pop() ?? path,
+  path,
+  isDir: false,
+  children: [],
+  modified,
+});
+const dir = (path: string, children: TreeNode[]): TreeNode => ({
+  name: path.split("/").pop() ?? path,
+  path,
+  isDir: true,
+  children,
+  modified: 0,
+});
+
+const tree = [
+  dir("Work", [
+    dir("Work/Security", [
+      file("Work/Security/Policy.md", 5),
+      file("Work/Security/Firewall.md", 9),
+    ]),
+    file("Work/Plan.md", 1),
+  ]),
+  file("Home.md", 3),
+];
+const project: Project = {
+  schemaVersion: 1,
+  id: "p1",
+  name: "Security docs",
+  folder: "Work/Security",
+  instructions: "",
+  providerId: null,
+  localOnly: false,
+  createdAt: "",
+  updatedAt: "",
+};
+
+const settings = (recentNotes: number): Settings =>
+  makeSettings({
+    editor: { recentNotes: recentNotes },
+    ai: { defaultProviderId: "p1", embeddings: { enabled: false, providerId: "p1", model: "" } },
+  });
+
+describe("FilesPanel", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    useTreeStore.setState({
+      expanded: new Set(),
+      filter: "",
+      sort: "name",
+      sectionOpen: {},
+      projectOpen: {},
+      multi: new Set(),
+    });
+    useSettingsStore.setState({ settings: settings(4) });
+    useRecent.setState({ vaultPath: "/v", paths: ["Home.md", "Work/Plan.md"] });
+    useVaultStore.setState({
+      vault: null,
+      tree,
+      files: ["Home.md", "Work/Plan.md", "Work/Security/Policy.md", "Work/Security/Firewall.md"],
+      projects: [project],
+      activePath: null,
+      selectedPath: null,
+    });
+  });
+
+  it("shows page counts on folders, and no lock on projects", () => {
+    useTreeStore.setState({ expanded: new Set(["Work"]) });
+    render(<FilesPanel />);
+    // Work now holds only Plan.md: the project inside it is listed under Projects.
+    expect(screen.getByTestId("tree-Work")).toHaveTextContent("1");
+    expect(screen.getByTestId("project-Work/Security")).toHaveTextContent("Security docs");
+    expect(screen.queryByLabelText("Local AI only")).toBeNull();
+  });
+
+  it("a project is not part of All files, but its pages are listed under Projects", () => {
+    useTreeStore.setState({ expanded: new Set(["Work"]), projectOpen: { "Work/Security": true } });
+    render(<FilesPanel />);
+    const all = screen.getByRole("tree", { name: "Files" });
+    expect(all.querySelector('[data-tree-path="Work/Security"]')).toBeNull();
+    expect(all.querySelector('[data-tree-path="Work/Security/Policy.md"]')).toBeNull();
+    const projects = screen.getByRole("region", { name: "Projects" });
+    expect(projects.querySelector('[data-tree-path="Work/Security/Policy.md"]')).not.toBeNull();
+    expect(projects.querySelector('[data-tree-path="Work/Security/Firewall.md"]')).not.toBeNull();
+  });
+
+  it("opening and folding a project is remembered", async () => {
+    render(<FilesPanel />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /^Security docs/ }));
+    expect(screen.queryByTestId("tree-Work/Security/Policy.md")).toBeNull();
+    expect(localStorage.getItem("nexmio-project:Work/Security")).toBe("closed");
+    await user.click(screen.getByRole("button", { name: /^Security docs/ }));
+    expect(screen.getByTestId("tree-Work/Security/Policy.md")).toBeInTheDocument();
+  });
+
+  it("a new page can be started from the project, in the project folder", async () => {
+    render(<FilesPanel />);
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "New page in Security docs" }));
+    // The name dialog is shared by every way of making a note (see NewNoteDialog).
+    expect(useUiStore.getState().newNoteDialog).toEqual({ folder: "Work/Security" });
+  });
+
+  it("dropping a page on a project moves it into the project folder", () => {
+    const renamePath = vi.fn().mockResolvedValue(true);
+    useVaultStore.setState({ renamePath });
+    render(<FilesPanel />);
+    const data = { "application/x-nexmio-path": "Home.md" };
+    fireEvent.drop(screen.getByTestId("project-Work/Security"), {
+      dataTransfer: {
+        types: Object.keys(data),
+        getData: () => data["application/x-nexmio-path"],
+      },
+    });
+    return vi.waitFor(() => {
+      expect(renamePath).toHaveBeenCalledWith("Home.md", "Work/Security/Home.md", undefined);
+    });
+  });
+
+  it("the filter also searches inside projects and hides projects with no match", async () => {
+    render(<FilesPanel />);
+    await userEvent.setup().type(screen.getByLabelText("Filter the file tree"), "policy");
+    const projects = screen.getByRole("region", { name: "Projects" });
+    expect(projects.querySelector('[data-tree-path="Work/Security/Policy.md"]')).not.toBeNull();
+    expect(projects.querySelector('[data-tree-path="Work/Security/Firewall.md"]')).toBeNull();
+    await userEvent.setup().clear(screen.getByLabelText("Filter the file tree"));
+    await userEvent.setup().type(screen.getByLabelText("Filter the file tree"), "zzzz");
+    expect(screen.queryByTestId("project-Work/Security")).toBeNull();
+  });
+
+  it("the attachments folder is not in All files (pictures are in the Images tab)", () => {
+    useVaultStore.setState({
+      tree: [dir("attachments", [file("attachments/a.png")]), ...tree],
+      vault: {
+        path: "/v",
+        name: "v",
+        config: {
+          schemaVersion: 1,
+          attachmentsFolder: "attachments",
+          newNoteFolder: "",
+          meetingsFolder: "Meetings",
+          quickNotesFolder: "Quick pages",
+          dailyNotesFolder: "Daily",
+          dailyNoteFormat: "YYYY-MM-DD",
+          dailyTemplate: "",
+          imageLinkStyle: "markdown",
+        },
+      },
+    });
+    render(<FilesPanel />);
+    expect(screen.queryByTestId("tree-attachments")).toBeNull();
+    expect(screen.getByTestId("tree-Home.md")).toBeInTheDocument();
+  });
+
+  it("right-clicking a project offers the same choices as a folder in All files", async () => {
+    render(<FilesPanel />);
+    fireEvent.contextMenu(screen.getByTestId("project-Work/Security"));
+    for (const name of [
+      "New page",
+      "New folder",
+      "Rename",
+      "Delete",
+      "Create index page",
+      "Project settings",
+      "Export…",
+      "Reveal in file manager",
+    ]) {
+      expect(await screen.findByRole("menuitem", { name })).toBeInTheDocument();
+    }
+  });
+
+  describe("selecting several items", () => {
+    const ctrl = { ctrlKey: true };
+
+    it("Ctrl+click ticks items without opening them, and a plain click clears the ticks", () => {
+      render(<FilesPanel />);
+      fireEvent.click(screen.getByTestId("tree-Home.md"), ctrl);
+      fireEvent.click(screen.getByTestId("tree-Work"), ctrl);
+      expect(actions.openFile).not.toHaveBeenCalled();
+      expect(screen.getByTestId("tree-Home.md")).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByTestId("tree-Work")).toHaveAttribute("aria-selected", "true");
+      expect(useTreeStore.getState().multi.size).toBe(2);
+      fireEvent.click(screen.getByTestId("tree-Home.md"));
+      expect(useTreeStore.getState().multi.size).toBe(0);
+      expect(actions.openFile).toHaveBeenCalledWith("Home.md");
+    });
+
+    it("Shift+click ticks everything between two items", () => {
+      useTreeStore.setState({ expanded: new Set(["Work"]) });
+      render(<FilesPanel />);
+      fireEvent.click(screen.getByTestId("tree-Work/Plan.md"));
+      fireEvent.click(screen.getByTestId("tree-Home.md"), { shiftKey: true });
+      expect([...useTreeStore.getState().multi]).toEqual(["Work/Plan.md", "Home.md"]);
+    });
+
+    it("the menu of a ticked item deletes all ticked items after one question", async () => {
+      const deletePath = vi.fn().mockResolvedValue(true);
+      useVaultStore.setState({ deletePath });
+      render(<FilesPanel />);
+      fireEvent.click(screen.getByTestId("tree-Home.md"), ctrl);
+      fireEvent.click(screen.getByTestId("tree-Work"), ctrl);
+      fireEvent.contextMenu(screen.getByTestId("tree-Work"));
+      await userEvent
+        .setup()
+        .click(await screen.findByRole("menuitem", { name: "Delete 2 items" }));
+      expect(deletePath).not.toHaveBeenCalled();
+      await userEvent.setup().click(await screen.findByRole("button", { name: "Delete" }));
+      await vi.waitFor(() => {
+        expect(deletePath).toHaveBeenCalledTimes(2);
+      });
+      expect(deletePath).toHaveBeenCalledWith("Home.md");
+      expect(deletePath).toHaveBeenCalledWith("Work");
+      expect(useTreeStore.getState().multi.size).toBe(0);
+    });
+
+    it("dragging a ticked item moves all of them, without asking about links for each", async () => {
+      const renamePath = vi.fn().mockResolvedValue(true);
+      useVaultStore.setState({ renamePath });
+      useTreeStore.setState({
+        expanded: new Set(["Work"]),
+        multi: new Set(["Home.md", "Work/Plan.md"]),
+      });
+      render(<FilesPanel />);
+      const data: Record<string, string> = {
+        "application/x-nexmio-path": "Home.md",
+        "application/x-nexmio-paths": JSON.stringify(["Home.md", "Work/Plan.md"]),
+      };
+      fireEvent.drop(screen.getByTestId("project-Work/Security"), {
+        dataTransfer: { types: Object.keys(data), getData: (k: string) => data[k] ?? "" },
+      });
+      await vi.waitFor(() => {
+        expect(renamePath).toHaveBeenCalledTimes(2);
+      });
+      expect(renamePath).toHaveBeenCalledWith("Home.md", "Work/Security/Home.md", true);
+      expect(renamePath).toHaveBeenCalledWith("Work/Plan.md", "Work/Security/Plan.md", true);
+    });
+  });
+
+  describe("my own order", () => {
+    beforeEach(() => {
+      useVaultStore.setState({ projects: [] });
+      useTreeStore.setState({ sort: "manual", order: { "": ["Home.md", "Work"] } });
+    });
+
+    const rows = (): (string | null)[] =>
+      within(screen.getByRole("tree", { name: "Files" }))
+        .getAllByRole("treeitem")
+        .map((r) => r.getAttribute("data-tree-path"));
+
+    it("shows the chosen order, with a file before a folder", () => {
+      render(<FilesPanel />);
+      expect(rows()).toEqual(["Home.md", "Work"]);
+    });
+
+    it("Move down in the menu saves the new order of the folder", async () => {
+      const setFolderOrder = vi.fn().mockResolvedValue(undefined);
+      useTreeStore.setState({ setFolderOrder });
+      render(<FilesPanel />);
+      fireEvent.contextMenu(screen.getByTestId("tree-Home.md"));
+      await userEvent.setup().click(await screen.findByRole("menuitem", { name: "Move down" }));
+      expect(setFolderOrder).toHaveBeenCalledWith("", ["Work", "Home.md"]);
+    });
+
+    it("Alt+ArrowUp moves an item up", () => {
+      const setFolderOrder = vi.fn().mockResolvedValue(undefined);
+      useTreeStore.setState({ setFolderOrder });
+      render(<FilesPanel />);
+      fireEvent.keyDown(screen.getByTestId("tree-Work"), { key: "ArrowUp", altKey: true });
+      expect(setFolderOrder).toHaveBeenCalledWith("", ["Work", "Home.md"]);
+    });
+
+    it("the menu has no Move up / Move down when the order is by name", () => {
+      useTreeStore.setState({ sort: "name" });
+      render(<FilesPanel />);
+      fireEvent.contextMenu(screen.getByTestId("tree-Home.md"));
+      expect(screen.queryByRole("menuitem", { name: "Move down" })).toBeNull();
+    });
+  });
+
+  it("Meetings, Quick pages and Tasks have a Landing section of their own, not All files", () => {
+    useVaultStore.setState({
+      tree: [
+        dir("Archive", [file("Archive/a.md")]),
+        dir("Quick pages", [file("Quick notes/q.md")]),
+        dir("Meetings", [file("Meetings/m.md")]),
+        dir("Tasks", [file("Tasks/VPN.md")]),
+        ...tree,
+      ],
+      vault: {
+        path: "/v",
+        name: "v",
+        config: {
+          schemaVersion: 1,
+          attachmentsFolder: "attachments",
+          newNoteFolder: "",
+          meetingsFolder: "Meetings",
+          quickNotesFolder: "Quick pages",
+          dailyNotesFolder: "Daily",
+          dailyNoteFormat: "YYYY-MM-DD",
+          dailyTemplate: "",
+          imageLinkStyle: "markdown",
+        },
+      },
+    });
+    render(<FilesPanel />);
+    const landing = screen.getByRole("region", { name: "Landing" });
+    for (const f of ["Meetings", "Quick pages", "Tasks"]) {
+      expect(within(landing).getByTestId(`tree-${f}`)).toBeInTheDocument();
+    }
+    const all = within(screen.getByRole("tree", { name: "Files" }))
+      .getAllByRole("treeitem")
+      .map((r) => r.getAttribute("data-tree-path"));
+    expect(all).not.toContain("Meetings");
+    expect(all).toContain("Archive");
+  });
+
+  it("has the calendar at the top, and the daily pages folder is not listed", () => {
+    useVaultStore.setState({
+      tree: [dir("Daily", [file("Daily/2026-10-20.md")]), ...tree],
+      vault: {
+        path: "/v",
+        name: "v",
+        config: {
+          schemaVersion: 1,
+          attachmentsFolder: "attachments",
+          newNoteFolder: "",
+          meetingsFolder: "Meetings",
+          quickNotesFolder: "Quick pages",
+          dailyNotesFolder: "Daily",
+          dailyNoteFormat: "YYYY-MM-DD",
+          dailyTemplate: "",
+          imageLinkStyle: "markdown",
+        },
+      },
+    });
+    render(<FilesPanel />);
+    expect(screen.getByRole("region", { name: "Daily pages" })).toBeInTheDocument();
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+    const all = within(screen.getByRole("tree", { name: "Files" }))
+      .getAllByRole("treeitem")
+      .map((r) => r.getAttribute("data-tree-path"));
+    expect(all).not.toContain("Daily");
+  });
+
+  it("the Recent section shows as many pages as the setting allows", () => {
+    useRecent.setState({ paths: ["a.md", "b.md", "c.md", "d.md", "e.md", "f.md"] });
+    useSettingsStore.setState({ settings: settings(4) });
+    render(<FilesPanel />);
+    const recent = screen.getByRole("region", { name: "Recent" });
+    expect(within(recent).getAllByRole("button").length).toBe(1 + 4);
+    expect(recent).not.toHaveTextContent(/\be\b/);
+  });
+
+  it("the Recent section is hidden when the setting is 0", () => {
+    useSettingsStore.setState({ settings: settings(0) });
+    render(<FilesPanel />);
+    expect(screen.queryByRole("region", { name: "Recent" })).toBeNull();
+  });
+
+  it("filtering shows only matching pages with their folders open", async () => {
+    render(<FilesPanel />);
+    await userEvent.setup().type(screen.getByLabelText("Filter the file tree"), "firewall");
+    expect(screen.getByTestId("tree-Work/Security/Firewall.md")).toBeInTheDocument();
+    expect(screen.queryByTestId("tree-Home.md")).toBeNull();
+    expect(screen.queryByTestId("tree-Work/Plan.md")).toBeNull();
+  });
+
+  it("says so when nothing matches, and Escape clears the filter", async () => {
+    render(<FilesPanel />);
+    const user = userEvent.setup();
+    const box = screen.getByLabelText("Filter the file tree");
+    await user.type(box, "zzzz");
+    expect(screen.getByText(/No pages match “zzzz”/)).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(box).toHaveValue("");
+    expect(screen.getByTestId("tree-Home.md")).toBeInTheDocument();
+  });
+
+  it("the Recent section lists the last pages and opens one", async () => {
+    render(<FilesPanel />);
+    const recent = screen.getByRole("region", { name: "Recent" });
+    expect(recent).toHaveTextContent("Home");
+    expect(recent).toHaveTextContent("Plan");
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Home/ }));
+    expect(actions.openFile).toHaveBeenCalledWith("Home.md");
+  });
+
+  it("the Projects section shows the project with its page count", () => {
+    render(<FilesPanel />);
+    const section = screen.getByRole("region", { name: "Projects" });
+    expect(section).toHaveTextContent("Security docs");
+    expect(section).toHaveTextContent("2");
+  });
+
+  it("a section can be folded and the choice is remembered", async () => {
+    render(<FilesPanel />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /^Recent/ }));
+    expect(screen.queryByRole("button", { name: /^Home/ })).toBeNull();
+    expect(localStorage.getItem("nexmio-section:recent")).toBe("closed");
+  });
+
+  it("without recent pages or projects those sections are not shown", () => {
+    useRecent.setState({ paths: [] });
+    useVaultStore.setState({ projects: [] });
+    render(<FilesPanel />);
+    expect(screen.queryByRole("region", { name: "Recent" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Projects" })).toBeNull();
+  });
+
+  it("sorting by last change puts the newest page first", () => {
+    useTreeStore.setState({ sort: "modified", expanded: new Set(["Work", "Work/Security"]) });
+    render(<FilesPanel />);
+    const rows = screen.getAllByRole("treeitem").map((r) => r.getAttribute("data-tree-path"));
+    expect(rows.indexOf("Work/Security/Firewall.md")).toBeLessThan(
+      rows.indexOf("Work/Security/Policy.md"),
+    );
+  });
+});

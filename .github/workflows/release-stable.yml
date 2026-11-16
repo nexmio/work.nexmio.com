@@ -1,0 +1,79 @@
+name: Release Stable
+
+# Makes a Preview release that is already out into Nexmio Work: builds the same tag as "Nexmio Work",
+# sends it to the Microsoft Store product "Nexmio Work", and makes the GitHub release the latest one,
+# which the website's main download follows. Start it by hand: Actions → Release Stable → Run workflow.
+# Starting it is the decision, so nothing asks again (add a required reviewer to the environment
+# "stable" if you want a second question).
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The Preview release to make Stable, for example v0.26.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Check the tag
+        shell: bash
+        run: |
+          tag="${{ inputs.tag }}"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "The tag $tag is not a version such as v0.26.0 or v1.0.0."; exit 1
+          fi
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "v$pkg" != "$tag" ]; then
+            echo "The tag $tag does not match the version $pkg in package.json."; exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Make the release texts
+        run: node scripts/release/notes.mjs "${TAG#v}" release-texts
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-texts
+          path: release-texts
+
+      # The Preview release must be there already: Stable is a Preview that was good enough.
+      - name: Find the release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "release_id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/${{ inputs.tag }}" --jq .id)" >> "$GITHUB_OUTPUT"
+
+  stable:
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      edition: stable
+      release_id: ${{ needs.prepare.outputs.release_id }}
+      tag: ${{ inputs.tag }}
+    secrets: inherit
+
+  publish-stable:
+    needs: stable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make it the latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --prerelease=false --latest

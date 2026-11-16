@@ -1,0 +1,41 @@
+<#
+.SYNOPSIS
+  Installs the test copy of the Nexmio Work Store package (the one signed with the test certificate) on a
+  Windows test computer, for example Windows Sandbox or a virtual machine. Run it as administrator
+  from the folder that has the .msix and .cer files. It is not for your everyday computer.
+
+.PARAMETER Remove
+  Removes Nexmio Work again, and the test certificate.
+#>
+[CmdletBinding()]
+param(
+  [string]$Folder = $PSScriptRoot,
+  [string]$IdentityName = "Nexmio.Work.Placeholder",
+  [switch]$Remove
+)
+
+$ErrorActionPreference = "Stop"
+
+if ($Remove) {
+  Get-AppxPackage -Name $IdentityName | Remove-AppxPackage
+  Get-ChildItem Cert:\LocalMachine\TrustedPeople | Where-Object { $_.FriendlyName -eq "Nexmio Work test package" } | Remove-Item
+  Write-Host "Nexmio Work and the test certificate are removed."
+  return
+}
+
+$cer = Get-ChildItem -Path $Folder -Filter "*.cer" | Select-Object -First 1
+$msix = Get-ChildItem -Path $Folder -Filter "*_test.msix" | Select-Object -First 1
+if (-not $cer -or -not $msix) { throw "Put this script next to the *_test.msix and nexmio-work-test.cer files." }
+
+# Windows only installs a package whose signer it trusts.
+Import-Certificate -FilePath $cer.FullName -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
+# Nexmio Work needs the Windows App SDK runtime (for Phi Silica). The Store installs it by itself; here it
+# comes from the file next to this script when Windows does not have it yet.
+$runtime = Get-ChildItem -Path $Folder -Filter "Microsoft.WindowsAppRuntime.*.msix" | Select-Object -First 1
+if ($runtime) {
+  Add-AppxPackage -Path $msix.FullName -DependencyPath $runtime.FullName
+} else {
+  Add-AppxPackage -Path $msix.FullName
+}
+$pkg = Get-AppxPackage -Name $IdentityName
+Write-Host "Installed $($pkg.PackageFullName). Start Nexmio Work from the Start menu."

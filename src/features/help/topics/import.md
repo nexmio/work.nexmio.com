@@ -1,0 +1,18 @@
+## Move your pages from OneNote or another app
+
+OneNote cannot save pages as Markdown, so it takes two steps:
+
+1. **Turn the notebook into a folder of Markdown files** with a free tool, for example OneNoteMdExporter (search for `onenote-md-exporter` on GitHub).
+2. In Nexmio Work choose **File → Import pages from a folder…**, pick that folder, check the preview, choose where in your vault the pages go, and click **Import**.
+
+## What Nexmio Work does for you
+
+- The folder you import from is **only read**, never changed.
+- **Nothing in your vault is overwritten.** A taken name gets a number.
+- Names a computer does not allow are cleaned.
+- The whole import is **one entry in the version history**, after a snapshot. You can undo it.
+- You can **cancel** while it runs.
+
+Pages from a work notebook may be confidential. Check your rules first, and use **Local AI only** for such pages.
+
+The full step-by-step guide is in `docs/IMPORT-ONENOTE.md` in the Nexmio Work folder.

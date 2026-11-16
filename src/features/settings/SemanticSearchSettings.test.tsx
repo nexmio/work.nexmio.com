@@ -1,0 +1,82 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import type { Settings } from "@/bindings/Settings";
+
+vi.mock("@/lib/api", () => ({ api: {}, toApiError: (e: unknown) => ({ message: String(e) }) }));
+vi.mock("@/stores/embeddingStore", () => ({
+  useEmbeddingStore: (selector: (s: unknown) => unknown) =>
+    selector({ status: null, start: vi.fn(), cancel: vi.fn() }),
+}));
+
+import { SemanticSearchSettings } from "./SemanticSearchSettings";
+import { makeSettings } from "@/test/settings";
+
+function settings(
+  providerLocation: "local" | "cloud",
+  kind: "lmstudio" | "anthropic" | "openai_compatible" = "lmstudio",
+): Settings {
+  return makeSettings({
+    ai: {
+      defaultProviderId: "p1",
+      embeddings: { enabled: true, providerId: "p1", model: "" },
+      providers: [
+        {
+          id: "p1",
+          kind,
+          name: "Provider",
+          baseUrl: providerLocation === "local" ? "http://localhost:1234/v1" : "https://x",
+          model: "",
+          location: providerLocation,
+          supportsTools: true,
+          contextTokens: 8000,
+        },
+        {
+          id: "claude",
+          kind: "anthropic",
+          name: "Claude",
+          baseUrl: "https://api.anthropic.com",
+          model: "",
+          location: "cloud",
+          supportsTools: true,
+          contextTokens: 8000,
+        },
+      ],
+    },
+  });
+}
+
+describe("SemanticSearchSettings", () => {
+  it("offers local providers only, because the pages are read to make embeddings", () => {
+    const { unmount } = render(
+      <SemanticSearchSettings draft={settings("local")} onChange={vi.fn()} persist={vi.fn()} />,
+    );
+    expect(screen.getByRole("option", { name: "Provider" })).toBeInTheDocument();
+    unmount();
+    render(
+      <SemanticSearchSettings
+        draft={settings("cloud", "openai_compatible")}
+        onChange={vi.fn()}
+        persist={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("option", { name: "Provider" })).toBeNull();
+  });
+
+  it("does not offer Anthropic, which has no embeddings endpoint", () => {
+    render(
+      <SemanticSearchSettings draft={settings("local")} onChange={vi.fn()} persist={vi.fn()} />,
+    );
+    expect(screen.queryByRole("option", { name: /Claude/ })).toBeNull();
+  });
+
+  it("toggling the checkbox updates the draft", async () => {
+    const onChange = vi.fn();
+    render(
+      <SemanticSearchSettings draft={settings("local")} onChange={onChange} persist={vi.fn()} />,
+    );
+    await userEvent.setup().click(screen.getByLabelText("Enable semantic search"));
+    const next = onChange.mock.calls[0]?.[0] as Settings | undefined;
+    expect(next?.ai.embeddings.enabled).toBe(false);
+  });
+});

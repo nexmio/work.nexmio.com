@@ -1,0 +1,163 @@
+name: Build an edition
+
+# Called by release.yml, once for Preview and once for Stable. Builds the installers (Windows and
+# Linux), adds them to the draft release, and on Windows builds the Microsoft Store package and
+# sends it to the Store (see docs/MSIX.md and scripts/store/Submit-Store.ps1).
+on:
+  workflow_call:
+    inputs:
+      edition:
+        description: "preview or stable"
+        required: true
+        type: string
+      release_id:
+        description: "The id of the release the files are added to"
+        required: true
+        type: string
+      tag:
+        description: "The tag that is built, for example v0.26.0"
+        required: true
+        type: string
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    # The environments "preview" and "stable" are made in GitHub (Settings → Environments). A reviewer
+    # on "stable" is optional: starting the Release Stable workflow is already the owner's decision.
+    environment: ${{ inputs.edition }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+          - platform: ubuntu-22.04
+    runs-on: ${{ matrix.platform }}
+    env:
+      # The app shows which edition it is (src/lib/version.ts).
+      NEXMIO_EDITION: ${{ inputs.edition }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
+            libdbus-1-dev libayatana-appindicator3-dev librsvg2-dev rpm
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+
+      # Foundry Local's native libraries are packed into the installer, the AppImage and the Store
+      # package (src-tauri/foundry-native). A failure here stops the release on purpose: a build
+      # without them would silently have no Foundry Local.
+      - name: Fetch Foundry Local's native libraries (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: ./scripts/fetch-foundry-native.sh
+
+      - name: Fetch Foundry Local's native libraries (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: ./scripts/fetch-foundry-native.ps1
+
+      # Preview is its own app ("Nexmio Work Preview", its own identity), so both can be installed.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The AppImage tool follows the libraries' dependencies; Foundry Local's sit in this folder.
+          LD_LIBRARY_PATH: ${{ github.workspace }}/src-tauri/foundry-native
+        with:
+          releaseId: ${{ inputs.release_id }}
+          args: ${{ inputs.edition == 'preview' && '--config src-tauri/tauri.preview.conf.json' || '' }}
+
+      - uses: actions/download-artifact@v4
+        if: matrix.platform == 'windows-latest'
+        with:
+          name: release-texts
+          path: release-texts
+
+      # The Microsoft Store package (see docs/MSIX.md). Preview and Stable have their own identity,
+      # reserved in Partner Center, kept in repository variables. A problem here must not stop the
+      # installers, so it only shows up as a failed step.
+      - name: Build the Microsoft Store package (MSIX)
+        if: matrix.platform == 'windows-latest'
+        id: msix
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release -Filter *.exe | Where-Object { $_.Name -in @('nexmio-work.exe', 'Nexmio Work.exe', 'Nexmio Work Preview.exe') } | Select-Object -First 1
+          ./scripts/msix/Build-Msix.ps1 -Version "${{ inputs.tag }}" -Exe $exe.FullName `
+            -IdentityName "${{ vars.MSIX_IDENTITY_NAME || (inputs.edition == 'stable' && 'Nexmio.Work.Placeholder' || 'Nexmio.Work.Preview.Placeholder') }}" `
+            -DisplayName "${{ vars.MSIX_DISPLAY_NAME || (inputs.edition == 'stable' && 'Nexmio Work' || 'Nexmio Work Preview') }}" `
+            -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=00000000-0000-0000-0000-000000000000' }}" `
+            -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Nexmio' }}" `
+            -TestSign
+        env:
+          # Microsoft's key for Phi Silica; written into the package only (see docs/MSIX.md).
+          PHI_SILICA_TOKEN: ${{ secrets.PHI_SILICA_TOKEN }}
+          PHI_SILICA_ATTESTATION: ${{ secrets.PHI_SILICA_ATTESTATION }}
+
+      - name: Keep the Microsoft Store package
+        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexmio-work-${{ inputs.edition }}-msix
+          path: msix-out/NexmioWork_*_x64.msix
+          if-no-files-found: warn
+
+      # Sends the package and the texts (description, search terms, What's new) to the Store. Without
+      # the Store connection (the secrets below) it says so and does nothing.
+      - name: Send it to the Microsoft Store
+        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $pkg = (Get-ChildItem msix-out -Filter 'NexmioWork_*_x64.msix' | Where-Object { $_.Name -notlike '*_test*' } | Select-Object -First 1).FullName
+          ./scripts/store/Submit-Store.ps1 -AppId "${{ vars.STORE_APP_ID }}" `
+            -PackagePath $pkg -ListingJson release-texts/store-listing.json -NotesFile release-texts/store-notes.txt `
+            -Edition "${{ inputs.edition == 'stable' && 'Stable' || 'Preview' }}"
+        env:
+          STORE_TENANT_ID: ${{ secrets.STORE_TENANT_ID }}
+          STORE_CLIENT_ID: ${{ secrets.STORE_CLIENT_ID }}
+          STORE_CLIENT_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
+
+      # The copy for trying the package on a test Windows (Sandbox or a virtual machine), signed with
+      # a throw-away certificate that is NOT valid in the Store. See docs/MSIX.md.
+      - name: Add the Windows App SDK runtime to the test copy
+        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $nupkg = "winappsdk-runtime.zip"
+          Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.runtime/2.5.1/microsoft.windowsappsdk.runtime.2.5.1.nupkg" -OutFile $nupkg
+          Expand-Archive $nupkg -DestinationPath winappsdk-runtime -Force
+          Copy-Item "winappsdk-runtime/tools/MSIX/win10-x64/Microsoft.WindowsAppRuntime.2.msix" msix-out/
+
+      - name: Keep the test copy of the Microsoft Store package
+        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexmio-work-${{ inputs.edition }}-msix-test
+          path: |
+            msix-out/*_test.msix
+            msix-out/nexmio-work-test.cer
+            msix-out/Microsoft.WindowsAppRuntime.2.msix
+            msix-out/Install-TestMsix.ps1
+          if-no-files-found: warn

@@ -1,0 +1,435 @@
+//! System prompt assembly and context budgeting.
+
+use super::providers::types::{ChatMessage, Role};
+use crate::projects::Project;
+
+/// Who the AI is, used when the user has not written their own base instruction. The user can
+/// edit it in Settings → AI; the safety rules below are not part of it.
+pub const DEFAULT_BASE_INSTRUCTION: &str = r#"You are the AI assistant inside Nexmio Work, a Markdown notes and tasks app.
+You help the user write, restructure, correct and find information in their notes, and you help them organise notes, tasks and projects so they are easier to keep under control. Prefer clear headings, consistent structure, links between related notes and short, actionable summaries.
+If the user asks who you are, say in one or two sentences that you are the AI in Nexmio Work, that you run on this computer unless the user chose a cloud AI, and that you only propose changes the user reviews. Then offer something concrete to do with their notes."#;
+
+/// Rules that always apply, whatever the base instruction says (the AI only proposes changes).
+const RULES: &str = "Rules:
+- Notes are Markdown. Preserve existing frontmatter, wiki-links ([[...]]) and tags unless asked to change them.
+- Never invent facts about the user's notes. Use the search_notes and read_note tools to look things up.
+- You cannot write files directly. To change files, use the propose_* tools. The user reviews every change.
+- When proposing an edit, provide the complete new file content.
+- Keep answers concise. Answer in the language the user writes in.
+- Saying that you will change something does nothing. Every change needs a propose_* tool call.
+- The user's review screen is the confirmation. Never ask in the chat whether you may delete or change a note: propose it, and the user accepts or rejects it there.
+- When the user asks you to merge, combine or consolidate notes into one: read every source note, then call propose_merge once with ALL source paths. Do not stop after creating the new note, and do not leave source notes out.
+- Nothing you propose is applied by you. The proposals are queued and the user applies them afterwards, so never say that you have moved, created or deleted anything; say what you proposed.
+- There is no tool for folders. A folder is created by moving a note into a new path: propose_move to \"New folder/Note.md\" creates \"New folder\". Do not try to create empty folders or placeholder notes for them.
+- When the user asks you to organise, sort or structure many notes: (1) call list_folder with recursive=true once to see all of them, (2) read only the notes whose title is not enough to place them, (3) decide the folders yourself, (4) call the propose_move_many TOOL (never write the list of moves in your answer) with about 20 moves per call, and call it again until every note is placed. Do not ask the user which note to start with, do not ask for confirmation, and do not list the notes again.
+- Several changes need several tool calls. If a tool call returns an error, fix the arguments and call it again.
+- When you are done, say in one or two sentences what you proposed, and list the notes proposed for deletion.";
+
+/// Rules for the plain chat ("Ask about my notes"): it only reads and answers. Changes are made
+/// with the fixed AI commands in the app, which run as skills with their own rules.
+const CHAT_RULES: &str = "Rules:
+- Notes are Markdown. Never invent facts about the user's notes. Use the search_notes, read_note and list_folder tools to look things up, and say which note an answer comes from.
+- In this chat you only answer. You cannot change, create, move or delete notes, and you have no tools for it. Never say that you changed something.
+- When the user wants a note changed, say in one sentence that they can do it with the AI button above the note, the AI bar over selected text, or by right-clicking a folder and choosing AI.
+- Keep answers concise. Answer in the language the user writes in.";
+
+/// What the AI says about writing new facts: it has no internet access, so it does not write
+/// documentation from memory.
+const KNOWLEDGE_RULE: &str = "- You have no internet access, and your own knowledge can be outdated or wrong. You cannot write new documentation or facts about a subject. If the user asks for that, say so in one or two sentences and offer what you can do: structure, correct, merge, summarise, link and reformat what is in the notes. Work with what is in the user's notes and what the user tells you.";
+
+const TOOL_RESULT_LIMIT: usize = 6_000;
+
+/// Everything that goes into the system prompt.
+#[derive(Clone, Copy)]
+pub struct PromptInput<'a> {
+    /// "About me and my notes".
+    pub global_instructions: &'a str,
+    /// The language of the answers; blank means the language of the user's message.
+    pub answer_language: &'a str,
+    pub project: Option<&'a Project>,
+    /// Project folder, or `None` for the whole vault.
+    pub scope: Option<&'a str>,
+    /// `(path, content)` of the current note, if included.
+    pub note: Option<(&'a str, &'a str)>,
+    /// `(path, content)` of the notes the user attached to the message.
+    pub mentions: &'a [(String, String)],
+    pub selection: Option<&'a str>,
+    pub tools_enabled: bool,
+    /// The plain chat: only reading tools, and rules that say so.
+    pub read_only: bool,
+}
+
+/// Truncates the middle of a string to at most `max` chars, marking the cut.
+pub fn truncate_middle(s: &str, max: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= max {
+        return s.to_string();
+    }
+    let marker = "\n[...truncated...]\n";
+    let keep = max.saturating_sub(marker.len());
+    let head: String = chars[..keep / 2].iter().collect();
+    let tail: String = chars[chars.len() - (keep - keep / 2)..].iter().collect();
+    format!("{head}{marker}{tail}")
+}
+
+/// Builds the system prompt, with the note content replaced by `note_override` if given.
+pub fn build_system_prompt(i: &PromptInput, note_override: Option<&str>) -> String {
+    let mut out = String::from(DEFAULT_BASE_INSTRUCTION);
+    out.push_str("\n\n");
+    out.push_str(if i.read_only { CHAT_RULES } else { RULES });
+    out.push('\n');
+    out.push_str(KNOWLEDGE_RULE);
+    out.push_str(&format!(
+        "\n- You may only access files inside: {}.",
+        i.scope.unwrap_or("the whole vault")
+    ));
+    if !i.tools_enabled {
+        out.push_str("\n- Tools are not available in this conversation. Do not try to call any.");
+    }
+    if !i.answer_language.trim().is_empty() {
+        out.push_str(&format!(
+            "\n- Answer in {}, whatever language the question is in.",
+            i.answer_language.trim()
+        ));
+    }
+    if !i.global_instructions.trim().is_empty() {
+        out.push_str(&format!(
+            "\n\n## About the user and their notes\n{}",
+            i.global_instructions.trim()
+        ));
+    }
+    if let Some(p) = i.project {
+        if !p.instructions.trim().is_empty() {
+            out.push_str(&format!(
+                "\n\n## About this project ({})\n{}",
+                p.name,
+                p.instructions.trim()
+            ));
+        }
+    }
+    if !i.mentions.is_empty() {
+        out.push_str(
+            "\n\n## Notes attached by the user\nThe user attached these notes. They are the pages to work on.",
+        );
+        for (path, content) in i.mentions {
+            out.push_str(&format!("\n\n### {path}\n```markdown\n{content}\n```"));
+        }
+    }
+    if i.note.is_some() || i.selection.is_some() {
+        out.push_str("\n\n## Context");
+        if let Some((path, content)) = i.note {
+            out.push_str(&format!(
+                "\nActive note: {path}\n\n```markdown\n{}\n```",
+                note_override.unwrap_or(content)
+            ));
+        }
+        if let Some(sel) = i.selection.filter(|s| !s.is_empty()) {
+            out.push_str(&format!("\n\nSelected text:\n```\n{sel}\n```"));
+        }
+    }
+    out
+}
+
+fn size(system: &str, msgs: &[ChatMessage]) -> usize {
+    system.len()
+        + msgs
+            .iter()
+            .map(|m| {
+                m.content.len()
+                    + m.tool_calls
+                        .iter()
+                        .map(|c| c.name.len() + c.arguments.len())
+                        .sum::<usize>()
+            })
+            .sum::<usize>()
+}
+
+/// Text kept per attached note once the prompt has to be shortened.
+const MENTION_SHRINK_LIMIT: usize = 2_000;
+
+/// Builds the system prompt and fits messages into 75% of the context window
+/// (tokens estimated as chars / 4). Truncation order: older messages, tool results,
+/// attached notes (the last one first), then the current note.
+pub fn assemble(
+    i: &PromptInput,
+    messages: Vec<ChatMessage>,
+    context_tokens: u32,
+) -> (String, Vec<ChatMessage>) {
+    let budget = (context_tokens as usize * 4) * 3 / 4;
+    let mut msgs = messages;
+    let mut system = build_system_prompt(i, None);
+
+    // 1. Drop whole older exchanges (keep at least the last two).
+    loop {
+        if size(&system, &msgs) <= budget {
+            return (system, msgs);
+        }
+        let starts: Vec<usize> = msgs
+            .iter()
+            .enumerate()
+            .filter(|(_, m)| m.role == Role::User)
+            .map(|(n, _)| n)
+            .collect();
+        if starts.len() <= 2 {
+            break;
+        }
+        msgs.drain(..starts[1]);
+    }
+    // 2. Truncate tool results.
+    for m in msgs.iter_mut().filter(|m| m.role == Role::Tool) {
+        m.content = truncate_middle(&m.content, TOOL_RESULT_LIMIT);
+    }
+    if size(&system, &msgs) <= budget {
+        return (system, msgs);
+    }
+    // 3. Shorten the attached notes, starting with the last one.
+    let mut mentions: Vec<(String, String)> = i.mentions.to_vec();
+    let build = |m: &[(String, String)], note: Option<&str>| {
+        build_system_prompt(&PromptInput { mentions: m, ..*i }, note)
+    };
+    for idx in (0..mentions.len()).rev() {
+        if size(&system, &msgs) <= budget {
+            return (system, msgs);
+        }
+        mentions[idx].1 = truncate_middle(&mentions[idx].1, MENTION_SHRINK_LIMIT);
+        system = build(&mentions, None);
+    }
+    if size(&system, &msgs) <= budget {
+        return (system, msgs);
+    }
+    // 4. Truncate the current note.
+    if let Some((_, content)) = i.note {
+        let without = build(&mentions, Some(""));
+        let allowed = budget.saturating_sub(size(&without, &msgs)).max(500);
+        system = build(&mentions, Some(&truncate_middle(content, allowed)));
+    }
+    (system, msgs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn input<'a>(note: Option<(&'a str, &'a str)>) -> PromptInput<'a> {
+        PromptInput {
+            answer_language: "",
+            global_instructions: "",
+            project: None,
+            scope: None,
+            note,
+            mentions: &[],
+            selection: None,
+            tools_enabled: true,
+            read_only: false,
+        }
+    }
+
+    #[test]
+    fn the_plain_chat_is_told_it_only_answers() {
+        let s = build_system_prompt(
+            &PromptInput {
+                read_only: true,
+                ..input(None)
+            },
+            None,
+        );
+        assert!(s.contains("In this chat you only answer"));
+        assert!(!s.contains("propose_"));
+    }
+
+    #[test]
+    fn prompt_sections_in_order() {
+        let p = Project {
+            schema_version: 1,
+            id: "1".into(),
+            name: "Sec".into(),
+            folder: "Work/Sec".into(),
+            instructions: "Be strict".into(),
+            provider_id: None,
+            local_only: false,
+            created_at: String::new(),
+            updated_at: String::new(),
+        };
+        let i = PromptInput {
+            answer_language: "",
+            global_instructions: "Reply in Danish",
+            project: Some(&p),
+            scope: Some("Work/Sec"),
+            note: Some(("Work/Sec/a.md", "# A")),
+            mentions: &[],
+            selection: Some("sel"),
+            tools_enabled: true,
+            read_only: false,
+        };
+        let s = build_system_prompt(&i, None);
+        let a = s
+            .find("You are the AI assistant inside Nexmio Work")
+            .unwrap();
+        let rules = s.find("Rules:").unwrap();
+        let b = s.find("## About the user and their notes").unwrap();
+        let c = s.find("## About this project (Sec)").unwrap();
+        let d = s.find("## Context").unwrap();
+        assert!(a < rules && rules < b && b < c && c < d);
+        assert!(s.contains("only access files inside: Work/Sec."));
+        assert!(s.contains("Active note: Work/Sec/a.md"));
+        assert!(s.contains("Selected text:"));
+    }
+
+    #[test]
+    fn truncates_note_last_and_keeps_recent_messages() {
+        let note = "x".repeat(50_000);
+        let i = input(Some(("a.md", &note)));
+        let msgs = vec![
+            ChatMessage::user("old question"),
+            ChatMessage::assistant("old answer", vec![]),
+            ChatMessage::user("q2"),
+            ChatMessage::assistant("a2", vec![]),
+            ChatMessage::user("q3"),
+        ];
+        let (sys, out) = assemble(&i, msgs, 4_000); // budget 12_000 chars
+        assert!(sys.contains("[...truncated...]"));
+        assert!(sys.len() <= 12_000 + 200);
+        assert_eq!(
+            out.len(),
+            3,
+            "oldest exchange dropped, last two exchanges kept"
+        );
+        assert_eq!(out[0].content, "q2");
+    }
+
+    #[test]
+    fn small_prompts_are_untouched() {
+        let i = input(Some(("a.md", "tiny")));
+        let (sys, out) = assemble(&i, vec![ChatMessage::user("hi")], 16_000);
+        assert!(!sys.contains("truncated"));
+        assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn tool_results_are_truncated_before_the_note() {
+        let i = input(Some(("a.md", "short note")));
+        let big = "y".repeat(40_000);
+        let msgs = vec![
+            ChatMessage::user("q"),
+            ChatMessage::assistant("", vec![]),
+            ChatMessage::tool_result("1", big),
+        ];
+        let (sys, out) = assemble(&i, msgs, 4_000);
+        assert!(out[2].content.len() <= TOOL_RESULT_LIMIT + 50);
+        assert!(!sys.contains("truncated"));
+    }
+
+    #[test]
+    fn truncate_middle_is_char_safe() {
+        let s = "åäö".repeat(100);
+        let t = truncate_middle(&s, 50);
+        assert!(t.contains("[...truncated...]"));
+        assert!(t.chars().count() <= 50);
+    }
+
+    #[test]
+    fn default_instruction_names_the_app_and_has_no_character() {
+        let s = build_system_prompt(&input(None), None);
+        assert!(s.contains("You are the AI assistant inside Nexmio Work"));
+        assert!(!s.contains("## Who you are (introduction)"));
+    }
+
+    #[test]
+    fn no_prompt_names_the_old_name_or_a_myth() {
+        let (inline, _) = crate::ai::inline::build_messages(
+            &crate::ai::InlineRequest {
+                command: crate::ai::InlineCommand::Rewrite,
+                instruction: None,
+                text: "x".into(),
+                note_path: None,
+                provider_id: None,
+            },
+            "",
+            false,
+        );
+        let chat = build_system_prompt(&input(None), None);
+        for text in [chat, inline, DEFAULT_BASE_INSTRUCTION.to_string()] {
+            // The old name and its myth, written in pieces so a search for the old name finds nothing.
+            for word in [
+                ["Mi", "mer"].concat(),
+                "Mímir".to_string(),
+                "Odin".to_string(),
+            ] {
+                assert!(!text.contains(&word), "a prompt contains {word}");
+            }
+        }
+    }
+
+    #[test]
+    fn the_answer_language_is_a_rule_and_the_rules_always_stay() {
+        let mut i = input(None);
+        i.answer_language = "  Danish  ";
+        let s = build_system_prompt(&i, None);
+        assert!(s.contains("Answer in Danish, whatever language the question is in."));
+        assert!(s.contains("You are the AI assistant inside Nexmio Work"));
+        assert!(s.contains("use the propose_* tools"));
+        i.answer_language = "   ";
+        assert!(!build_system_prompt(&i, None).contains("Answer in  "));
+    }
+
+    fn attached(items: &[(&str, &str)]) -> Vec<(String, String)> {
+        items
+            .iter()
+            .map(|(p, c)| (p.to_string(), c.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn attached_notes_get_their_own_section_before_the_context() {
+        let m = attached(&[("Work/Plan.md", "# Plan"), ("Home.md", "# Home")]);
+        let mut i = input(Some(("a.md", "# A")));
+        i.mentions = &m;
+        let s = build_system_prompt(&i, None);
+        let a = s.find("## Notes attached by the user").unwrap();
+        let b = s.find("### Work/Plan.md").unwrap();
+        let c = s.find("### Home.md").unwrap();
+        let d = s.find("## Context").unwrap();
+        assert!(a < b && b < c && c < d);
+        assert!(s.contains("They are the pages to work on."));
+        assert!(!build_system_prompt(&input(None), None).contains("Notes attached"));
+    }
+
+    #[test]
+    fn attached_notes_are_shortened_last_one_first_before_the_current_note() {
+        let m = attached(&[("a.md", &"a".repeat(8_000)), ("b.md", &"b".repeat(8_000))]);
+        let note = "n".repeat(3_000);
+        let mut i = input(Some(("cur.md", &note)));
+        i.mentions = &m;
+        // Budget 17_000 chars: too small for everything, enough once the last note is cut.
+        let (sys, _) = assemble(&i, vec![ChatMessage::user("q")], 5_700);
+        assert!(
+            sys.contains(&"a".repeat(8_000)),
+            "the first note stays whole"
+        );
+        assert!(
+            !sys.contains(&"b".repeat(8_000)),
+            "the last note is shortened"
+        );
+        assert!(
+            sys.contains(&"n".repeat(3_000)),
+            "the current note is untouched"
+        );
+    }
+
+    #[test]
+    fn the_rules_tell_the_model_how_to_merge_and_never_to_ask_in_chat() {
+        let s = build_system_prompt(&input(None), None);
+        assert!(s.contains("call propose_merge once with ALL source paths"));
+        assert!(s.contains("Never ask in the chat whether you may delete"));
+        assert!(s.contains("Every change needs a propose_* tool call"));
+    }
+
+    #[test]
+    fn the_ai_is_told_it_cannot_write_new_documentation() {
+        let s = build_system_prompt(&input(None), None);
+        assert!(s.contains("no internet access"));
+        assert!(s.contains("You cannot write new documentation or facts"));
+        assert!(!s.contains("write_research_prompt"));
+        assert!(s.contains("You cannot write files directly"));
+    }
+}

@@ -1,0 +1,355 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Poppins SemiBold (SIL Open Font License, see src/assets/fonts/OFL.txt), bundled with the app.
+   Used only for the wordmark and the big headings on splash, welcome and About. */
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/Poppins-SemiBold.woff2") format("woff2");
+}
+
+/* The small heading over a group (in panels, menus, lists and pages): one look everywhere. */
+@utility section-label {
+  font-size: 11px;
+  line-height: 1rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+:root,
+[data-theme="light"] {
+  --background: oklch(0.985 0.006 300);
+  --foreground: oklch(0.21 0.05 293);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.96 0.012 300);
+  --muted-foreground: oklch(0.48 0.06 295);
+  --border: oklch(0.9 0.02 300);
+  --input: oklch(0.88 0.025 300);
+  --primary: oklch(0.54 0.25 293);
+  --primary-foreground: oklch(0.99 0 0);
+  --accent: oklch(0.93 0.04 300);
+  --accent-foreground: oklch(0.35 0.15 293);
+  --destructive: oklch(0.56 0.22 27);
+  --success: oklch(0.55 0.15 150);
+  --warning: oklch(0.75 0.15 80);
+  --ring: oklch(0.54 0.25 293);
+  --sidebar: oklch(0.97 0.01 300);
+  --editor-font-size: 15px;
+  --editor-line-width: 760px;
+  color-scheme: light;
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: oklch(0.2 0.008 290);
+  --foreground: oklch(0.96 0.008 298);
+  --card: oklch(0.25 0.01 290);
+  --muted: oklch(0.295 0.012 290);
+  --muted-foreground: oklch(0.75 0.02 295);
+  --border: oklch(0.38 0.015 290);
+  --input: oklch(0.43 0.018 290);
+  --primary: oklch(0.74 0.17 306);
+  --primary-foreground: oklch(0.16 0.04 291);
+  --accent: oklch(0.34 0.09 295);
+  --accent-foreground: oklch(0.93 0.04 300);
+  --destructive: oklch(0.68 0.19 25);
+  --success: oklch(0.72 0.15 150);
+  --warning: oklch(0.8 0.14 85);
+  --ring: oklch(0.74 0.17 306);
+  --sidebar: oklch(0.165 0.008 290);
+  color-scheme: dark;
+}
+
+/* The other themes (docs/design-system/themes.json). Each is a full set of the tokens above, so a
+   screen never needs to know which theme is on. */
+[data-theme="slate"] {
+  --background: oklch(0.975 0.006 245);
+  --foreground: oklch(0.22 0.025 250);
+  --card: oklch(0.995 0.003 245);
+  --muted: oklch(0.94 0.01 245);
+  --muted-foreground: oklch(0.48 0.03 250);
+  --border: oklch(0.88 0.012 245);
+  --input: oklch(0.85 0.015 245);
+  --primary: oklch(0.5 0.13 245);
+  --primary-foreground: oklch(0.99 0 0);
+  --accent: oklch(0.92 0.025 245);
+  --accent-foreground: oklch(0.3 0.08 250);
+  --destructive: oklch(0.56 0.22 27);
+  --success: oklch(0.52 0.14 160);
+  --warning: oklch(0.75 0.15 80);
+  --ring: oklch(0.5 0.13 245);
+  --sidebar: oklch(0.94 0.012 245);
+  color-scheme: light;
+}
+
+[data-theme="paper"] {
+  --background: oklch(0.975 0.014 85);
+  --foreground: oklch(0.25 0.03 60);
+  --card: oklch(0.99 0.008 85);
+  --muted: oklch(0.94 0.02 85);
+  --muted-foreground: oklch(0.47 0.04 65);
+  --border: oklch(0.88 0.025 85);
+  --input: oklch(0.85 0.03 85);
+  --primary: oklch(0.5 0.14 50);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --accent: oklch(0.92 0.04 75);
+  --accent-foreground: oklch(0.32 0.08 55);
+  --destructive: oklch(0.55 0.2 28);
+  --success: oklch(0.52 0.13 150);
+  --warning: oklch(0.75 0.15 80);
+  --ring: oklch(0.5 0.14 50);
+  --sidebar: oklch(0.95 0.022 85);
+  color-scheme: light;
+}
+
+[data-theme="mint"] {
+  --background: oklch(0.98 0.01 165);
+  --foreground: oklch(0.22 0.03 175);
+  --card: oklch(0.995 0.005 165);
+  --muted: oklch(0.95 0.015 165);
+  --muted-foreground: oklch(0.46 0.04 175);
+  --border: oklch(0.89 0.02 165);
+  --input: oklch(0.86 0.025 165);
+  --primary: oklch(0.48 0.12 165);
+  --primary-foreground: oklch(0.99 0 0);
+  --accent: oklch(0.93 0.04 165);
+  --accent-foreground: oklch(0.3 0.07 170);
+  --destructive: oklch(0.56 0.22 27);
+  --success: oklch(0.5 0.13 150);
+  --warning: oklch(0.75 0.15 80);
+  --ring: oklch(0.48 0.12 165);
+  --sidebar: oklch(0.955 0.018 165);
+  color-scheme: light;
+}
+
+[data-theme="midnight"] {
+  --background: oklch(0.19 0.035 265);
+  --foreground: oklch(0.92 0.012 255);
+  --card: oklch(0.23 0.04 265);
+  --muted: oklch(0.27 0.04 265);
+  --muted-foreground: oklch(0.7 0.035 255);
+  --border: oklch(0.33 0.04 265);
+  --input: oklch(0.37 0.045 265);
+  --primary: oklch(0.74 0.13 250);
+  --primary-foreground: oklch(0.17 0.03 265);
+  --accent: oklch(0.3 0.06 255);
+  --accent-foreground: oklch(0.9 0.05 250);
+  --destructive: oklch(0.68 0.19 25);
+  --success: oklch(0.74 0.15 160);
+  --warning: oklch(0.8 0.14 85);
+  --ring: oklch(0.74 0.13 250);
+  --sidebar: oklch(0.16 0.03 265);
+  color-scheme: dark;
+}
+
+[data-theme="graphite"] {
+  --background: oklch(0.21 0.004 250);
+  --foreground: oklch(0.93 0.004 250);
+  --card: oklch(0.25 0.005 250);
+  --muted: oklch(0.29 0.006 250);
+  --muted-foreground: oklch(0.7 0.01 250);
+  --border: oklch(0.35 0.007 250);
+  --input: oklch(0.39 0.008 250);
+  --primary: oklch(0.75 0.12 190);
+  --primary-foreground: oklch(0.17 0.01 250);
+  --accent: oklch(0.32 0.04 195);
+  --accent-foreground: oklch(0.9 0.05 190);
+  --destructive: oklch(0.68 0.19 25);
+  --success: oklch(0.74 0.15 150);
+  --warning: oklch(0.8 0.14 85);
+  --ring: oklch(0.75 0.12 190);
+  --sidebar: oklch(0.17 0.004 250);
+  color-scheme: dark;
+}
+
+[data-theme="ember"] {
+  --background: oklch(0.22 0.015 50);
+  --foreground: oklch(0.93 0.015 70);
+  --card: oklch(0.26 0.018 50);
+  --muted: oklch(0.3 0.02 50);
+  --muted-foreground: oklch(0.7 0.03 65);
+  --border: oklch(0.36 0.022 50);
+  --input: oklch(0.4 0.025 50);
+  --primary: oklch(0.76 0.14 55);
+  --primary-foreground: oklch(0.2 0.02 50);
+  --accent: oklch(0.33 0.05 55);
+  --accent-foreground: oklch(0.92 0.05 65);
+  --destructive: oklch(0.68 0.19 25);
+  --success: oklch(0.74 0.14 150);
+  --warning: oklch(0.82 0.14 85);
+  --ring: oklch(0.76 0.14 55);
+  --sidebar: oklch(0.18 0.014 50);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--input);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+.chat-markdown.md-text p,
+.chat-markdown.md-text li {
+  /* Text written in a box keeps its line breaks. */
+  white-space: pre-line;
+}
+.chat-markdown p {
+  margin: 0.4em 0;
+}
+/* Text in a box (a log line next to its date, a note) starts and ends flush with its box. */
+.chat-markdown.md-text > :first-child {
+  margin-top: 0;
+}
+.chat-markdown.md-text > :last-child {
+  margin-bottom: 0;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+.chat-markdown ul {
+  list-style: disc;
+}
+.chat-markdown ol {
+  list-style: decimal;
+}
+.chat-markdown code {
+  background: var(--muted);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.chat-markdown pre {
+  background: var(--muted);
+  padding: 0.6em 0.8em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.chat-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.chat-markdown a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.chat-markdown table {
+  border-collapse: collapse;
+}
+.chat-markdown th,
+.chat-markdown td {
+  border: 1px solid var(--border);
+  padding: 0.2em 0.5em;
+}
+
+/* The how-to guide reuses the chat Markdown styles and adds tables and bigger headings. */
+.help-markdown h2 {
+  font-size: 1.1em;
+  margin: 1.1em 0 0.4em;
+}
+.help-markdown table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  width: 100%;
+  font-size: 0.92em;
+}
+.help-markdown th,
+.help-markdown td {
+  border: 1px solid var(--border);
+  padding: 0.3em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.help-markdown th {
+  background: var(--muted);
+}
+
+/* Reading: the line you are in stays clear and the others are a little dimmer (Settings → Editor). */
+html[data-follow-line] .cm-content .cm-line {
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+html[data-follow-line] .cm-content .cm-line.cm-follow-active {
+  opacity: 1;
+}
+
+/* A diagram proposed by the AI, drawn before it is written anywhere. */
+.diagram-preview .cm-mermaid-error {
+  color: var(--destructive);
+  font-size: 12px;
+}
+.diagram-preview pre {
+  margin-top: 6px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  color: var(--muted-foreground);
+}

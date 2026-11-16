@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-brand="purple">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nexmio Work privacy policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+</head>
+<body data-nav="Nexmio Work|Nexmio Work|index.html">
+<div class="wrap prose">
+<h1>Nexmio Work privacy policy</h1>
+<p><em>Last updated: 15 November 2026. Nexmio Work is made by Jesper Ahasverusen Kielsgaard (<a href="https://github.com/nexmio/work.nexmio.com">https://github.com/nexmio/work.nexmio.com</a>).</em></p>
+<p>Nexmio Work is a notes app that runs on your own computer. This page says what it does with your data.</p>
+<h2>What Nexmio Work collects</h2>
+<p><strong>Nothing.</strong> Nexmio Work has no account, no analytics, no telemetry, no advertising and no automatic update check. The author does not receive any data from the app. <strong>Help → Check for new version…</strong> only opens the releases page in your web browser.</p>
+<h2>Where your data is</h2>
+<ul>
+<li>Your <strong>notes</strong> are ordinary Markdown files in folders you choose, and each folder is also a local Git repository. They stay on your computer.</li>
+<li>Your <strong>settings</strong> and chat history are files on your computer (the app's data folder, and <code>.vault</code> inside your notes folder).</li>
+<li><strong>API keys</strong> you enter (for a local AI server that asks for one) are stored in the Windows Credential Manager (or the keychain of your system), never in a file.</li>
+</ul>
+<h2>When data leaves your computer</h2>
+<p>Only when you choose it:</p>
+<ul>
+<li><strong>The AI</strong> runs on your own computer by default: the built-in AI, LM Studio or another local server. The AI reads your notes only on your own machine. A cloud AI is possible, but only after you say yes, and never in a project you lock to local. You turn it on yourself in Settings → AI, in a window that says what is sent (the open note and the text you select, the notes the chat searches and reads, your questions and the chat history) and that it is your responsibility; it is used only after you tick "I understand". The status bar shows <strong>Cloud AI</strong> while it is on, and what the cloud company does with the text is governed by its own terms.</li>
+<li><strong>The built-in AI download</strong> (when you press Download) fetches, for llama.cpp, the engine from <code>github.com</code> and the model from <code>huggingface.co</code>; for Foundry Local, the hardware parts and the model from Microsoft's Foundry Local catalog. Those sites see your internet address, as for any download.</li>
+<li><strong>A backup</strong> (Settings → Vault → Backup) copies your notes and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.</li>
+<li><strong>Export and import</strong> write and read files on your computer only.</li>
+<li><strong>Links</strong> you click in Nexmio Work (for example <strong>Report a bug…</strong>) open in your web browser; Nexmio Work itself sends nothing.</li>
+</ul>
+<h2>Children</h2>
+<p>Nexmio Work does not collect any data, from anyone.</p>
+<h2>Changes and contact</h2>
+<p>If this policy changes, the new text is published here with a new date. Questions: open an issue at <a href="https://github.com/nexmio/work.nexmio.com/issues">https://github.com/nexmio/work.nexmio.com/issues</a>.</p>
+</div>
+</body>
+</html>

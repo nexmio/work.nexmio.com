@@ -1,0 +1,404 @@
+import { AlertTriangle, Check, Copy, Loader2, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { AiOffNote } from "@/components/AiOffNote";
+import { api, toApiError } from "@/lib/api";
+import { missingFacts, factsOf } from "@/lib/facts";
+import { looksLikeDiagram, withDiagram } from "@/lib/diagram";
+import { stripCodeFence } from "@/lib/fence";
+import { wakeIfNeeded } from "@/lib/wake";
+import { cn } from "@/lib/utils";
+import { useNow } from "@/features/chat/useNow";
+import { AiMistakesNote } from "@/components/AiMistakesNote";
+import { DiagramPreview } from "@/components/DiagramPreview";
+import { DiffView } from "@/components/DiffView";
+import {
+  INLINE_ACTIONS,
+  inlineAction,
+  type InlineAction,
+  type InlineActionId,
+} from "./inlineActions";
+import { PlainButton } from "@/components/ui/plain-button";
+
+export interface InlineSelection {
+  from: number;
+  to: number;
+  text: string;
+  /** Viewport position of the selection start. */
+  x: number;
+  y: number;
+}
+
+/** A command to start at once when the popup opens (from the bubble over a selection). */
+export interface InlineStart {
+  id: InlineActionId;
+}
+
+interface Props {
+  selection: InlineSelection;
+  start?: InlineStart;
+  /** The note the text is from, or null for a text field outside a note. */
+  notePath: string | null;
+  /** Offer "Find tasks in it" (not for a text field). */
+  allowFindTasks?: boolean;
+  /** Why the AI cannot be used now; the menu then says so instead of running. */
+  aiOff?: string | null;
+  /** Called with the replacement text when the user accepts. */
+  onAccept: (replacement: string, commandLabel: string) => void;
+  /** "Find tasks in it": the selected text is handed to the task finder. */
+  onFindTasks: (text: string) => void;
+  /**
+   * When given, a command is not run here: it is put in the AI queue (the tasks of the AI window)
+   * and the menu closes, so work can go on while the AI answers.
+   */
+  onQueue?: (action: InlineAction) => void;
+  onClose: () => void;
+}
+
+type Phase = "choose" | "running" | "review";
+
+/** The least height (px) the menu is given on the screen. */
+const MIN_ROOM = 260;
+
+const GROUPS: { label: string; ids: InlineActionId[] }[] = [
+  { label: "Change the text", ids: ["fix", "clearer", "shorten", "list"] },
+  { label: "Rewrite, same meaning", ids: ["simpler", "formal", "friendly"] },
+  { label: "Translate", ids: ["toDanish", "toEnglish"] },
+  { label: "Use the text", ids: ["explain", "diagram", "findTasks"] },
+];
+
+/**
+ * The AI popup at a selection: choose a fixed command, see the result, and accept or reject it.
+ * A changed text is shown as a diff, with a check that its numbers, links and names are still
+ * there. "Explain this" only shows an answer; nothing in the note changes.
+ */
+export function InlineAiPopup({
+  selection,
+  start,
+  notePath,
+  allowFindTasks = true,
+  aiOff = null,
+  onAccept,
+  onFindTasks,
+  onQueue,
+  onClose,
+}: Props) {
+  const [phase, setPhase] = useState<Phase>("choose");
+  const [result, setResult] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [action, setAction] = useState<InlineAction | null>(null);
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  /** Show what the text was before (red and green), instead of only the new text. */
+  const [showOld, setShowOld] = useState(false);
+  const now = useNow(phase === "running");
+  const taskId = useRef<string | null>(null);
+  const raw = useRef("");
+
+  const run = useCallback(
+    async (a: InlineAction) => {
+      if (a.id === "findTasks") {
+        onFindTasks(selection.text);
+        return;
+      }
+      setAction(a);
+      setStartedAt(Date.now());
+      setPhase("running");
+      setError(null);
+      setResult("");
+      raw.current = "";
+      try {
+        // A built-in AI that is not loaded is loaded first, so nobody has to press Load AI.
+        const waking = await wakeIfNeeded();
+        if (waking !== null) {
+          setError(waking);
+          setPhase("choose");
+          return;
+        }
+        taskId.current = await api.aiInline(
+          {
+            command: a.command,
+            instruction: a.instruction,
+            text: selection.text,
+            notePath,
+            providerId: null,
+          },
+          (e) => {
+            if (e.type === "textDelta") {
+              raw.current += e.text;
+              setResult(raw.current);
+            } else if (e.type === "error") {
+              setError(e.error.message);
+              setPhase("choose");
+            } else if (e.type === "done") {
+              const text = stripCodeFence(raw.current).trim();
+              if (a.diagram === true && !looksLikeDiagram(text)) {
+                setError("The AI did not answer with a diagram. Try again.");
+                setPhase("choose");
+                return;
+              }
+              setResult(text);
+              setPhase((p) => (p === "running" ? "review" : p));
+            }
+          },
+        );
+      } catch (e) {
+        setError(toApiError(e).message);
+        setPhase("choose");
+      }
+    },
+    [notePath, selection.text, onFindTasks],
+  );
+
+  /** Runs a command here, or puts it in the AI queue when the popup is told to. */
+  const go = useCallback(
+    (a: InlineAction): void => {
+      if (onQueue && a.id !== "findTasks") {
+        onQueue(a);
+        return;
+      }
+      void run(a);
+    },
+    [onQueue, run],
+  );
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (!start || started.current || aiOff !== null) return;
+    started.current = true;
+    const a = inlineAction(start.id);
+    if (a) go(a);
+  }, [start, go, aiOff]);
+
+  const close = useCallback(() => {
+    if (taskId.current !== null) void api.aiCancel(taskId.current).catch(() => undefined);
+    onClose();
+  }, [onClose]);
+
+  const answerOnly = action?.answer === true;
+  const isDiagram = action?.diagram === true;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      } else if (e.key === "Enter" && phase === "review" && !answerOnly && !e.shiftKey) {
+        e.preventDefault();
+        onAccept(result, action?.label ?? "AI");
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [close, onAccept, phase, result, action, answerOnly]);
+
+  // A click anywhere else closes the menu (the result of a command is kept until you answer it).
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (phase !== "choose") return;
+    const onDown = (e: MouseEvent): void => {
+      if (box.current && e.target instanceof Node && !box.current.contains(e.target)) close();
+    };
+    window.addEventListener("mousedown", onDown);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+    };
+  }, [phase, close]);
+
+  const left = Math.max(8, Math.min(selection.x, window.innerWidth - 480));
+  // The menu starts under the selection but never lower than leaves room for a few lines, and it
+  // is no taller than the room that is left, so its last entries can always be reached.
+  const top = Math.max(8, Math.min(selection.y + 24, window.innerHeight - MIN_ROOM));
+  const room = Math.max(MIN_ROOM - 8, window.innerHeight - top - 8);
+  const lost = phase === "review" && !answerOnly ? missingFacts(selection.text, result) : [];
+  const hadFacts = factsOf(selection.text).length > 0;
+
+  return (
+    <div
+      ref={box}
+      role="dialog"
+      aria-label="AI command"
+      className="fixed z-[70] w-[460px] max-w-[94vw] rounded-lg border bg-card p-2 shadow-xl"
+      style={{ left, top, maxHeight: room, overflowY: "auto" }}
+    >
+      {phase === "choose" && (
+        <div className="flex flex-col">
+          <div className="flex items-center px-2 pt-0.5">
+            <span className="flex-1 text-xs font-semibold">AI</span>
+            <PlainButton
+              type="button"
+              aria-label="Close the menu"
+              className="rounded p-1 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={close}
+            >
+              <X className="size-3.5" />
+            </PlainButton>
+          </div>
+          {aiOff !== null && <AiOffNote reason={aiOff} />}
+          {error !== null && <p className="px-2 py-1 text-xs text-destructive">{error}</p>}
+          {GROUPS.map((g) => (
+            <div key={g.label} className="flex flex-col">
+              <span className="px-2 pb-0.5 pt-2 section-label">{g.label}</span>
+              {g.ids
+                .map((id) => INLINE_ACTIONS.find((a) => a.id === id))
+                .filter((a): a is InlineAction => a !== undefined)
+                .filter((a) => allowFindTasks || (a.id !== "findTasks" && !a.diagram))
+                .map((a) => (
+                  <PlainButton
+                    key={a.id}
+                    type="button"
+                    disabled={aiOff !== null}
+                    className="flex items-baseline gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-accent disabled:opacity-50 disabled:hover:bg-transparent"
+                    onClick={() => {
+                      go(a);
+                    }}
+                  >
+                    <span className="font-medium">{a.label}</span>
+                    <span className="truncate text-[11px] text-muted-foreground">{a.hint}</span>
+                  </PlainButton>
+                ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {(phase === "running" || phase === "review") && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {phase === "running" && <Loader2 className="size-3.5 animate-spin" />}
+            <span className="font-semibold text-foreground">{action?.label}</span>
+            {phase === "running" && (
+              <span aria-hidden className="tabular-nums">
+                {Math.max(0, Math.floor((now - startedAt) / 1000))} s
+              </span>
+            )}
+            {phase === "review" && !answerOnly && hadFacts && (
+              <span
+                role="status"
+                className={cn(
+                  "ml-auto flex items-center gap-1 rounded-full border px-2 py-0.5",
+                  lost.length > 0 && "border-warning bg-warning/10 text-foreground",
+                )}
+              >
+                {lost.length === 0 ? (
+                  <>
+                    <ShieldCheck className="size-3.5 text-success" aria-hidden /> Same numbers,
+                    links and names
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="size-3.5" aria-hidden /> Check: {lost.join(", ")}{" "}
+                    {lost.length === 1 ? "is" : "are"} gone
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+          <div
+            className={cn(
+              "rounded border",
+              !(phase === "review" && isDiagram && answerOnly) && "max-h-64 overflow-auto",
+            )}
+          >
+            {phase === "review" && !answerOnly ? (
+              showOld ? (
+                <DiffView original={selection.text} modified={result} />
+              ) : (
+                <p
+                  className="whitespace-pre-wrap p-2 text-sm"
+                  style={{
+                    backgroundColor: "color-mix(in oklab, var(--success) 14%, transparent)",
+                  }}
+                  data-testid="new-text"
+                >
+                  {result}
+                </p>
+              )
+            ) : phase === "review" && isDiagram ? (
+              <DiagramPreview source={result} />
+            ) : (
+              <p className="whitespace-pre-wrap p-2 text-sm">{result || "…"}</p>
+            )}
+          </div>
+          {phase === "review" && isDiagram && (
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">Show the code</summary>
+              <pre className="mt-1 max-h-40 overflow-auto rounded border bg-muted/40 p-2 whitespace-pre-wrap">
+                {result}
+              </pre>
+            </details>
+          )}
+          {phase === "review" && !answerOnly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              aria-pressed={showOld}
+              onClick={() => {
+                setShowOld((v) => !v);
+              }}
+            >
+              {showOld ? "Show only the new text" : "Show the original"}
+            </Button>
+          )}
+          <AiMistakesNote />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={close}>
+              <X /> {answerOnly ? "Close" : "Reject"}{" "}
+              <kbd className="text-[10px] opacity-60">Esc</kbd>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={phase === "running" || action === null}
+              onClick={() => {
+                if (action) void run(action);
+              }}
+            >
+              <RotateCcw /> Try again
+            </Button>
+            {answerOnly ? (
+              <>
+                <Button
+                  variant={isDiagram ? "outline" : "default"}
+                  size="sm"
+                  disabled={phase === "running" || result === ""}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(result).catch(() => undefined);
+                  }}
+                >
+                  <Copy /> Copy
+                </Button>
+                {isDiagram && (
+                  <Button
+                    size="sm"
+                    disabled={phase === "running" || result === ""}
+                    onClick={() => {
+                      onAccept(withDiagram(selection.text, result), action.label);
+                    }}
+                  >
+                    <Check /> Add under the text
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button
+                size="sm"
+                disabled={phase === "running" || result === ""}
+                onClick={() => {
+                  onAccept(result, action?.label ?? "AI");
+                }}
+              >
+                <Check /> Accept <kbd className="text-[10px] opacity-70">Enter</kbd>
+              </Button>
+            )}
+          </div>
+          {(!answerOnly || isDiagram) && (
+            <p className="text-[11px] text-muted-foreground">
+              Your page is saved first, so it can be undone from History.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

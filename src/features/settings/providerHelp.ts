@@ -1,0 +1,62 @@
+import type { ProviderKind } from "@/bindings/ProviderKind";
+
+/** What a user has to do to get one kind of AI provider working, shown when it is chosen. */
+export interface ProviderHelp {
+  /** One line: what this provider is. */
+  summary: string;
+  /** Numbered steps, in order. */
+  steps: string[];
+  /** Things to know afterwards (limits, where notes go, what to do when it fails). */
+  notes: string[];
+}
+
+export const PROVIDER_HELP: Record<ProviderKind, ProviderHelp> = {
+  lmstudio: {
+    summary: "LM Studio is a free program that runs AI models on this computer.",
+    steps: [
+      "Install LM Studio from lmstudio.ai and download a model. Choose one that supports tools (for example a Qwen or Gemma instruct model), so Nexmio Work can search and propose changes.",
+      "In LM Studio open the Developer tab and start the server. It listens on http://localhost:1234/v1, which is already filled in below.",
+      "Press Load models, choose the model, and press Test connection.",
+      "Make it Nexmio Work's provider under Settings → AI.",
+    ],
+    notes: [
+      "LM Studio must be running while you use it.",
+      "It runs on this computer, so your pages never leave it.",
+    ],
+  },
+  openai_compatible: {
+    summary:
+      "Any server that speaks the OpenAI interface: a program on this computer (Ollama, llama.cpp, vLLM) or a cloud service (OpenAI, Azure OpenAI and others).",
+    steps: [
+      "Enter the base URL of the server, usually ending in /v1. For Ollama on this computer it is http://localhost:11434/v1.",
+      "If the service needs an API key, paste it below and press Save key. It is kept in the system keychain, never in a file.",
+      "Press Load models, choose the model, and press Test connection.",
+      "Choose it as Nexmio Work's provider under Settings → AI. Only a program on this computer can be used.",
+    ],
+    notes: [
+      "Only an address on this computer (localhost, 127.0.0.1 or ::1) can be local. Anything else is cloud.",
+      "A cloud service can be the app's AI as a last resort: turn it on under Settings → AI, which says that your pages are then sent to it. Projects marked Local AI only never use it.",
+    ],
+  },
+  anthropic: {
+    summary:
+      "Claude, a cloud AI from Anthropic, from an older version of Nexmio Work. Nexmio Work only uses an AI on this computer, so it is not used.",
+    steps: ["Remove it, or leave it: nothing is ever sent to it."],
+    notes: ["Nexmio Work, which reads your pages, never uses a cloud provider."],
+  },
+  foundry_local: {
+    summary: "Nexmio Work's Foundry Local, set up under Settings → AI.",
+    steps: ["Open Settings → AI, choose Foundry Local and press Download."],
+    notes: [],
+  },
+  phi_silica: {
+    summary: "Phi Silica, built into Windows on Copilot+ PCs, chosen under Settings → AI.",
+    steps: ["Open Settings → AI, choose Windows AI · Phi Silica and press Test Phi Silica."],
+    notes: ["Only in the Microsoft Store version. It cannot call tools."],
+  },
+  builtin: {
+    summary: "Nexmio Work's own AI, set up under Settings → AI.",
+    steps: ["Open Settings → AI and press Download."],
+    notes: [],
+  },
+};

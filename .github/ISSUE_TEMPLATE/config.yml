@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How do I…? Read the start guide
+    url: https://github.com/nexmio/work.nexmio.com/blob/main/docs/START-GUIDE.md
+    about: Install, open your first vault and choose an AI. Many questions are answered there.
+  - name: Privacy policy
+    url: https://work.nexmio.com/privacy.html
+    about: What Nexmio Work does with your data (nothing leaves your computer by default).

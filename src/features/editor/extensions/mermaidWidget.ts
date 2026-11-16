@@ -1,0 +1,64 @@
+import { EditorView, WidgetType } from "@codemirror/view";
+import { draw } from "@/lib/mermaidDraw";
+
+export { draw };
+
+/** The first line of a Mermaid diagram, which is how a block without a language is recognised. */
+const DIAGRAM_START =
+  /^\s*(graph|flowchart)\s+(TB|TD|BT|RL|LR)\b|^\s*(sequenceDiagram|classDiagram(-v2)?|stateDiagram(-v2)?|erDiagram|gantt|journey|pie|mindmap|timeline|gitGraph|quadrantChart|requirementDiagram)\b/;
+
+/**
+ * The code inside a fenced block that is written with the language `mermaid`, or null. A block
+ * with no language whose first line starts a diagram (`graph TD`, `sequenceDiagram`, …) counts
+ * too, because the language is easy to forget.
+ */
+export function mermaidSource(block: string): string | null {
+  const lines = block.split("\n");
+  const open = /^\s*(```|~~~)\s*(\S*)/.exec(lines[0] ?? "");
+  if (!open) return null;
+  const language = (open[2] ?? "").toLowerCase();
+  if (language !== "mermaid" && !(language === "" && DIAGRAM_START.test(lines[1] ?? ""))) {
+    return null;
+  }
+  const fence = open[1] ?? "```";
+  const last = lines.length > 1 ? (lines[lines.length - 1] ?? "") : "";
+  const end = last.trim().startsWith(fence) ? lines.length - 1 : lines.length;
+  const source = lines.slice(1, end).join("\n").trim();
+  return source === "" ? null : source;
+}
+
+/**
+ * A Mermaid diagram drawn in place of its code while the cursor is somewhere else. The library is
+ * loaded the first time a note has a diagram, and draws on this computer. A diagram with a mistake
+ * shows what is wrong and its code. Clicking the picture puts the cursor in the code.
+ */
+export class MermaidWidget extends WidgetType {
+  constructor(readonly source: string) {
+    super();
+  }
+
+  eq(other: MermaidWidget): boolean {
+    return other.source === this.source;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const box = document.createElement("div");
+    box.className = "cm-mermaid";
+    box.setAttribute("role", "img");
+    box.setAttribute("aria-label", "Diagram. Click to edit its code.");
+    box.title = "Click to edit the diagram's code";
+    box.textContent = "Drawing the diagram…";
+    box.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const pos = view.posAtDOM(box);
+      view.dispatch({ selection: { anchor: pos } });
+      view.focus();
+    });
+    void draw(box, this.source);
+    return box;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
