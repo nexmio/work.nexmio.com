@@ -51,7 +51,7 @@ A bug found in **Preview** while you work on a feature is fixed on `main` like a
 
 1. **GitHub → Settings → Environments:** `preview` and `stable` (no reviewer needed).
 2. **Microsoft Store:** see `docs/MSIX.md`, "Connect the Store". The Store steps skip themselves, with a notice, until the secrets are there, so the first releases work without them.
-3. **GitHub → Settings → Pages:** source **GitHub Actions**. The custom domain comes later: move `site/CNAME.later` back to `site/CNAME` when the DNS for `work.nexmio.com` is ready. Until then the site is at `https://nexmio.github.io/work.nexmio.com/`.
+3. **GitHub → Settings → Pages:** source **GitHub Actions**. The custom domain is `work.nexmio.com`: a CNAME record `work` pointing to `nexmio.github.io` at the DNS host, and the domain typed under Settings → Pages (then tick Enforce HTTPS). `site/CNAME` documents it; the site is also reachable at `https://nexmio.github.io/work.nexmio.com/` until the domain works. When the domain moves to another DNS host, make the same record there.
 
 ## When something goes wrong
 

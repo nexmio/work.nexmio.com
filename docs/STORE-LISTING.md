@@ -68,7 +68,7 @@ markdown, pages, page taking, local ai, git history, wiki links, knowledge base
 
 ## Links and contact
 
-- **Privacy policy URL:** https://work.nexmio.com/privacy.html (until the domain is ready: https://nexmio.github.io/work.nexmio.com/privacy.html)
+- **Privacy policy URL:** https://work.nexmio.com/privacy.html
 - **Website:** https://work.nexmio.com
 - **Support contact:** https://github.com/nexmio/work.nexmio.com/issues (add an e-mail address if Partner Center requires one)
 - **Copyright and trademark info:** © 2026 Jesper Ahasverusen Kielsgaard
