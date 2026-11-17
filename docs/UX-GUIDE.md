@@ -69,7 +69,7 @@ Nexmio Work has eight themes (Light, Dark, Slate, Paper, Mint, Midnight, Graphit
 - **Poppins** (bundled, not loaded from the web) is used only for the wordmark and big headings on those screens. Everything else uses the system font.
 - **Brand banner:** the start page has a banner band at the top with the greeting, the date and the page's buttons on it; the welcome screen and About show a purple backdrop. `src/lib/brandImages.ts` gives the light or the dark pictures from the active theme's `dark` flag, so Mint shows the light banner and Midnight the dark one. The splash is always dark. No motion. Buttons on the banner have a solid background.
 - **The top bar has the compact wordmark** at its left end on every page: only the N mark and the "Work" tag, without "exmio".
-- **Dark keeps purple for what matters.** Its surfaces are almost neutral (a hint of purple), with clear steps between the page, panels and cards, so the purple buttons, marks and banner stand out.
+- **Dark keeps purple for what matters.** Its surfaces carry a little blue-violet colour (hue 280, between Midnight and purple), with clear steps between the page, panels and cards and visible borders, so it is easy on the eyes; the purple buttons, marks and banner stand out.
 
 ## The parts a screen is built from
 
@@ -78,7 +78,7 @@ Every control comes from `src/components/ui`, so a change to how one looks is ma
 - `Button`: anything that looks like a button. `PlainButton`: a button whose look belongs to the row, chip, tab or rail icon it is.
 - `Input` (a field in a form), `InlineInput` (a field inside a row or list: + Add a step, renaming in place, the file filter), `TagChip` and the Tags window (Nexmio Work's tags filled with a mark and what they do, the person's own outlined with a `#`), `TimeInput` (a time: type it, or pick it from a list of every quarter of an hour that opens under the box; a time that is not on the list is kept as written).
 - `MarkdownField` (several lines, written as Markdown, with live preview) and `MarkdownText` (shows saved Markdown formatted): every text of more than one line that is a page, a log or a meeting's notes. One line (a title, a task, a step, a name) is `Input` and is never Markdown. `Textarea` is for plain text that is not a page (instructions for the AI, a list of words); `Select`, `Checkbox`, `Radio`, `Label`.
-- `Dialog`, `ConfirmDialog`, `PromptDialog`, the menus (`menuStyles`), `ViewHeader`, `PanelHeader`, `RowActions`, `MoveButtons`, `InfoHint`, `MonthCalendar`.
+- `Dialog`, `ConfirmDialog`, `PromptDialog`, the menus (`menuStyles`), `ViewHeader`, `Trail` (the path above a task, an epic or a plan), `PanelHeader`, `RowActions`, `MoveButtons`, `InfoHint`, `MonthCalendar`.
 
 ## Interaction patterns
 
