@@ -182,7 +182,8 @@ describe("MeetingFocus", () => {
       { timeout: 5000 },
     );
     expect(apiMock.writeNote.mock.calls.at(-1)?.[1]).not.toContain("Rollout starts Monday");
-  });
+    // The test waits up to 5 s for the write itself, so it needs more than the default 5 s in all.
+  }, 20_000);
 
   it("adds an action as a task with its made date, and ticks it", async () => {
     useUiStore.setState({ meetingFocus: PATH });
