@@ -4,7 +4,7 @@ Use this together with [docs/MSIX.md](MSIX.md). Everything below is in English, 
 
 ## What the release sends by itself
 
-Every release sends these fields to both Store products: the description, short description and search terms below; "What's new" from `CHANGELOG.md`; the notes for certification and the runFullTrust reason below; and the fixed fields in `docs/store/store-fields.json` (copyright and trademark, developed by, website, privacy policy, support contact, features, hardware). Change the text here or in that file and it goes out with the next release. Pictures, price, markets, visibility, category and age rating are **not** touched: they stay as they were set in Partner Center. A Preview product that is not hidden is never updated (the script stops).
+Every release sends these fields to both Store products: the description, short description and search terms below; "What's new" from `CHANGELOG.md`; the notes for certification and the runFullTrust reason below; and the fixed fields in `docs/store/store-fields.json` (copyright and trademark, developed by, website, privacy policy, support contact, features, hardware). Change the text here or in that file and it goes out with the next release. The pictures below (ten screenshots, the icon and the box art) are sent with every release and replace the Store's pictures of those types. Price, markets, visibility, category and age rating are **not** touched: they stay as they were set in Partner Center. A Preview product that is not hidden is never updated (the script stops).
 
 ## Files
 
@@ -32,7 +32,7 @@ Nexmio Work is a pages app for people who want to own their pages. Your pages ar
 
 - A live-preview Markdown editor with a toolbar, tabs, split view and a table editor. Mermaid diagrams are drawn right in the page.
 - Tasks are plain checklist lines in your pages, with steps, a page and a log. Epics group them in one outline you can fold, and move to Done when every task is done. A task made from a page gets an epic of its own that points back to the page.
-- Plans: break something big into parts, as an outline or a map, and tie a part to a task, a page or an epic.
+- Projects and plans: a project is a folder with its own notes for the AI. A plan always lives in a project: break it into parts, as an outline or a map, and tie a part to a task, a page or an epic. A project can wait for its plan until you have gathered enough to make one, and the same task can be made for several people at once.
 - An ideas list, and a Focus view that shows one task at a time.
 - Landing keeps Meetings, Quick pages and Tasks together, with a mark on new pages and a button to move them where they belong.
 - Daily pages in a calendar at the top of the file panel. Wiki-links, tags (typing # suggests the ones you already use), images and index pages.
@@ -60,7 +60,7 @@ Nexmio Work is a beta version. The app is in English; the assistant answers in t
 
 ## What's new in this version
 
-Nexmio Work 0.25: a new purple look, and the AI is simply called the AI. AI commands on selected text now run in the background: add several, keep working, and accept each answer from the Queue tab of the AI. Plans have a better map (arrange the parts, drag, zoom) and a start-page widget, and meetings can write an agenda point into the pages. A new layout: names beside the icons, search at the top, the chat beside the page, tasks one epic at a time, ideas as cards, and settings that apply at once. Settings start fresh.
+Nexmio Work 0.26: plans and projects belong together. A plan always lives in a project, a project without a plan is offered one, and each project says whether it has a plan. A trail above a task or epic shows where it belongs. Settings show a Main AI and a Local AI side by side. The Dark theme has calmer colours, opening a task from anywhere brings the Tasks list to the left, and a Debug mode (off by default) is in Settings.
 
 ## Search terms (up to seven)
 
