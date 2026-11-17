@@ -357,6 +357,9 @@ impl Default for EmbeddingSettings {
 pub struct AiSettings {
     /// The local provider used by Nexmio Work (the notes AI), inline commands and project help.
     pub default_provider_id: String,
+    /// The Local AI: an AI on this computer that a project marked Local AI only uses, even when
+    /// the app's AI is a cloud AI. Empty: the app's AI when it is local, else the first local AI.
+    pub local_provider_id: String,
     /// "About me and my notes": background the chat and the skills read (who the person is, what
     /// their terms mean). The fixed commands do not read it.
     pub global_instructions: String,
@@ -404,6 +407,7 @@ impl Default for AiSettings {
     fn default() -> Self {
         Self {
             default_provider_id: preferred_default_provider().into(),
+            local_provider_id: String::new(),
             global_instructions: String::new(),
             answer_language: String::new(),
             embeddings: EmbeddingSettings::default(),
@@ -446,6 +450,8 @@ pub struct Settings {
     pub backups: HashMap<String, VaultBackup>,
     /// The taskbar helper (Windows only): keys that work in every program, and the icon.
     pub helper: HelperSettings,
+    /// Debug mode: "Inspect element" is shown in every right-click menu. Off by default.
+    pub debug_mode: bool,
 }
 
 /// The taskbar helper's choices. It does nothing unless `enabled`.
@@ -504,6 +510,7 @@ impl Default for Settings {
             ai: AiSettings::default(),
             backups: HashMap::new(),
             helper: HelperSettings::default(),
+            debug_mode: false,
         }
     }
 }
@@ -684,6 +691,14 @@ impl Settings {
             s.provider(id)
                 .is_some_and(|p| p.effective_location() == Location::Local || s.cloud_consented(p))
         };
+        // The Local AI must be an AI on this computer that still exists.
+        if !self.ai.local_provider_id.is_empty()
+            && !self
+                .provider(&self.ai.local_provider_id)
+                .is_some_and(|p| p.effective_location() == Location::Local)
+        {
+            self.ai.local_provider_id.clear();
+        }
         if !is_local(self, &self.ai.default_provider_id.clone()) {
             if let Some(first) = self
                 .ai

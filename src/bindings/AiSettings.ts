@@ -11,6 +11,11 @@ export type AiSettings = {
  */
 defaultProviderId: string, 
 /**
+ * The Local AI: an AI on this computer that a project marked Local AI only uses, even when
+ * the app's AI is a cloud AI. Empty: the app's AI when it is local, else the first local AI.
+ */
+localProviderId: string, 
+/**
  * "About me and my notes": background the chat and the skills read (who the person is, what
  * their terms mean). The fixed commands do not read it.
  */

@@ -180,6 +180,14 @@ pub fn is_template_error(e: &AppError) -> bool {
         || (m.contains("at row") && m.contains("column") && m.contains("{%"))
 }
 
+/// True when the server refuses tool calls for this model (Foundry Local: "structured tool
+/// calling requires model-published opening and closing tool markers"), although it was
+/// offered tools. The request can be sent again without them.
+pub fn is_tool_support_error(e: &AppError) -> bool {
+    let m = e.to_string().to_lowercase();
+    m.contains("tool markers") || m.contains("structured tool calling")
+}
+
 /// The same request with the system text put at the start of the first user message, for a
 /// chat template that cannot handle a system message.
 pub fn without_system(req: &LlmRequest) -> LlmRequest {
@@ -196,7 +204,9 @@ pub fn without_system(req: &LlmRequest) -> LlmRequest {
 
 /// Streams a chat completion. When the server's chat template fails before any text came (some
 /// models in Foundry Local cannot take a system message), it is asked once more with the system
-/// text in the first user message. Other errors and other models are not affected.
+/// text in the first user message. When the server says the model cannot call tools (but was
+/// offered them), it is asked once more without tools: the chat then answers as plain text, with
+/// no vault search or skills. Other errors and other models are not affected.
 pub async fn chat_stream(
     client: &reqwest::Client,
     p: &ProviderConfig,
@@ -217,6 +227,14 @@ pub async fn chat_stream(
         Err(e) if !sent && !req.system.is_empty() && is_template_error(&e) => {
             tracing::info!("chat template failed with a system message; trying without: {e}");
             stream_once(client, p, key, &without_system(req), cancel, on_text).await
+        }
+        Err(e)
+            if !sent && p.supports_tools && !req.tools.is_empty() && is_tool_support_error(&e) =>
+        {
+            tracing::info!("the model cannot call tools; trying without them: {e}");
+            let mut plain = p.clone();
+            plain.supports_tools = false;
+            stream_once(client, &plain, key, req, cancel, on_text).await
         }
         other => other,
     }
@@ -324,6 +342,17 @@ mod tests {
         );
     }
     use crate::ai::providers::types::ToolDef;
+
+    #[test]
+    fn a_refusal_of_tool_calls_is_told_apart_from_other_errors() {
+        let e = AppError::Provider(
+            "Provider returned 500: chat_session.cc:1233 structured tool calling requires model-published opening and closing tool markers".into(),
+        );
+        assert!(is_tool_support_error(&e));
+        assert!(!is_tool_support_error(&AppError::Provider(
+            "Stream error: timed out".into()
+        )));
+    }
 
     #[test]
     fn parses_fixture_stream() {

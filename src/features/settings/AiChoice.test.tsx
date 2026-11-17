@@ -46,6 +46,7 @@ function settings(): Settings {
   return {
     ai: {
       defaultProviderId: "lmstudio-default",
+      localProviderId: "",
       providers: [lm, openai],
       foundry: { model: "", tools: true },
       cloudConsent: null,
@@ -98,6 +99,44 @@ describe("Settings → AI → Which AI to use", () => {
       providerId: "openai",
       baseUrl: "https://api.openai.com/v1",
     });
+  });
+
+  it("shows a Main AI and a Local AI side by side, and lets the Local AI be chosen", async () => {
+    const onChange = vi.fn();
+    const draft = settings();
+    draft.ai.defaultProviderId = "openai";
+    draft.ai.cloudConsent = {
+      providerId: "openai",
+      baseUrl: "https://api.openai.com/v1",
+      agreedAt: "",
+    };
+    render(
+      <AiChoice draft={draft} onChange={onChange} providersPanel={providers} persist={persist} />,
+    );
+    const cards = await screen.findByTestId("two-ais");
+    expect(within(cards).getByText("Main AI").parentElement).toHaveTextContent(
+      "Cloud · pages leave this computer",
+    );
+    expect(within(cards).getByText("Local AI").parentElement).toHaveTextContent("LM Studio");
+    await userEvent
+      .setup()
+      .selectOptions(within(cards).getByLabelText("Local AI"), "lmstudio-default");
+    const next = onChange.mock.calls[0]?.[0] as Settings;
+    expect(next.ai.localProviderId).toBe("lmstudio-default");
+    expect(next.ai.defaultProviderId).toBe("openai");
+  });
+
+  it("says the Local AI is the same as the Main AI when the Main AI is on this computer", async () => {
+    render(
+      <AiChoice
+        draft={settings()}
+        onChange={vi.fn()}
+        providersPanel={providers}
+        persist={persist}
+      />,
+    );
+    const cards = await screen.findByTestId("two-ais");
+    expect(cards).toHaveTextContent("Same as the Main AI");
   });
 
   it("keeps the AI on this computer when the warning is closed", async () => {

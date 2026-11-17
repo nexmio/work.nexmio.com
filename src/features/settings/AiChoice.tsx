@@ -15,6 +15,7 @@ import {
   aiOrder,
   cloudConsented,
   cloudProviders,
+  localAiOf,
   optionOf,
   otherLocalProviders,
   type AiOption,
@@ -138,6 +139,22 @@ export function AiChoice({
     }
   };
 
+  // The two AIs at once: the Main AI is what the app uses (it can be a cloud AI); the Local AI
+  // always runs on this computer and is what a project marked Local AI only uses.
+  const mainIsLocal = current !== undefined && inUse !== "cloud";
+  const localAi = localAiOf(draft);
+  const localChoices = draft.ai.providers.filter((p) => {
+    const o = optionOf(p);
+    return o !== null && o !== "cloud" && ready[o] && (o !== "local" || locals.includes(p));
+  });
+  const localOption = optionOf(localAi);
+  const nameOf = (p: ProviderConfig | undefined): string =>
+    p === undefined
+      ? "None"
+      : p.kind === "foundry_local" && draft.ai.foundry.model !== ""
+        ? `${p.name} · ${draft.ai.foundry.model}`
+        : p.name;
+
   const makeProvider = (o: AiOption) => {
     const ai = { ...draft.ai, cloudConsent: null };
     if (o === "phi") {
@@ -218,6 +235,72 @@ export function AiChoice({
           best for you.
         </p>
       </div>
+      <div className="flex gap-3" data-testid="two-ais">
+        <div
+          className={cn(
+            "flex flex-1 flex-col gap-1 rounded-lg border-2 p-3",
+            mainIsLocal ? "border-primary bg-accent" : "border-warning bg-warning/10",
+          )}
+        >
+          <span className="section-label">Main AI</span>
+          <span className="text-sm font-semibold">{nameOf(current)}</span>
+          <span className="text-xs text-foreground/80">
+            Used for everything, unless a project says otherwise.
+          </span>
+          {!mainIsLocal && current !== undefined && (
+            <span className="w-fit rounded-full border border-warning px-2 text-[11px] text-warning">
+              Cloud · pages leave this computer
+            </span>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col gap-1 rounded-lg border-2 border-primary bg-accent p-3">
+          <span className="section-label">Local AI</span>
+          <span className="text-sm font-semibold">
+            {nameOf(localAi)}
+            {mainIsLocal && draft.ai.localProviderId === "" && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                Same as the Main AI
+              </span>
+            )}
+          </span>
+          <span className="text-xs text-foreground/80">
+            Always runs on this computer. Used by projects marked Local AI only.
+          </span>
+          {localChoices.length > 0 ? (
+            <label className="flex items-center gap-2 text-xs">
+              Use
+              <Select
+                aria-label="Local AI"
+                value={draft.ai.localProviderId}
+                onChange={(e) => {
+                  onChange({
+                    ...draft,
+                    ai: { ...draft.ai, localProviderId: e.target.value },
+                  });
+                }}
+              >
+                <option value="">
+                  {mainIsLocal ? "Same as the Main AI" : `Automatic (${nameOf(localAi)})`}
+                </option>
+                {localChoices.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {nameOf(p)}
+                  </option>
+                ))}
+              </Select>
+            </label>
+          ) : (
+            <span className="text-xs text-warning" role="status">
+              None is set up. A project marked Local AI only has no AI to use until you set one up
+              below.
+            </span>
+          )}
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Both work at the same time. Click a row below to make it the Main AI; the Local AI is chosen
+        above.
+      </p>
       <div role="radiogroup" aria-label="AI for Nexmio Work" className="flex flex-col gap-2">
         {order.map((o, i) => {
           const cloud = o === "cloud";
@@ -260,6 +343,11 @@ export function AiChoice({
                     {BETA.includes(o) && (
                       <span className="rounded-full bg-warning/25 px-2 text-[11px] font-normal">
                         Beta
+                      </span>
+                    )}
+                    {o === localOption && (
+                      <span className="rounded-full bg-primary px-2 text-[11px] font-normal text-primary-foreground">
+                        Local AI
                       </span>
                     )}
                     {cloud && (

@@ -63,8 +63,22 @@ pub fn select_for_project(
     select_notes(settings, project, None)
 }
 
+/// The Local AI: the AI on this computer chosen under Settings → AI, else the app's AI when it
+/// is local, else the first AI on this computer.
+pub fn local_ai(settings: &Settings) -> Option<&ProviderConfig> {
+    settings
+        .provider(&settings.ai.local_provider_id)
+        .filter(|p| is_local(p))
+        .or_else(|| {
+            settings
+                .provider(&settings.ai.default_provider_id)
+                .filter(|p| is_local(p))
+        })
+        .or_else(|| settings.ai.providers.iter().find(|p| is_local(p)))
+}
+
 /// Chooses the provider that receives notes: `provider_id`, else the project's own, else Nexmio Work's
-/// AI. A cloud AI is only accepted when the user agreed to it, and never for a project marked
+/// AI (for a project marked Local AI only: the Local AI). A cloud AI is only accepted when the user agreed to it, and never for a project marked
 /// Local AI only; such a project falls back to the first AI on this computer.
 pub fn select_notes(
     settings: &Settings,
@@ -76,8 +90,12 @@ pub fn select_notes(
     let own = project
         .and_then(|p| p.provider_id.as_deref())
         .filter(|id| settings.provider(id).is_some_and(allowed));
+    let local_choice = local_only
+        .then(|| local_ai(settings).map(|p| p.id.as_str()))
+        .flatten();
     let id = provider_id
         .or(own)
+        .or(local_choice)
         .unwrap_or(&settings.ai.default_provider_id);
     let config = settings
         .provider(id)
@@ -288,6 +306,33 @@ mod tests {
             select_for_project(&s, Some(&p)),
             Err(AppError::ProviderBlocked(_))
         ));
+    }
+
+    #[test]
+    fn a_local_only_project_uses_the_chosen_local_ai_while_the_app_uses_the_cloud() {
+        let mut s = settings();
+        with_cloud(&mut s);
+        s.ai.default_provider_id = "openai".into();
+        s.ai.cloud_consent = Some(crate::settings::CloudConsent {
+            provider_id: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            agreed_at: String::new(),
+        });
+        s.ai.local_provider_id = "builtin".into();
+        let mut p = project(None);
+        p.local_only = true;
+        assert_eq!(
+            select_for_project(&s, Some(&p)).unwrap().config().id,
+            "builtin"
+        );
+        // Other projects and the rest of the app still use the cloud AI.
+        assert_eq!(select_for_project(&s, None).unwrap().config().id, "openai");
+        // An id that is not an AI on this computer is ignored.
+        s.ai.local_provider_id = "openai".into();
+        assert_ne!(
+            select_for_project(&s, Some(&p)).unwrap().config().id,
+            "openai"
+        );
     }
 
     #[test]

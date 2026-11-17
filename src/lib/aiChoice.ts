@@ -66,3 +66,20 @@ export function optionOf(p: ProviderConfig | undefined): AiOption | null {
   if (p.kind === "anthropic") return null;
   return effectiveLocation(p) === "cloud" ? "cloud" : "local";
 }
+
+/**
+ * The Local AI: the AI on this computer that a project marked Local AI only uses, even when the
+ * app's AI is a cloud AI. Mirrors the backend: the one chosen under Settings → AI, else the app's
+ * AI when it is local, else the first AI on this computer.
+ */
+export function localAiOf(settings: Settings): ProviderConfig | undefined {
+  const local = (p: ProviderConfig | undefined): ProviderConfig | undefined =>
+    p && effectiveLocation(p) === "local" ? p : undefined;
+  const byId = (id: string): ProviderConfig | undefined =>
+    settings.ai.providers.find((p) => p.id === id);
+  return (
+    local(byId(settings.ai.localProviderId)) ??
+    local(byId(settings.ai.defaultProviderId)) ??
+    settings.ai.providers.find((p) => effectiveLocation(p) === "local")
+  );
+}

@@ -39,11 +39,24 @@ describe("ProjectForm", () => {
   it("has a Local AI only choice (off) and offers local providers only", () => {
     render(<ProjectForm state={{ folder: "Work", project: null }} settings={settings} />);
     expect(screen.getByRole("checkbox", { name: /Local AI only/ })).not.toBeChecked();
-    const options = screen.getByLabelText("AI provider").querySelectorAll("option");
+    const options = screen.getByLabelText("AI for this project").querySelectorAll("option");
     expect([...options].map((o) => o.textContent)).toEqual([
-      "Use global default (LM Studio)",
-      "LM Studio",
+      "Main AI (LM Studio)",
+      "LM Studio · your Local AI",
     ]);
+  });
+
+  it("says which AI a Local AI only project uses when the Main AI is a cloud AI", () => {
+    const cloudMain = makeSettings({
+      ai: { ...settings.ai, defaultProviderId: "claude", localProviderId: "lm" },
+    });
+    render(<ProjectForm state={{ folder: "Work", project: null }} settings={cloudMain} />);
+    expect(screen.getByRole("status")).toHaveTextContent("This project uses Claude (cloud).");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Local AI only/ }));
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This project uses LM Studio, on this computer.",
+    );
+    expect(screen.getByRole("option", { name: "Local AI (LM Studio)" })).toBeInTheDocument();
   });
 
   it("has About this project and no Ask AI box for the text", () => {
@@ -72,9 +85,9 @@ describe("ProjectForm", () => {
         settings={settings}
       />,
     );
-    expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "AI provider" }).value).toBe(
-      "__global__",
-    );
+    expect(
+      screen.getByRole<HTMLSelectElement>("combobox", { name: "AI for this project" }).value,
+    ).toBe("__global__");
   });
 
   it("a new project is a new folder in the vault root: a name already used there is refused", () => {

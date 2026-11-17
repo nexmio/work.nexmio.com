@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { localAiOf } from "@/lib/aiChoice";
 import { nameError, projectNameError } from "@/lib/nameConflict";
 import { reportError, type ProjectDialogState, useUiStore } from "@/stores/uiStore";
 import { useTreeStore } from "@/stores/treeStore";
@@ -55,7 +56,12 @@ export function ProjectForm({
       ? null
       : ((isNew ? nameError(tree, allProjects, "", name, true) : null) ??
         projectNameError(allProjects, name, p0?.id));
-  const globalDefault = settings.ai.providers.find((p) => p.id === settings.ai.defaultProviderId);
+  const mainAi = settings.ai.providers.find((p) => p.id === settings.ai.defaultProviderId);
+  const localAi = localAiOf(settings);
+  // What this project will use, in words.
+  const chosen =
+    providerId === GLOBAL ? undefined : localProviders.find((p) => p.id === providerId);
+  const usedAi = chosen ?? (localOnly ? localAi : mainAi);
 
   const save = async (): Promise<void> => {
     if (name.trim() === "") return;
@@ -150,7 +156,7 @@ export function ProjectForm({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor="proj-provider">AI provider</Label>
+              <Label htmlFor="proj-provider">AI for this project</Label>
               <Select
                 id="proj-provider"
                 value={providerId}
@@ -158,13 +164,23 @@ export function ProjectForm({
                   setProviderId(e.target.value);
                 }}
               >
-                <option value={GLOBAL}>Use global default ({globalDefault?.name ?? "none"})</option>
+                <option value={GLOBAL}>
+                  {localOnly
+                    ? `Local AI (${localAi?.name ?? "none"})`
+                    : `Main AI (${mainAi?.name ?? "none"})`}
+                </option>
                 {localProviders.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
+                    {p.id === localAi?.id ? " · your Local AI" : ""}
                   </option>
                 ))}
               </Select>
+              <p className="text-xs text-muted-foreground" role="status">
+                {usedAi === undefined
+                  ? "No AI on this computer is set up. Set one up under Settings → AI."
+                  : `This project uses ${usedAi.name}${usedAi.location === "local" ? ", on this computer" : " (cloud)"}.`}
+              </p>
             </div>
             <label className="flex items-start gap-2 text-sm">
               <Checkbox
@@ -177,8 +193,9 @@ export function ProjectForm({
               <span>
                 Local AI only
                 <span className="block text-xs text-muted-foreground">
-                  The pages of this project never go to a cloud AI, even when one is turned on under
-                  Settings → AI.
+                  The pages of this project never go to a cloud AI, even when the Main AI is one. It
+                  uses your Local AI (Settings → AI) unless you choose another AI on this computer
+                  above.
                 </span>
               </span>
             </label>
