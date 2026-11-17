@@ -49,6 +49,10 @@ Anchor ids are English: `products`, `about`, `thinking`, `principles`, `contact`
 - Write text with `<span data-l="en">…</span><span data-l="da">…</span>`. CSS shows only the active language.
 - `brand/tools/build_site.py` writes both languages with `T(english, danish)`.
 
+## Website of an app
+
+The standard for an app's own site (sections, files, rules) is `brand/APP-SITE.md`, with a ready template in `brand/templates/app-site/`.
+
 ## Motion
 
 Slow drift of the background, a glow that follows the mouse, reveal on scroll and hover glow on cards. Everything switches off when the system asks for reduced motion.
