@@ -48,10 +48,10 @@ On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 ```powershell
 pnpm install
 pnpm tauri build
-./scripts/msix/Build-Msix.ps1 -Version 0.25.0 -TestSign -DisplayName "Nexmio Work"
+./scripts/msix/Build-Msix.ps1 -Version 0.26.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.25.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.25.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.26.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.26.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
 
 **Windows Sandbox** (Windows 11 Pro, feature "Windows Sandbox" turned on): edit `scripts/msix/sandbox.wsb` so that `HostFolder` is the full path of `msix-out`, and double-click it. The sandbox installs Nexmio Work; start it from the Start menu. Everything is gone when you close the sandbox.
 

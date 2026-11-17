@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This list is kept short: it tells what Nexmio Work can do in each version. A small release that only fixed the one before it is folded into the last version of its series (for example 0.8.0 to 0.8.10 is one entry), and something that was removed and later came back is described only where it is in the app now.
 
+## [0.26.0] - 2026-11-17
+
+### Changed
+
+- A plan always lives in a project. **New plan** asks **In a new project** or **In a project I have**, and a project without a plan is offered **Make a plan** in the Plans panel. Plans are listed under their project. A plan made before this can be moved into a project.
+- Each project in Files says whether it has a plan: **Open the plan**, or **No plan yet · Make a plan**.
+- A small trail above an epic and a task shows where it belongs (project › the page it was made from › epic), and each step takes you there.
+- Settings → AI shows two AIs at once: the **Main AI** (what everything uses, also a cloud AI) and the **Local AI** (always on your computer, used by projects marked Local AI only). Project settings say which AI the project uses.
+- The Dark theme has new colours: surfaces with a little blue-violet colour, clearer steps between the page, panels and cards, and visible borders. It is calmer to look at, and purple is kept for buttons and marks.
+- Right-clicking an empty place no longer shows a menu with only "Inspect element". A new **Debug mode** (Settings → About) adds "Inspect element" to every right-click menu; it is off by default.
+
+### Fixed
+
+- Opening a task or an epic from somewhere else (a plan, the start page, a search, a page) now brings the Tasks list to the left, so the left panel and the page in the middle always belong together. The same goes for a meeting, an idea and a plan.
+- A Foundry Local model that cannot call tools no longer ends the chat with the error "structured tool calling requires model-published … tool markers": Nexmio Work asks again without tools and the chat answers as plain text.
+- The "New page" button at the top of the left panel now opens the dialog for a new page.
+- The name that shows when the mouse rests on an icon in the left panel now has a solid background, so text behind it no longer shows through.
+
 ## [0.25.0] - 2026-11-15
 
 ### Added

@@ -1,6 +1,6 @@
 # Nexmio Work (work.nexmio.com)
 
-Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.25. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
+Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.26. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
 
 ## Read first
 
