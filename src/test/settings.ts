@@ -31,6 +31,7 @@ function defaults(): Settings {
     git: { authorName: "M", authorEmail: "m@l", idleCommitMinutes: 5 },
     ai: {
       defaultProviderId: "lm",
+      localProviderId: "",
       checkAnswers: false,
       cloudConsent: null,
       builtin: { ...DEFAULT_BUILTIN },
@@ -47,6 +48,7 @@ function defaults(): Settings {
       quickNoteKey: "Ctrl+Alt+N",
       parkKey: "Ctrl+Alt+P",
     },
+    debugMode: false,
   };
 }
 

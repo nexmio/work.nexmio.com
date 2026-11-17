@@ -45,22 +45,22 @@
 
 .dark,
 [data-theme="dark"] {
-  --background: oklch(0.2 0.008 290);
-  --foreground: oklch(0.96 0.008 298);
-  --card: oklch(0.25 0.01 290);
-  --muted: oklch(0.295 0.012 290);
-  --muted-foreground: oklch(0.75 0.02 295);
-  --border: oklch(0.38 0.015 290);
-  --input: oklch(0.43 0.018 290);
-  --primary: oklch(0.74 0.17 306);
-  --primary-foreground: oklch(0.16 0.04 291);
-  --accent: oklch(0.34 0.09 295);
-  --accent-foreground: oklch(0.93 0.04 300);
+  --background: oklch(0.205 0.03 280);
+  --foreground: oklch(0.94 0.01 280);
+  --card: oklch(0.25 0.036 280);
+  --muted: oklch(0.29 0.04 280);
+  --muted-foreground: oklch(0.74 0.035 280);
+  --border: oklch(0.34 0.042 280);
+  --input: oklch(0.38 0.045 280);
+  --primary: oklch(0.76 0.13 290);
+  --primary-foreground: oklch(0.17 0.04 282);
+  --accent: oklch(0.31 0.07 288);
+  --accent-foreground: oklch(0.94 0.04 290);
   --destructive: oklch(0.68 0.19 25);
-  --success: oklch(0.72 0.15 150);
+  --success: oklch(0.76 0.14 160);
   --warning: oklch(0.8 0.14 85);
-  --ring: oklch(0.74 0.17 306);
-  --sidebar: oklch(0.165 0.008 290);
+  --ring: oklch(0.76 0.13 290);
+  --sidebar: oklch(0.165 0.035 280);
   color-scheme: dark;
 }
 
@@ -190,6 +190,9 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+  /* Floating boxes (name of an icon, small menus) look like a card, so they are never see-through. */
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);

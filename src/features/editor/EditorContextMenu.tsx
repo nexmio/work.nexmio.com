@@ -1,5 +1,7 @@
 import type { EditorView } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useDebugMode } from "@/components/useDebugMode";
+import { api } from "@/lib/api";
 import { reportError } from "@/stores/uiStore";
 import { PlainButton } from "@/components/ui/plain-button";
 
@@ -50,6 +52,7 @@ export function EditorContextMenu({
   onCapture: (kind: "task" | "idea") => void;
   onClose: () => void;
 }) {
+  const debug = useDebugMode();
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "Escape") onClose();
@@ -157,6 +160,18 @@ export function EditorContextMenu({
             done();
           }}
         />
+        {debug && (
+          <>
+            <div role="separator" className="my-1 h-px bg-border" />
+            <Item
+              label="Inspect element"
+              onClick={() => {
+                api.openDevtools().catch(reportError);
+                done();
+              }}
+            />
+          </>
+        )}
       </div>
     </>
   );

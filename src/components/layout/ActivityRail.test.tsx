@@ -65,8 +65,13 @@ describe("ActivityRail", () => {
     expect(newAction("meetings").label).toBe("New meeting");
     expect(newAction("ideas").label).toBe("New idea");
     expect(newAction("start").label).toBe("New");
-    useUiStore.setState({ centerView: "ideas" });
+    useUiStore.setState({ centerView: "notes", newNoteDialog: null });
     render(<ActivityRail />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "New page" }));
+    expect(useUiStore.getState().newNoteDialog).not.toBeNull();
+    act(() => {
+      useUiStore.setState({ centerView: "ideas", newNoteDialog: null });
+    });
     await userEvent.setup().click(screen.getByRole("button", { name: "New idea" }));
     expect(useUiStore.getState().captureKind).toBe("idea");
     act(() => {

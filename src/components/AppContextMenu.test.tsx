@@ -4,14 +4,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const api = vi.hoisted(() => ({ openDevtools: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/api", () => ({ api, toApiError: (e: unknown) => ({ message: String(e) }) }));
 
+import { useSettingsStore } from "@/stores/settingsStore";
+import { makeSettings } from "@/test/settings";
 import { AppContextMenu } from "./AppContextMenu";
 
 describe("AppContextMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({ settings: makeSettings({ debugMode: false }) });
   });
 
-  it("replaces the web view menu with Inspect element, which opens the inspector", () => {
+  it("shows no menu at all while debug mode is off", () => {
+    render(
+      <div>
+        <p>text</p>
+        <AppContextMenu />
+      </div>,
+    );
+    expect(fireEvent.contextMenu(screen.getByText("text"))).toBe(false);
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("with debug mode on, replaces the web view menu with Inspect element, which opens the inspector", () => {
+    useSettingsStore.setState({ settings: makeSettings({ debugMode: true }) });
     render(
       <div>
         <p>text</p>

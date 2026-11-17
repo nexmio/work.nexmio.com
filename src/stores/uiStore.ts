@@ -11,6 +11,22 @@ export type LeftTab = "files" | "search" | "tasks" | "ideas" | "meetings" | "pla
 export type CenterView =
   "notes" | "tasks" | "epic" | "task" | "ideas" | "meetings" | "plans" | "start";
 
+/** The area (the left panel) a middle page belongs to, or null for the pages and the start page. */
+function areaOf(v: CenterView): LeftTab | null {
+  switch (v) {
+    case "tasks":
+    case "epic":
+    case "task":
+      return "tasks";
+    case "ideas":
+    case "meetings":
+    case "plans":
+      return v;
+    default:
+      return null;
+  }
+}
+
 /** The task list, an epic or a task: all of them are the Tasks area. */
 export function isTasksView(v: CenterView): boolean {
   return v === "tasks" || v === "epic" || v === "task";
@@ -241,6 +257,10 @@ interface UiState {
   setRecoverOpen: (open: boolean) => void;
   openProjectDialog: (state: ProjectDialogState | null) => void;
   /** A project (its folder) that should be made a plan; Plans picks this up when it opens. */
+  /** A plan that something outside the Plans area asked to open (it is opened there). */
+  planToOpen: string | null;
+  openPlan: (path: string) => void;
+  clearPlanToOpen: () => void;
   planFromProjectFolder: string | null;
   /** Opens Plans with the window that makes a plan of the project in `folder`. */
   planFromProject: (folder: string) => void;
@@ -370,18 +390,32 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ captureKind: null });
   },
   setCenterView: (centerView) => {
-    // Back to the notes: the left panel shows the files again, not the Tasks or Ideas list.
-    set((s) => ({
-      centerView,
-      leftTab:
-        centerView === "notes" &&
-        (s.leftTab === "tasks" ||
-          s.leftTab === "ideas" ||
-          s.leftTab === "meetings" ||
-          s.leftTab === "plans")
-          ? "files"
-          : s.leftTab,
-    }));
+    // The left panel follows the middle: a task, an epic, a meeting, an idea or a plan opened from
+    // anywhere (a plan, the start page, a search, a page) brings its own list to the left. Back to
+    // the pages: the left panel shows the files again, not the Tasks or Ideas list.
+    set((s) => {
+      const area = areaOf(centerView);
+      if (area !== null) {
+        if (s.leftTab === area) return { centerView };
+        // The ideas are cards in the middle: the list at the left would show the same thing twice.
+        return {
+          centerView,
+          leftTab: area,
+          leftCollapsed: area === "ideas" ? true : s.leftCollapsed,
+        };
+      }
+      return {
+        centerView,
+        leftTab:
+          centerView === "notes" &&
+          (s.leftTab === "tasks" ||
+            s.leftTab === "ideas" ||
+            s.leftTab === "meetings" ||
+            s.leftTab === "plans")
+            ? "files"
+            : s.leftTab,
+      };
+    });
   },
   focusOpen: false,
   setFocusOpen: (focusOpen) => {
@@ -517,6 +551,14 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
   openProjectDialog: (projectDialog) => {
     set({ projectDialog });
+  },
+  planToOpen: null,
+  openPlan: (path) => {
+    set({ planToOpen: path });
+    get().openArea("plans");
+  },
+  clearPlanToOpen: () => {
+    set({ planToOpen: null });
   },
   planFromProjectFolder: null,
   planFromProject: (folder) => {

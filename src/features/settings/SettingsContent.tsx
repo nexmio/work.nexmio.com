@@ -619,6 +619,23 @@ export function SettingsContent({ stored, onClose }: { stored: Settings; onClose
                   About Nexmio Work…
                 </Button>
               </div>
+              <h3 className="section-label mt-2">For troubleshooting</h3>
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  className="mt-1"
+                  checked={draft.debugMode}
+                  onChange={(e) => {
+                    update({ debugMode: e.target.checked });
+                  }}
+                />
+                <span>
+                  Debug mode
+                  <span className="block text-xs text-muted-foreground">
+                    Adds "Inspect element" to every right-click menu, so a problem can be looked
+                    into. Leave it off in daily use.
+                  </span>
+                </span>
+              </label>
             </div>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDebugMode } from "@/components/useDebugMode";
 import { api } from "@/lib/api";
 import { reportError } from "@/stores/uiStore";
 
@@ -11,17 +12,19 @@ function isTextField(el: EventTarget | null): boolean {
 }
 
 /**
- * Replaces the web view's own right-click menu (Back, Reload…) with one entry, Inspect element.
- * Menus the app draws itself (file tree, editor) are left alone, and so are text fields.
+ * Replaces the web view's own right-click menu (Back, Reload…). Without debug mode a right-click
+ * on an empty place does nothing; with it (Settings → About) the menu has one entry, Inspect
+ * element. Menus the app draws itself (file tree, editor) are left alone, and so are text fields.
  */
 export function AppContextMenu() {
+  const debug = useDebugMode();
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const onContext = (e: MouseEvent): void => {
       if (e.defaultPrevented || isTextField(e.target)) return;
       e.preventDefault();
-      setAt({ x: e.clientX, y: e.clientY });
+      if (debug) setAt({ x: e.clientX, y: e.clientY });
     };
     const close = (): void => {
       setAt(null);
@@ -39,9 +42,9 @@ export function AppContextMenu() {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("blur", close);
     };
-  }, []);
+  }, [debug]);
 
-  if (at === null) return null;
+  if (!debug || at === null) return null;
   return (
     <div
       role="menu"

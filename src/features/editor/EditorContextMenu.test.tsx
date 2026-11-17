@@ -3,6 +3,8 @@ import { EditorView } from "@codemirror/view";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { makeSettings } from "@/test/settings";
 import { EditorContextMenu } from "./EditorContextMenu";
 
 function view(): EditorView {
@@ -29,6 +31,26 @@ describe("EditorContextMenu", () => {
     );
     return props;
   }
+
+  it("has Inspect element only while debug mode is on", () => {
+    useSettingsStore.setState({ settings: makeSettings({ debugMode: false }) });
+    const { unmount } = render(
+      <EditorContextMenu
+        at={{ x: 10, y: 10 }}
+        view={view()}
+        aiOff={null}
+        onAi={vi.fn()}
+        onCapture={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("menuitem", { name: "Inspect element" })).toBeNull();
+    unmount();
+    useSettingsStore.setState({ settings: makeSettings({ debugMode: true }) });
+    show(view());
+    expect(screen.getByRole("menuitem", { name: "Inspect element" })).toBeInTheDocument();
+    useSettingsStore.setState({ settings: null });
+  });
 
   it("is moved up and left when it would run off the screen", () => {
     const high = window.innerHeight;

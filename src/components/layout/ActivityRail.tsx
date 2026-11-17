@@ -11,6 +11,7 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { newNoteInCurrentFolder } from "@/lib/actions";
 import { type NavCounts, useNavCounts } from "@/lib/navCounts";
 import { PLANS_LABEL } from "@/lib/planTree";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ export function newAction(view: CenterView): { label: string; run: () => void } 
   const ui = useUiStore.getState();
   switch (view) {
     case "notes":
-      return { label: "New page", run: () => ui.openNewNoteDialog(null) };
+      return { label: "New page", run: newNoteInCurrentFolder };
     case "tasks":
     case "epic":
     case "task":

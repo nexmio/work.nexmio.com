@@ -1,7 +1,10 @@
 import { ChevronRight } from "lucide-react";
 import * as Primitive from "@radix-ui/react-context-menu";
 import * as React from "react";
+import { useDebugMode } from "@/components/useDebugMode";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { reportError } from "@/stores/uiStore";
 import {
   menuContent,
   menuItem,
@@ -40,13 +43,34 @@ export function ContextMenuSubContent({
   );
 }
 
+/** "Inspect element", at the end of every menu while debug mode is on (Settings → About). */
+function InspectEntry() {
+  return (
+    <>
+      <Primitive.Separator className={menuSeparator} />
+      <Primitive.Item
+        className={menuItem}
+        onSelect={() => {
+          api.openDevtools().catch(reportError);
+        }}
+      >
+        Inspect element
+      </Primitive.Item>
+    </>
+  );
+}
+
 export function ContextMenuContent({
   className,
   ...props
 }: React.ComponentProps<typeof Primitive.Content>) {
+  const debug = useDebugMode();
   return (
     <Primitive.Portal>
-      <Primitive.Content className={cn(menuContent, className)} {...props} />
+      <Primitive.Content className={cn(menuContent, className)} {...props}>
+        {props.children}
+        {debug && <InspectEntry />}
+      </Primitive.Content>
     </Primitive.Portal>
   );
 }
