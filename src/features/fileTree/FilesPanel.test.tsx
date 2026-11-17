@@ -17,6 +17,7 @@ const actions = vi.hoisted(() => ({
 vi.mock("@/lib/actions", () => actions);
 
 import { FilesPanel } from "./FilesPanel";
+import { usePlanIndex } from "@/stores/planIndexStore";
 import { useRecent } from "@/stores/recentStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import type { Settings } from "@/bindings/Settings";
@@ -420,6 +421,21 @@ describe("FilesPanel", () => {
     const section = screen.getByRole("region", { name: "Projects" });
     expect(section).toHaveTextContent("Security docs");
     expect(section).toHaveTextContent("2");
+  });
+
+  it("a project row says whether it has a plan, and offers to make or open one", async () => {
+    usePlanIndex.setState({ paths: [], loaded: true });
+    const { unmount } = render(<FilesPanel />);
+    const section = screen.getByRole("region", { name: "Projects" });
+    expect(section).toHaveTextContent("No plan yet");
+    await userEvent.setup().click(within(section).getByRole("button", { name: "Make a plan" }));
+    expect(useUiStore.getState().planFromProjectFolder).toBe("Work/Security");
+    unmount();
+    usePlanIndex.setState({ paths: ["Work/Security/Plan of it.md"], loaded: true });
+    render(<FilesPanel />);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Open the plan" }));
+    expect(useUiStore.getState().planToOpen).toBe("Work/Security/Plan of it.md");
+    usePlanIndex.setState({ paths: [], loaded: false });
   });
 
   it("a section can be folded and the choice is remembered", async () => {

@@ -9,12 +9,14 @@ import { findTask, useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { BreakDownDialog } from "./BreakDownDialog";
+import { epicTrail } from "./epicTrail";
 import { WaitingFor } from "./WaitingFor";
 import { WaitingForTask } from "./WaitingForTask";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
 import { MoveButtons, moveKey } from "@/components/MoveButtons";
 import { InlineEdit, RowActions } from "@/components/RowActions";
+import { Trail } from "@/components/Trail";
 import { ViewHeader } from "@/components/ViewHeader";
 import { AiAsk } from "@/components/AiAsk";
 import { NoteBox } from "./NoteBox";
@@ -258,6 +260,8 @@ export function TaskPage() {
   const aiOff = useAiBlocked();
   const epics = useTaskStore((s) => s.epics);
   const epic = task ? epics.find((e) => e.path === task.path) : undefined;
+  const projects = useVaultStore((s) => s.projects);
+  const resolver = useVaultStore((s) => s.resolver);
 
   if (!task) {
     return (
@@ -282,6 +286,21 @@ export function TaskPage() {
   const today = todayIso();
   const firstOpen = task.steps.findIndex((s) => !s.done);
 
+  const trail = epicTrail({
+    epicPath: task.path,
+    epicTitle: epic?.title ?? noteName(task.path),
+    from: epic?.source ? resolver.resolve(epic.source) : null,
+    projects,
+    goProject: (folder) => {
+      useVaultStore.getState().select(folder);
+      useUiStore.getState().setLeftTab("files");
+    },
+    goPage: (path) => {
+      void useVaultStore.getState().openNote(path);
+    },
+    goEpic: toEpic,
+  });
+
   return (
     <section aria-label="Task" className="flex h-full min-h-0 flex-col bg-background">
       <ViewHeader title="Task" back={{ label: epic?.title ?? noteName(task.path), run: toEpic }}>
@@ -303,6 +322,7 @@ export function TaskPage() {
           }}
         />
       </ViewHeader>
+      <Trail steps={trail} />
 
       <div className="min-h-0 flex-1 overflow-auto px-6 py-5">
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">

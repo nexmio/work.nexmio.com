@@ -12,7 +12,7 @@ import {
   Settings2,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Project } from "@/bindings/Project";
 import {
   ContextMenu,
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/context-menu";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { usePlanIndex } from "@/stores/planIndexStore";
 import { isProjectOpen, useTreeStore } from "@/stores/treeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -42,6 +43,9 @@ function ProjectTree({ project, onAction }: { project: Project; onAction: (a: Ac
   const setOpen = useTreeStore((s) => s.setProjectOpen);
   const [dragOver, setDragOver] = useState(false);
   const folder = findFolder(tree, project.folder);
+  const planPaths = usePlanIndex((s) => s.paths);
+  const planIndexLoaded = usePlanIndex((s) => s.loaded);
+  const plan = planPaths.find((p) => p.startsWith(`${project.folder}/`));
   const children = withoutImages(folder?.children ?? []);
   const filtering = filter.trim() !== "";
   // While filtering, a project with nothing that matches is left out.
@@ -200,6 +204,34 @@ function ProjectTree({ project, onAction }: { project: Project; onAction: (a: Ac
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+      {planIndexLoaded && (
+        <div className="pb-0.5 pl-7 text-[11px] text-muted-foreground">
+          {plan !== undefined ? (
+            <PlainButton
+              type="button"
+              className="text-primary hover:underline"
+              onClick={() => {
+                useUiStore.getState().openPlan(plan);
+              }}
+            >
+              Open the plan
+            </PlainButton>
+          ) : (
+            <>
+              No plan yet ·{" "}
+              <PlainButton
+                type="button"
+                className="text-primary hover:underline"
+                onClick={() => {
+                  useUiStore.getState().planFromProject(project.folder);
+                }}
+              >
+                Make a plan
+              </PlainButton>
+            </>
+          )}
+        </div>
+      )}
       {shown && (
         <FileTree
           nodes={children}
@@ -219,6 +251,11 @@ function ProjectTree({ project, onAction }: { project: Project; onAction: (a: Ac
  */
 export function ProjectsSection({ onAction }: { onAction: (a: Action) => void }) {
   const projects = useVaultStore((s) => s.projects);
+  const files = useVaultStore((s) => s.files);
+  // Which projects have a plan is read when the list of pages changes (a plan is a page).
+  useEffect(() => {
+    void usePlanIndex.getState().load();
+  }, [files]);
   if (projects.length === 0) return null;
   const sorted = [...projects].sort((a, b) =>
     a.name.toLowerCase().localeCompare(b.name.toLowerCase()),

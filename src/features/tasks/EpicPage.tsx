@@ -2,7 +2,9 @@ import { FileText, Link2, Plus, Sparkles, Target } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { NoteBox } from "./NoteBox";
+import { epicTrail } from "./epicTrail";
 import { InlineEdit, RowActions } from "@/components/RowActions";
+import { Trail } from "@/components/Trail";
 import { ViewHeader } from "@/components/ViewHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,7 @@ export function EpicPage() {
   const epicOrder = useTaskStore((s) => s.epicOrder);
   const epicPath = useTaskStore((s) => s.epicPath);
   const resolver = useVaultStore((s) => s.resolver);
+  const projects = useVaultStore((s) => s.projects);
   const aiOff = useAiBlocked();
   const [draft, setDraft] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -78,6 +81,21 @@ export function EpicPage() {
           </Button>
         )}
       </ViewHeader>
+      <Trail
+        steps={epicTrail({
+          epicPath: group.path,
+          epicTitle: group.title,
+          from,
+          projects,
+          goProject: (folder) => {
+            useVaultStore.getState().select(folder);
+            useUiStore.getState().setLeftTab("files");
+          },
+          goPage: (path) => {
+            void useVaultStore.getState().openNote(path);
+          },
+        })}
+      />
       <div className="min-h-0 flex-1 overflow-auto px-7 py-5">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           <div className="flex flex-col gap-1">

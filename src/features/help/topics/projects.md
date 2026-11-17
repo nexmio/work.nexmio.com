@@ -8,7 +8,10 @@ Choose **New → Project…** above the file tree. A window asks for:
 
 - **Name**: this is also the name of the new folder. It is made at once, in the **vault root**, whatever you have selected in the tree.
 - **About this project**: what Nexmio Work should know about it (what the pages are for, what its terms mean). The chat and the skills read it; the fixed commands (Fix, Rewrite, Shorten…) do not.
-- **AI provider**: use the default or choose another **local** AI. Pages are only ever sent to an AI on your own computer, in every project.
+- **AI for this project**: use the **Main AI** (the app's AI), or choose an AI on your own computer. The window says which AI the project will use.
+- **Local AI only**: the pages of this project never go to a cloud AI, even when the Main AI is one. The project then uses your **Local AI** (Settings → AI → Local AI), unless you choose another AI on your computer.
+
+Under each project's name in Files a line says **No plan yet · Make a plan** or **Open the plan**, so you can see at once whether a project has a plan.
 
 A project is always a **new** folder of its own. A folder you already have cannot be turned into a project, and a project cannot be put inside a folder or another project. If the name is already used in the root (also with other upper/lower case, or by a page with that name), the window says so. To bring existing pages into a project, drag them onto it.
 

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Radio } from "@/components/ui/radio";
+import { Select } from "@/components/ui/select";
 import { useAiBlocked } from "@/lib/useAiBlocked";
 import { cn } from "@/lib/utils";
 import { splitText, walk, type NodePath, type PlanNode } from "@/lib/planTree";
-import { usePlanStore } from "@/stores/planStore";
+import { usePlanStore, type PlanPlace } from "@/stores/planStore";
+import { useVaultStore } from "@/stores/vaultStore";
 import { addIdea, makeTask, removeIdea } from "./planActions";
 
 const STEPS = ["What is it?", "What are the parts?", "Where to start"] as const;
@@ -62,7 +63,13 @@ export function GuidedDialog({ hidden }: { hidden: boolean }) {
   const [sub, setSub] = useState("");
   const [start, setStart] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [asProject, setAsProject] = useState(true);
+  // A plan lives in a project: a new one made for it, or one that is there.
+  const [where, setWhere] = useState<"new" | "existing">("new");
+  const [folder, setFolder] = useState("");
+  const projects = useVaultStore((s) => s.projects);
+  const chosenFolder = folder !== "" ? folder : (projects[0]?.folder ?? "");
+  const place: PlanPlace =
+    where === "existing" && chosenFolder !== "" ? { folder: chosenFolder } : "project";
   const nodes = usePlanStore((s) => s.nodes);
   const aiOff = useAiBlocked();
 
@@ -74,9 +81,7 @@ export function GuidedDialog({ hidden }: { hidden: boolean }) {
   const first = async (): Promise<void> => {
     if (title.trim() === "") return;
     setBusy(true);
-    const path = await usePlanStore
-      .getState()
-      .create(title.trim(), [], true, asProject ? "project" : "plans");
+    const path = await usePlanStore.getState().create(title.trim(), [], true, place);
     setBusy(false);
     if (path !== null) setStep(1);
   };
@@ -84,9 +89,7 @@ export function GuidedDialog({ hidden }: { hidden: boolean }) {
   const justTitle = async (): Promise<void> => {
     if (title.trim() === "") return;
     setBusy(true);
-    const path = await usePlanStore
-      .getState()
-      .create(title.trim(), [], true, asProject ? "project" : "plans");
+    const path = await usePlanStore.getState().create(title.trim(), [], true, place);
     setBusy(false);
     if (path !== null) done();
   };
@@ -145,22 +148,55 @@ export function GuidedDialog({ hidden }: { hidden: boolean }) {
                     setTitle(e.target.value);
                   }}
                 />
-                <label className="mt-1 flex items-start gap-3 text-sm">
-                  <Checkbox
-                    className="mt-1"
-                    checked={asProject}
-                    onChange={(e) => {
-                      setAsProject(e.target.checked);
-                    }}
-                  />
-                  <span>
-                    Make a project for it
-                    <span className="block text-xs text-muted-foreground">
-                      A folder with the name of the plan. The plan, and the epics and pages made
-                      from it, are kept in it. Without it the plan goes in the folder Plans.
+                <fieldset className="mt-1 flex flex-col gap-2 text-sm">
+                  <legend className="font-semibold">Where does it live?</legend>
+                  <label className="flex items-start gap-3">
+                    <Radio
+                      name="plan-where"
+                      className="mt-1"
+                      checked={where === "new"}
+                      onChange={() => {
+                        setWhere("new");
+                      }}
+                    />
+                    <span>
+                      In a new project
+                      <span className="block text-xs text-muted-foreground">
+                        A folder with the name of the plan, with its own AI rules. The plan, and the
+                        epics and pages made from it, are kept in it.
+                      </span>
                     </span>
-                  </span>
-                </label>
+                  </label>
+                  <label className="flex items-start gap-3">
+                    <Radio
+                      name="plan-where"
+                      className="mt-1"
+                      disabled={projects.length === 0}
+                      checked={where === "existing"}
+                      onChange={() => {
+                        setWhere("existing");
+                      }}
+                    />
+                    <span className="flex flex-col gap-1">
+                      In a project I have
+                      {where === "existing" && projects.length > 0 && (
+                        <Select
+                          aria-label="Project"
+                          value={chosenFolder}
+                          onChange={(e) => {
+                            setFolder(e.target.value);
+                          }}
+                        >
+                          {projects.map((p) => (
+                            <option key={p.id} value={p.folder}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </span>
+                  </label>
+                </fieldset>
                 <p className="text-xs text-muted-foreground">
                   It becomes a plan: a page you can open in any editor. Press “Next” to be guided
                   through the parts, or “Just make the plan” to start with the name and build it

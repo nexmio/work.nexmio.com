@@ -4,7 +4,7 @@ A big thing is hard to start. Writing it down as parts, and the parts as smaller
 
 ### Plans and projects
 
-A **project** is a folder with its own AI rules (see Projects). When you make a plan, the box **Make a project for it** makes one: a folder with the name of the plan, with the plan in it. The epics and pages you make from the plan are kept inside it, in the folders `Epics` and `Notes`, so everything about the plan is in one place. Without the box, the plan is kept in the folder Plans.
+A **project** is a folder with its own AI rules (see Projects). A plan always lives in a project. When you make a plan you choose **In a new project** (a folder with the name of the plan, with the plan in it) or **In a project I have**. The epics and pages you make from the plan are kept inside the project, in the folders `Epics` and `Notes`, so everything about the plan is in one place. A project can have no plan, and you can make one of it when you have been working on it for a while (**Make a plan** under **Projects without a plan**). A plan made before this, in the folder Plans, shows **This plan is not in a project yet** above it; **Move it to a project…** moves the page into one.
 
 A project that is already there can be made a plan: press **Plan from a project…** on the page you see with no plan open, or right-click the project in Files and choose **Make a plan of this project**. Nexmio Work adds a plan page to the project's folder and can start it with the project's pages and epics as parts, linked. Nothing in the project is moved or changed, and a project never becomes a plan unless you ask.
 

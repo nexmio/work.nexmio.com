@@ -22,6 +22,7 @@ import { PlanDialogs } from "./PlanDialogs";
 import { PlanMap } from "./PlanMap";
 import { usePartSlot } from "./PartSlot";
 import { PlanOutline } from "./PlanOutline";
+import { PlanProjectNotice } from "./PlanProjectNotice";
 import { usePlanContext } from "./usePlanContext";
 
 const VIEWS: { id: PlanView; label: string }[] = [
@@ -71,6 +72,7 @@ export function PlansView() {
   const aiOff = useAiBlocked();
   const ctx = usePlanContext(path);
   const fromProject = useUiStore((s) => s.planFromProjectFolder);
+  const planToOpen = useUiStore((s) => s.planToOpen);
   const newPlanNonce = useUiStore((s) => s.newPlanNonce);
   const slot = usePartSlot();
 
@@ -80,6 +82,13 @@ export function PlansView() {
     handledNewPlan = newPlanNonce;
     usePlanStore.getState().setGuidedOpen(true);
   }, [newPlanNonce]);
+
+  // A plan that was asked for from outside this area (a project row in Files) is opened here.
+  useEffect(() => {
+    if (planToOpen === null) return;
+    void usePlanStore.getState().open(planToOpen);
+    useUiStore.getState().clearPlanToOpen();
+  }, [planToOpen]);
 
   useEffect(() => {
     if (fromProject === null) return;
@@ -212,6 +221,7 @@ export function PlansView() {
           </DropdownMenuContent>
         </DropdownMenu>
       </ViewHeader>
+      <PlanProjectNotice planPath={path} />
       <div className="min-h-0 flex-1 overflow-auto">
         {finished && (
           <p className="mx-7 mt-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">

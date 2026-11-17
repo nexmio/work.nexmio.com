@@ -12,6 +12,7 @@ import {
 } from "@/lib/planTree";
 import { basename, dirname } from "@/lib/utils";
 import { fileNameFrom } from "@/lib/noteTitle";
+import { usePlanIndex } from "./planIndexStore";
 import { reportError, useUiStore } from "./uiStore";
 import { projectForPath, useVaultStore } from "./vaultStore";
 
@@ -179,6 +180,7 @@ export const usePlanStore = create<PlanState>((set, get) => {
           }))
           .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
         set({ plans, loaded: true });
+        usePlanIndex.getState().setPaths(plans.map((p) => p.path));
       } catch (e) {
         reportError(e);
       }

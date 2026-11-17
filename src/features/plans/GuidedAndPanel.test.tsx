@@ -59,16 +59,38 @@ describe("GuidedDialog", () => {
     usePlanStore.setState({ path: null, nodes: [], dialog: null, guidedOpen: true });
   });
 
-  it("makes the plan in Plans, without a project, when the box is unticked", async () => {
+  it("makes the plan in a project that is there, when that is chosen", async () => {
+    useVaultStore.setState({
+      projects: [
+        {
+          schemaVersion: 1,
+          id: "p1",
+          name: "Office",
+          folder: "Office",
+          instructions: "",
+          providerId: null,
+          localOnly: false,
+          createdAt: "",
+          updatedAt: "",
+        },
+      ],
+    });
     render(<GuidedDialog hidden={false} />);
     const user = userEvent.setup();
     await user.type(screen.getByRole("textbox"), "Move the office");
-    await user.click(screen.getByRole("checkbox", { name: /Make a project for it/ }));
+    await user.click(screen.getByRole("radio", { name: /In a project I have/ }));
     await user.click(screen.getByRole("button", { name: "Just make the plan" }));
     await waitFor(() => {
-      expect(usePlanStore.getState().path).toBe("Plans/Move the office.md");
+      expect(usePlanStore.getState().path).toBe("Office/Move the office.md");
     });
     expect(apiMock.createProject).not.toHaveBeenCalled();
+    useVaultStore.setState({ projects: [] });
+  });
+
+  it("has no way to make a plan outside a project", () => {
+    render(<GuidedDialog hidden={false} />);
+    expect(screen.queryByRole("checkbox", { name: /Make a project for it/ })).toBeNull();
+    expect(screen.getByRole("radio", { name: /In a new project/ })).toBeChecked();
   });
 
   it("makes a project with the name of the plan, and the plan in its folder", async () => {
@@ -222,6 +244,33 @@ describe("PlansPanel", () => {
       expect(useUiStore.getState().centerView).toBe("plans");
     });
     expect(usePlanStore.getState().path).toBe("Plans/Move.md");
+  });
+
+  it("lists a plan under its project, one in no project apart, and offers a plan to a project without one", async () => {
+    const project = (id: string, name: string) => ({
+      schemaVersion: 1,
+      id,
+      name,
+      folder: name,
+      instructions: "",
+      providerId: null,
+      localOnly: false,
+      createdAt: "",
+      updatedAt: "",
+    });
+    useVaultStore.setState({ projects: [project("a", "Office"), project("b", "Course")] });
+    apiMock.taggedNotes.mockResolvedValue([
+      { path: "Office/Move.md", content: "---\ntags: [plan]\n---\n# Move\n\n- a\n" },
+      { path: "Plans/Trip.md", content: "---\ntags: [plan]\n---\n# Trip\n\n- a\n" },
+    ]);
+    render(<PlansPanel />);
+    await screen.findByRole("button", { name: /^Move/ });
+    expect(screen.getByRole("heading", { name: "Office" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Not in a project" })).toBeInTheDocument();
+    expect(screen.getByText("Projects without a plan")).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Make a plan of Course" }));
+    expect(useUiStore.getState().planFromProjectFolder).toBe("Course");
+    useVaultStore.setState({ projects: [] });
   });
 
   it("starts a new plan from the + button", async () => {

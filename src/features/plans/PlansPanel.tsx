@@ -8,6 +8,7 @@ import { PLANS_LABEL } from "@/lib/planTree";
 import { cn } from "@/lib/utils";
 import { usePlanStore, type PlanSummary } from "@/stores/planStore";
 import { useUiStore } from "@/stores/uiStore";
+import { projectForPath, useVaultStore } from "@/stores/vaultStore";
 
 /** The left panel of the plans area: the plans that are going, and under them the finished ones. */
 export function PlansPanel() {
@@ -15,6 +16,7 @@ export function PlansPanel() {
   const loaded = usePlanStore((s) => s.loaded);
   const current = usePlanStore((s) => s.path);
   const centerView = useUiStore((s) => s.centerView);
+  const projects = useVaultStore((s) => s.projects);
 
   useEffect(() => {
     void usePlanStore.getState().load();
@@ -22,6 +24,11 @@ export function PlansPanel() {
 
   const ongoing = plans.filter((p) => !p.finished);
   const finished = plans.filter((p) => p.finished);
+  // A plan lives in a project: the plans are shown under their project. A plan that is in none
+  // (made before this was the rule) is listed on its own and can be moved into one.
+  const inProject = (p: PlanSummary) => projectForPath(projects, p.path);
+  const withoutProject = ongoing.filter((p) => inProject(p) === null);
+  const withoutPlan = projects.filter((pr) => !plans.some((p) => inProject(p)?.id === pr.id));
   const row = (p: PlanSummary) => {
     const on = centerView === "plans" && current === p.path;
     return (
@@ -80,7 +87,46 @@ export function PlansPanel() {
             None yet. Press <b>New</b> to break something big down.
           </p>
         )}
-        <ul>{ongoing.map(row)}</ul>
+        {projects.map((pr) => {
+          const list = ongoing.filter((p) => inProject(p)?.id === pr.id);
+          if (list.length === 0) return null;
+          return (
+            <div key={pr.id}>
+              <h4 className="px-2 pt-2 text-xs font-medium text-primary">{pr.name}</h4>
+              <ul>{list.map(row)}</ul>
+            </div>
+          );
+        })}
+        {withoutProject.length > 0 && (
+          <div>
+            <h4 className="px-2 pt-2 text-xs font-medium text-muted-foreground">
+              Not in a project
+            </h4>
+            <ul>{withoutProject.map(row)}</ul>
+          </div>
+        )}
+        {loaded && withoutPlan.length > 0 && (
+          <>
+            <h3 className="section-label px-2 pb-1 pt-3">Projects without a plan</h3>
+            <ul>
+              {withoutPlan.map((pr) => (
+                <li key={pr.id} className="flex items-center gap-2 px-2 py-1 text-sm">
+                  <span className="flex-1 truncate">{pr.name}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Make a plan of ${pr.name}`}
+                    onClick={() => {
+                      useUiStore.getState().planFromProject(pr.folder);
+                    }}
+                  >
+                    Make a plan
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         {finished.length > 0 && (
           <>
             <h3 className="section-label px-2 pb-1 pt-3">Archived · {finished.length}</h3>
