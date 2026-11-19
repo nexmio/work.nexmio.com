@@ -3,13 +3,12 @@ import type { MeetingSeed } from "@/lib/meeting";
 import type { Project } from "@/bindings/Project";
 import type { RenamePreview } from "@/bindings/RenamePreview";
 import { toApiError } from "@/lib/api";
-import { clampMinutes, FOCUS_DEFAULT } from "@/lib/focusTime";
 import type { TimeFormat } from "@/lib/timeFormat";
 
 export type LeftTab = "files" | "search" | "tasks" | "ideas" | "meetings" | "plans";
 /** What fills the middle of the window. */
 export type CenterView =
-  "notes" | "tasks" | "epic" | "task" | "ideas" | "meetings" | "plans" | "start";
+  "notes" | "tasks" | "epic" | "task" | "time" | "ideas" | "meetings" | "plans" | "start";
 
 /** The area (the left panel) a middle page belongs to, or null for the pages and the start page. */
 function areaOf(v: CenterView): LeftTab | null {
@@ -17,6 +16,7 @@ function areaOf(v: CenterView): LeftTab | null {
     case "tasks":
     case "epic":
     case "task":
+    case "time":
       return "tasks";
     case "ideas":
     case "meetings":
@@ -29,10 +29,11 @@ function areaOf(v: CenterView): LeftTab | null {
 
 /** The task list, an epic or a task: all of them are the Tasks area. */
 export function isTasksView(v: CenterView): boolean {
-  return v === "tasks" || v === "epic" || v === "task";
+  return v === "tasks" || v === "epic" || v === "task" || v === "time";
 }
 /** The tabs of the right panel. `task` and `part` belong to the Tasks and Plans areas. */
-export type RightTab = "outline" | "links" | "history" | "images" | "ai" | "task" | "part";
+export type RightTab =
+  "outline" | "links" | "history" | "images" | "timer" | "ai" | "task" | "part";
 const NAV_KEY = "nexmio.navCollapsed";
 
 /** Whether the navigation column is folded to icons (remembered between runs). */
@@ -63,27 +64,6 @@ function readTimeFormat(): TimeFormat {
     return v === "24" || v === "12" ? v : "system";
   } catch {
     return "system";
-  }
-}
-
-const FOCUS_TIMER_KEY = "nexmio.focusTimer";
-const FOCUS_MINUTES_KEY = "nexmio.focusMinutes";
-
-/** Whether the Focus timer is shown (remembered between runs; on unless it was turned off). */
-function readFocusTimer(): boolean {
-  try {
-    return localStorage.getItem(FOCUS_TIMER_KEY) !== "0";
-  } catch {
-    return true;
-  }
-}
-
-/** The length of the Focus timer that was used last, in minutes. */
-function readFocusMinutes(): number {
-  try {
-    return clampMinutes(Number(localStorage.getItem(FOCUS_MINUTES_KEY) ?? FOCUS_DEFAULT));
-  } catch {
-    return FOCUS_DEFAULT;
   }
 }
 
@@ -138,12 +118,6 @@ interface UiState {
   /** How times are written: the computer's own way, 24-hour or 12-hour. */
   timeFormat: TimeFormat;
   setTimeFormat: (f: TimeFormat) => void;
-  /** The timer in Focus is shown. */
-  focusTimer: boolean;
-  setFocusTimer: (on: boolean) => void;
-  /** How long the Focus timer runs, in minutes. */
-  focusMinutes: number;
-  setFocusMinutes: (minutes: number) => void;
   /** Open the start page when Nexmio Work starts, instead of the last note. */
   startOnLaunch: boolean;
   setStartOnLaunch: (on: boolean) => void;
@@ -175,6 +149,10 @@ interface UiState {
   /** What fills the middle of the window: the notes, the task list or one task. */
   centerView: CenterView;
   setCenterView: (v: CenterView) => void;
+  /** Where the task page was opened from, so Back goes there (null when it is not open). */
+  taskFrom: CenterView | null;
+  /** The right panel was closed and opened by a task: opening that task as a full page closes it again. */
+  rightOpenedForTask: boolean;
   /** Where "open the note" came from, so the note can offer a way back to the task or epic. */
   /** Shows the tasks or the ideas: their own panel on the left and their page in the middle. */
   openArea: (area: "tasks" | "ideas" | "meetings" | "plans") => void;
@@ -184,9 +162,6 @@ interface UiState {
   captureKind: "task" | "idea" | "note" | "choose" | null;
   openCapture: (kind?: "task" | "idea" | "note") => void;
   closeCapture: () => void;
-  /** The focus screen is open. */
-  focusOpen: boolean;
-  setFocusOpen: (open: boolean) => void;
   /** The "In short" window (main points and things to do of the open note) is open. */
   inShortOpen: boolean;
   setInShortOpen: (open: boolean) => void;
@@ -219,6 +194,8 @@ interface UiState {
   /** Opens Settings on the Vault tab. */
   openVaultSettings: () => void;
   recoverOpen: boolean;
+  /** The window that lists your tags and deletes one. */
+  tagsOpen: boolean;
   vaultSwitcherOpen: boolean;
   setVaultSwitcherOpen: (open: boolean) => void;
   importOpen: boolean;
@@ -255,6 +232,7 @@ interface UiState {
   setCommandPalette: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setRecoverOpen: (open: boolean) => void;
+  setTagsOpen: (open: boolean) => void;
   openProjectDialog: (state: ProjectDialogState | null) => void;
   /** A project (its folder) that should be made a plan; Plans picks this up when it opens. */
   /** A plan that something outside the Plans area asked to open (it is opened there). */
@@ -289,25 +267,6 @@ export const useUiStore = create<UiState>((set, get) => ({
       /* the choice just is not remembered */
     }
     set({ timeFormat });
-  },
-  focusTimer: readFocusTimer(),
-  setFocusTimer: (focusTimer) => {
-    try {
-      localStorage.setItem(FOCUS_TIMER_KEY, focusTimer ? "1" : "0");
-    } catch {
-      /* the choice just is not remembered */
-    }
-    set({ focusTimer });
-  },
-  focusMinutes: readFocusMinutes(),
-  setFocusMinutes: (minutes) => {
-    const focusMinutes = clampMinutes(minutes);
-    try {
-      localStorage.setItem(FOCUS_MINUTES_KEY, String(focusMinutes));
-    } catch {
-      /* the choice just is not remembered */
-    }
-    set({ focusMinutes });
   },
   startOnLaunch: readStartOnLaunch(),
   setStartOnLaunch: (startOnLaunch) => {
@@ -382,6 +341,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   // The right panel opens only when asked for: the note gets the width.
   rightCollapsed: true,
   centerView: "notes",
+  taskFrom: null,
+  rightOpenedForTask: false,
   captureKind: null,
   openCapture: (kind) => {
     set({ captureKind: kind ?? "choose" });
@@ -394,18 +355,35 @@ export const useUiStore = create<UiState>((set, get) => ({
     // anywhere (a plan, the start page, a search, a page) brings its own list to the left. Back to
     // the pages: the left panel shows the files again, not the Tasks or Ideas list.
     set((s) => {
+      // Opening a task as a full page remembers where it came from; Back goes there.
+      const from: Pick<UiState, "taskFrom"> =
+        centerView === "task" && s.centerView !== "task"
+          ? { taskFrom: s.centerView }
+          : { taskFrom: s.taskFrom };
+      // A panel that was shut and opened only to show the task goes shut again on the full page.
+      const closeAgain = centerView === "task" && s.rightOpenedForTask && s.centerView !== "task";
+      const panel: Pick<UiState, "rightOpenedForTask"> & { rightCollapsed?: boolean } = closeAgain
+        ? { rightOpenedForTask: false, rightCollapsed: true }
+        : {
+            rightOpenedForTask:
+              centerView === "tasks" || centerView === "epic" ? s.rightOpenedForTask : false,
+          };
       const area = areaOf(centerView);
       if (area !== null) {
-        if (s.leftTab === area) return { centerView };
+        if (s.leftTab === area) return { centerView, ...from, ...panel };
         // The ideas are cards in the middle: the list at the left would show the same thing twice.
         return {
           centerView,
+          ...from,
+          ...panel,
           leftTab: area,
           leftCollapsed: area === "ideas" ? true : s.leftCollapsed,
         };
       }
       return {
         centerView,
+        ...from,
+        ...panel,
         leftTab:
           centerView === "notes" &&
           (s.leftTab === "tasks" ||
@@ -416,10 +394,6 @@ export const useUiStore = create<UiState>((set, get) => ({
             : s.leftTab,
       };
     });
-  },
-  focusOpen: false,
-  setFocusOpen: (focusOpen) => {
-    set({ focusOpen });
   },
   inShortOpen: false,
   setInShortOpen: (inShortOpen) => {
@@ -458,6 +432,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ settingsOpen: true, settingsTab: "vault" });
   },
   recoverOpen: false,
+  tagsOpen: false,
   vaultSwitcherOpen: false,
   setVaultSwitcherOpen: (vaultSwitcherOpen) => {
     set({ vaultSwitcherOpen });
@@ -515,6 +490,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   setRightTab: (rightTab) => {
     set((s) => ({
       rightTab,
+      rightOpenedForTask: rightTab === "task" && (s.rightCollapsed || s.rightOpenedForTask),
       askOpen: rightTab === "ai",
       rightCollapsed: false,
       centerView: leavingStart(s.centerView),
@@ -545,6 +521,9 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
   setSettingsOpen: (settingsOpen) => {
     set({ settingsOpen, settingsTab: null });
+  },
+  setTagsOpen: (tagsOpen) => {
+    set({ tagsOpen });
   },
   setRecoverOpen: (recoverOpen) => {
     set({ recoverOpen });

@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
 import { ProviderEditor } from "./ProviderEditor";
-import { AskNextStep } from "./AskNextStep";
 import { ReadingSettings } from "./ReadingSettings";
 import { TaskbarHelperSettings } from "./TaskbarHelperSettings";
 import { ThemePicker } from "./ThemePicker";
@@ -42,7 +41,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "appearance", label: "Appearance" },
   { id: "editor", label: "Editor" },
   { id: "ai", label: "AI" },
-  { id: "tasks", label: "Tasks and focus" },
+  { id: "tasks", label: "Tasks and time" },
   { id: "pages", label: "Pages and backup" },
   { id: "shortcuts", label: "Shortcuts" },
   { id: "about", label: "About" },
@@ -153,9 +152,7 @@ export function SettingsContent({ stored, onClose }: { stored: Settings; onClose
     <div className="flex gap-4">
       <div className="flex w-44 shrink-0 flex-col gap-1">
         {draft.ai.providers
-          .filter(
-            (p) => p.kind !== "builtin" && p.kind !== "foundry_local" && p.kind !== "phi_silica",
-          )
+          .filter((p) => p.kind !== "builtin")
           .map((p) => (
             <PlainButton
               key={p.id}
@@ -476,10 +473,9 @@ export function SettingsContent({ stored, onClose }: { stored: Settings; onClose
           {tab === "tasks" && (
             <div className="flex flex-col gap-4">
               <Heading
-                title="Tasks and focus"
+                title="Tasks and time"
                 about="What Nexmio Work does when you work on tasks."
               />
-              <AskNextStep />
               <label className="flex items-start gap-2 text-sm">
                 <Checkbox
                   className="mt-1"
@@ -581,6 +577,40 @@ export function SettingsContent({ stored, onClose }: { stored: Settings; onClose
                       update({ git: { ...draft.git, idleCommitMinutes: n } });
                     }}
                   />
+                </div>
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    className="mt-1"
+                    checked={draft.git.commitOnClose}
+                    onChange={(e) => {
+                      update({ git: { ...draft.git, commitOnClose: e.target.checked } });
+                    }}
+                  />
+                  <span>
+                    Save a version when I close a page
+                    <span className="block text-xs text-muted-foreground">
+                      The same as pressing Ctrl+S for that page.
+                    </span>
+                  </span>
+                </label>
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="set-every">Save a version every (minutes, 0 = never)</Label>
+                  <Input
+                    data-no-ai
+                    id="set-every"
+                    type="number"
+                    min={0}
+                    max={240}
+                    value={draft.git.commitEveryMinutes}
+                    onChange={(e) => {
+                      const n = Math.min(240, Math.max(0, Number(e.target.value) || 0));
+                      update({ git: { ...draft.git, commitEveryMinutes: n } });
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    While you write, a version of what changed is saved this often. It is on top of
+                    the version saved after you stop.
+                  </p>
                 </div>
               </fieldset>
             </div>

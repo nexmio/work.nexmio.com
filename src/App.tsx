@@ -5,11 +5,10 @@ import { Toasts } from "@/components/layout/Toasts";
 import { ProjectDialog } from "@/features/projects/ProjectDialog";
 import { ProposalReview } from "@/features/proposals/ProposalReview";
 import { QuickCapture } from "@/features/capture/QuickCapture";
+import { TagManager } from "@/features/search/TagManager";
 import { FindTasksDialog } from "@/features/tasks/FindTasksDialog";
 import { InShortDialog } from "@/features/inlineAi/InShortDialog";
 import { MetaMigrationDialog } from "@/features/vaults/MetaMigrationDialog";
-import { FocusMode } from "@/features/tasks/FocusMode";
-import { LeftOffPrompt } from "@/features/tasks/LeftOffPrompt";
 import { FirstRunDialog } from "@/features/welcome/FirstRunDialog";
 import { CommandPalette } from "@/features/quickOpen/CommandPalette";
 import { QuickOpen } from "@/features/quickOpen/QuickOpen";
@@ -42,12 +41,10 @@ import {
   onHelperChanged,
   onEmbeddingStatus,
   onEngineStatus,
-  onFoundryStatus,
   onFileChanged,
   onIndexUpdated,
 } from "@/lib/events";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 import { NoticeDialog } from "@/components/NoticeDialog";
 import { NewNoteDialog } from "@/features/fileTree/NewNoteDialog";
 import { useEmbeddingStore } from "@/stores/embeddingStore";
@@ -110,17 +107,6 @@ function useBackendEvents(active: boolean): void {
       }),
     );
     void useEngineStore.getState().load();
-    keep(
-      onFoundryStatus((status) => {
-        const before = useFoundryStore.getState().status?.state;
-        useFoundryStore.getState().setStatus(status);
-        // A finished download may have made Foundry Local Nexmio Work's provider.
-        if (before === "installing" && status.state !== "installing") {
-          void useSettingsStore.getState().load();
-        }
-      }),
-    );
-    void useFoundryStore.getState().load();
     keep(
       onIndexUpdated(() => {
         useVaultStore.setState((s) => ({ indexNonce: s.indexNonce + 1 }));
@@ -288,9 +274,8 @@ export function App() {
       <MeetingForm />
       <MeetingFocus />
       <FirstRunDialog />
-      <FocusMode />
-      <LeftOffPrompt />
       <FindTasksDialog />
+      <TagManager />
       <InShortDialog />
       <MetaMigrationDialog />
       <QuickCapture />

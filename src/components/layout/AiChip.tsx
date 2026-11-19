@@ -13,7 +13,6 @@ import { api, toApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUiStore } from "@/stores/uiStore";
 
@@ -29,7 +28,7 @@ export interface ChipState {
 interface Inputs {
   provider: ProviderConfig | undefined;
   working: boolean;
-  /** The state of the built-in AI or Foundry Local, whichever the provider is. */
+  /** The state of the built-in AI. */
   engineState: string | undefined;
   engineMessage: string;
   model: string;
@@ -42,7 +41,7 @@ export function chipState(i: Inputs): ChipState {
   const p = i.provider;
   if (!p) return { tone: "idle", label: "No AI set up", action: "setup" };
   const name = i.model ? `${p.name} · ${i.model}` : p.name;
-  if (p.kind !== "builtin" && p.kind !== "foundry_local") {
+  if (p.kind !== "builtin") {
     return { tone: "idle", label: name, action: null };
   }
   switch (i.engineState) {
@@ -85,18 +84,19 @@ export function useAiChip() {
   const settings = useSettingsStore((s) => s.settings);
   const working = useChatStore((s) => s.streaming);
   const engine = useEngineStore((s) => s.status);
-  const foundry = useFoundryStore((s) => s.status);
   const isBuiltin = provider?.kind === "builtin";
-  const isFoundry = provider?.kind === "foundry_local";
   const model = isBuiltin
     ? (engine?.models.find((m) => m.id === settings?.ai.builtin.modelId)?.name ?? "")
-    : isFoundry
-      ? (foundry?.installed.find((m) => m.alias === settings?.ai.foundry.model)?.name ??
-        settings?.ai.foundry.model ??
-        "")
-      : (provider?.model ?? "");
-  const device = isFoundry && foundry?.state === "awake" ? (foundry.activeDevice ?? null) : null;
-  const status = isBuiltin ? engine : isFoundry ? foundry : null;
+    : (provider?.model ?? "");
+  // The engine the built-in AI was set to use (the graphics card through Vulkan, or the CPU).
+  const backend = settings?.ai.builtin.backend;
+  const device =
+    isBuiltin && engine?.state === "awake" && backend !== undefined
+      ? backend === "cpu"
+        ? "CPU"
+        : "Graphics card"
+      : null;
+  const status = isBuiltin ? engine : null;
   const state = chipState({
     provider,
     working,
@@ -105,7 +105,7 @@ export function useAiChip() {
     model,
     device,
   });
-  return { provider, isBuiltin, isFoundry, model, device, status, state, cloud };
+  return { provider, isBuiltin, model, device, status, state, cloud };
 }
 
 /**
@@ -113,7 +113,7 @@ export function useAiChip() {
  * needs doing (Wake, Stop, Fix). Clicking it opens the details: model, device, privacy.
  */
 export function AiChip() {
-  const { provider, isBuiltin, isFoundry, model, device, status, state, cloud } = useAiChip();
+  const { provider, isBuiltin, model, device, status, state, cloud } = useAiChip();
   const [test, setTest] = useState<{ ok: boolean; message: string } | null>(null);
 
   const act = (): void => {
@@ -122,12 +122,11 @@ export function AiChip() {
         void useChatStore.getState().stop();
         break;
       case "wake":
-        if (isFoundry) void useFoundryStore.getState().wake();
-        else void useEngineStore.getState().wake();
+        void useEngineStore.getState().wake();
         break;
       case "fix":
       case "setup":
-        if (isBuiltin || isFoundry) useUiStore.getState().openBuiltInSettings();
+        if (isBuiltin) useUiStore.getState().openBuiltInSettings();
         else useUiStore.getState().setSettingsOpen(true);
         break;
       case null:
@@ -137,7 +136,7 @@ export function AiChip() {
 
   const onOpen = (open: boolean): void => {
     setTest(null);
-    if (!open || !provider || isBuiltin || isFoundry) return;
+    if (!open || !provider || isBuiltin) return;
     api
       .testProvider(provider.id)
       .then((r) => {
@@ -181,7 +180,7 @@ export function AiChip() {
           <dl className="mt-2 grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-1.5">
             <dt className="text-muted-foreground">Model</dt>
             <dd className="font-medium">{model || "None chosen"}</dd>
-            {(isBuiltin || isFoundry) && (
+            {isBuiltin && (
               <>
                 <dt className="text-muted-foreground">Runs on</dt>
                 <dd className="font-medium">
@@ -189,7 +188,7 @@ export function AiChip() {
                 </dd>
               </>
             )}
-            {!isBuiltin && !isFoundry && provider && (
+            {!isBuiltin && provider && (
               <>
                 <dt className="text-muted-foreground">Connection</dt>
                 <dd className={cn("font-medium", test && !test.ok && "text-destructive")}>
@@ -209,22 +208,21 @@ export function AiChip() {
           </dl>
           <DropdownMenuSeparator />
           <div className="flex flex-wrap gap-1">
-            {(isBuiltin || isFoundry) && awake && (
+            {isBuiltin && awake && (
               <DropdownMenuItem
                 onSelect={() => {
-                  if (isFoundry) void useFoundryStore.getState().sleep();
-                  else void useEngineStore.getState().sleep();
+                  void useEngineStore.getState().sleep();
                 }}
               >
                 Unload AI
               </DropdownMenuItem>
             )}
-            {(isBuiltin || isFoundry) && status?.state === "asleep" && (
+            {isBuiltin && status?.state === "asleep" && (
               <DropdownMenuItem onSelect={act}>Load AI</DropdownMenuItem>
             )}
             <DropdownMenuItem
               onSelect={() => {
-                if (isBuiltin || isFoundry) useUiStore.getState().openBuiltInSettings();
+                if (isBuiltin) useUiStore.getState().openBuiltInSettings();
                 else useUiStore.getState().setSettingsOpen(true);
               }}
             >

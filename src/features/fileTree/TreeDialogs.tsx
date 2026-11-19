@@ -1,3 +1,4 @@
+import { FolderTagDialog } from "./FolderTagDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PromptDialog } from "@/components/PromptDialog";
 import { nameError } from "@/lib/nameConflict";
@@ -92,6 +93,7 @@ export function TreeDialogs({ action, close }: Props) {
   }, [action, close]);
   return (
     <>
+      <FolderTagDialog action={action?.kind === "tagFolder" ? action : null} close={close} />
       <PromptDialog
         open={action?.kind === "newFolder"}
         title="New folder"

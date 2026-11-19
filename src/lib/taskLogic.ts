@@ -142,6 +142,9 @@ export function afterTarget(tasks: readonly Task[], t: Pick<Task, "after">): Tas
 /** The area (epic) of the task list that stands for the tasks in notes that are not epics. */
 export const LOOSE_AREA = "__loose__";
 
+/** The page that holds tasks started without an epic (the same name as in Rust). */
+export const LOOSE_NOTE = "Loose tasks.md";
+
 /** The tasks of one area, sorted for the screen "one area at a time". */
 export interface AreaLists {
   /** The task to work on now: the one that is Doing, else the first open one that is not waiting. */
@@ -255,4 +258,63 @@ export function stepsFromAnswer(answer: string): string[] {
     )
     .filter((l) => l !== "" && !l.endsWith(":") && l.length <= 200)
     .slice(0, 8);
+}
+
+/** What the tags need to know about an epic. */
+type EpicTags = { path: string; tags: readonly string[] };
+
+/** The tags of the epic whose page is `path` (none for a page that is not an epic). */
+export function epicTagsOf(epics: readonly EpicTags[], path: string): string[] {
+  return [...(epics.find((e) => e.path === path)?.tags ?? [])];
+}
+
+/**
+ * The tags of a task: its own (`#tag` in its line) and those it gets from its epic. A tag on an
+ * epic counts for every task in it, so a customer tag on the epic covers all its tasks.
+ */
+export function tagsOfTask(
+  task: Task,
+  epics: readonly EpicTags[],
+): { own: string[]; inherited: string[] } {
+  const own = [...new Set(task.tags)];
+  const inherited = epicTagsOf(epics, task.path).filter((t) => !own.includes(t));
+  return { own, inherited };
+}
+
+/** Whether a task has `tag`, itself or through its epic. */
+export function taskHasTag(task: Task, epics: readonly EpicTags[], tag: string): boolean {
+  const { own, inherited } = tagsOfTask(task, epics);
+  return own.includes(tag) || inherited.includes(tag);
+}
+
+/** Every tag used on an epic or a task, sorted. */
+export function usedTags(tasks: readonly Task[], epics: readonly EpicTags[]): string[] {
+  const all = new Set<string>();
+  for (const e of epics) for (const t of e.tags) all.add(t);
+  for (const t of tasks) for (const tag of t.tags) all.add(tag);
+  return [...all].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+/** The tasks of an area that have `tag`: all of them when the epic has it, else the ones that do. */
+export function tasksWithTag(
+  group: Pick<EpicGroup, "path" | "tasks">,
+  epics: readonly EpicTags[],
+  tag: string | null,
+): Task[] {
+  if (tag === null) return group.tasks;
+  if (epicTagsOf(epics, group.path).includes(tag)) return group.tasks;
+  return group.tasks.filter((t) => t.tags.includes(tag));
+}
+
+/** Whether an area shows when `tag` is chosen: the epic has it, or one of its tasks does. */
+export function groupHasTag(
+  group: Pick<EpicGroup, "path" | "tasks">,
+  epics: readonly EpicTags[],
+  tag: string | null,
+): boolean {
+  return (
+    tag === null ||
+    tasksWithTag(group, epics, tag).length > 0 ||
+    epicTagsOf(epics, group.path).includes(tag)
+  );
 }

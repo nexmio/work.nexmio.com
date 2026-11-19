@@ -7,6 +7,7 @@ import { InlineEdit, RowActions } from "@/components/RowActions";
 import { TaskNoteChip } from "@/features/tasks/TaskNote";
 import { cn } from "@/lib/utils";
 import { afterTarget, isOpen, noteName, shortDate, waitersOf } from "@/lib/taskLogic";
+import { formatDuration, taskMinutes } from "@/lib/timeLog";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { PlainButton } from "@/components/ui/plain-button";
@@ -98,6 +99,7 @@ export function TaskRow({
   const moveUp = () => useTaskStore.getState().move(task.path, task.line, task.key, true);
   const moveDown = () => useTaskStore.getState().move(task.path, task.line, task.key, false);
   const stepsLeft = task.steps.length - stepsDone;
+  const minutes = taskMinutes(task);
   const facts = [
     showNote ? noteName(task.path) : null,
     task.steps.length > 0 ? `${String(stepsDone)} of ${String(task.steps.length)}` : null,
@@ -192,6 +194,14 @@ export function TaskRow({
         {calm && !task.done && stepsLeft > 0 && (
           <span className="shrink-0 text-sm text-muted-foreground">
             {stepsLeft} {stepsLeft === 1 ? "step" : "steps"} left
+          </span>
+        )}
+        {minutes > 0 && (
+          <span
+            className="shrink-0 text-xs text-muted-foreground tabular-nums"
+            title="Time registered on this task"
+          >
+            ⏱ {formatDuration(minutes)}
           </span>
         )}
         {!calm && <TaskNoteChip task={task} />}

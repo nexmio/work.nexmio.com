@@ -17,11 +17,11 @@ vi.mock("@/lib/clipboard", () => clip);
 import { TestAi, testReport } from "./TestAi";
 
 const provider: ProviderConfig = {
-  id: "foundry",
-  kind: "foundry_local",
-  name: "Built-in AI · Foundry Local",
-  baseUrl: "http://127.0.0.1:5272/v1",
-  model: "qwen3-4b",
+  id: "builtin",
+  kind: "builtin",
+  name: "Built-in AI · llama.cpp",
+  baseUrl: "http://127.0.0.1:8080/v1",
+  model: "nexmio-work",
   location: "local",
   supportsTools: true,
   contextTokens: 16000,
@@ -29,7 +29,7 @@ const provider: ProviderConfig = {
 
 const answered: AiTestResult = {
   ok: true,
-  provider: "Foundry · qwen3-4b",
+  provider: "Built-in AI · nexmio-work",
   answer: "Hello!",
   error: "",
   millis: 1500,
@@ -52,7 +52,7 @@ describe("TestAi", () => {
     expect(screen.getByRole("status")).toHaveTextContent("1.5 s");
     expect(persist).toHaveBeenCalled();
     expect(wake.wakeIfNeeded).toHaveBeenCalled();
-    expect(apiMock.aiTest).toHaveBeenCalledWith("foundry");
+    expect(apiMock.aiTest).toHaveBeenCalledWith("builtin");
     expect(screen.queryByRole("button", { name: "Copy for a bug report" })).toBeNull();
   });
 
@@ -73,7 +73,7 @@ describe("TestAi", () => {
   });
 
   it("says what is wrong when the AI cannot be woken, and asks nothing then", async () => {
-    wake.wakeIfNeeded.mockResolvedValue("Built-in AI · Foundry Local is not set up.");
+    wake.wakeIfNeeded.mockResolvedValue("Built-in AI · llama.cpp is not set up.");
     render(<TestAi provider={provider} persist={persist} />);
     await userEvent.setup().click(screen.getByRole("button", { name: "Test it" }));
     expect(await screen.findByText(/is not set up/)).toBeInTheDocument();

@@ -1,21 +1,22 @@
-import { FileText, Link2, Plus, Sparkles, Target } from "lucide-react";
+import { FileText, Link2, Play, Plus, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { NoteBox } from "./NoteBox";
 import { epicTrail } from "./epicTrail";
+import { EpicTags } from "./TaskTags";
 import { InlineEdit, RowActions } from "@/components/RowActions";
 import { Trail } from "@/components/Trail";
 import { ViewHeader } from "@/components/ViewHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { epicGroups, noteName, openThenDone } from "@/lib/taskLogic";
+import { epicGroups, isOpen, noteName, openThenDone } from "@/lib/taskLogic";
 import { useAiBlocked } from "@/lib/useAiBlocked";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { EpicProgress } from "./EpicProgress";
 import { TaskRow } from "./TaskRow";
-import { firstOpenTask, focusEpic } from "./focusEpic";
+import { useTimerStore } from "@/stores/timerStore";
 
 /** One epic: the note its tasks are in, how far it has come, and its tasks. */
 export function EpicPage() {
@@ -53,7 +54,7 @@ export function EpicPage() {
   }
 
   const from = group.source === null ? null : resolver.resolve(group.source);
-  const firstOpen = firstOpenTask(group);
+  const firstOpen = group.tasks.find(isOpen);
   const parts = openThenDone(group.tasks);
 
   return (
@@ -64,10 +65,10 @@ export function EpicPage() {
           variant="outline"
           disabled={firstOpen === undefined}
           onClick={() => {
-            focusEpic(group);
+            if (firstOpen !== undefined) void useTimerStore.getState().start(firstOpen);
           }}
         >
-          <Target /> Focus
+          <Play /> Start timer
         </Button>
         {group.native && (
           <Button
@@ -98,6 +99,7 @@ export function EpicPage() {
       />
       <div className="min-h-0 flex-1 overflow-auto px-7 py-5">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
+          <EpicTags path={group.path} />
           <div className="flex flex-col gap-1">
             {renaming ? (
               <InlineEdit

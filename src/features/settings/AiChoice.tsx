@@ -4,13 +4,6 @@ import type { ProviderConfig } from "@/bindings/ProviderConfig";
 import type { Settings } from "@/bindings/Settings";
 import { Select } from "@/components/ui/select";
 import { BuiltInAiSettings } from "@/features/engine/BuiltInAiSettings";
-import { FoundrySettings } from "@/features/engine/FoundrySettings";
-import {
-  PHI_ID,
-  PHI_PROVIDER,
-  PhiSilicaSettings,
-  usePhiStatus,
-} from "@/features/engine/PhiSilicaSettings";
 import {
   aiOrder,
   cloudConsented,
@@ -46,26 +39,22 @@ function usePlatform(): AppPlatform | null {
 }
 
 const TITLES: Record<AiOption, string> = {
-  phi: "Windows AI · Phi Silica",
-  foundry: "Foundry Local",
   llama: "Built-in AI · llama.cpp",
   local: "LM Studio, or another AI on this computer",
   cloud: "Cloud AI",
 };
 
 const TEXTS: Record<AiOption, string> = {
-  phi: "Built into Windows, on the neural processor. Nothing to download. No tools: text commands and chat about the open page.",
-  foundry:
-    "Microsoft's runtime. You choose and download a model; models with tools can also search the vault and use skills.",
   llama:
-    "The open-source engine with Google's Gemma models, on many graphics cards and processors. You download it once.",
-  local: "If the built-in choices do not work for you. LM Studio must be installed and running.",
+    "The open-source engine llama.cpp on the graphics card (Vulkan) or the processor, with a small model you download once. Nothing leaves this computer.",
+  local:
+    "An AI of your own on this computer, such as LM Studio or Ollama. It must be installed and running.",
   cloud:
-    "Last resort, when no AI on this computer is good enough. Your pages are sent to the company that runs it. Off until you turn it on.",
+    "When no AI on this computer is good enough. Your pages are sent to the company that runs it (OpenAI and others with an OpenAI-compatible address). Off until you turn it on and say you understand.",
 };
 
-/** The built-in AIs are new: their rows say so, and none of them is recommended over the others. */
-const BETA: readonly AiOption[] = ["phi", "foundry", "llama"];
+/** The built-in AI is new: its row says so. */
+const BETA: readonly AiOption[] = ["llama"];
 
 /**
  * Settings → AI: one list of the AIs Nexmio Work can use, in the order that suits where it runs, each
@@ -87,7 +76,6 @@ export function AiChoice({
   providersPanel: ReactNode;
 }) {
   const platform = usePlatform();
-  const [phi, setPhi] = usePhiStatus();
   const llamaReady = useEngineStore((s) => s.status?.engine != null && s.status.models.length > 0);
   const current = draft.ai.providers.find((p) => p.id === draft.ai.defaultProviderId);
   const [picked, setPicked] = useState<AiOption | null>(null);
@@ -101,24 +89,15 @@ export function AiChoice({
     () => (current && clouds.some((p) => p.id === current.id) ? current.id : clouds[0]?.id) ?? "",
   );
 
-  const phiReady =
-    phi?.shown === true &&
-    phi.access.state === "ok" &&
-    phi.device.state === "ok" &&
-    phi.model.state === "ok";
   const order = aiOrder({
     os: platform?.os ?? "",
-    store: platform?.store ?? phi?.shown ?? false,
-    phiShown: phi?.shown ?? false,
-    copilot: phi?.shown === true && phi.device.state !== "warn",
+    store: platform?.store ?? false,
   });
   const inUse = optionOf(current);
   const cloudOn = current !== undefined && inUse === "cloud" && cloudConsented(draft, current);
   const selected = picked ?? inUse;
 
   const ready: Record<AiOption, boolean> = {
-    phi: phiReady,
-    foundry: draft.ai.foundry.model !== "",
     llama: llamaReady,
     local: locals.length > 0,
     cloud: clouds.length > 0,
@@ -126,10 +105,6 @@ export function AiChoice({
   const state = (o: AiOption): string => {
     if (o === inUse && (o !== "cloud" || cloudOn)) return "In use";
     switch (o) {
-      case "phi":
-        return phiReady ? "Ready" : phi?.device.state === "warn" ? "Not on this PC" : "Not ready";
-      case "foundry":
-        return ready.foundry ? `Downloaded: ${draft.ai.foundry.model}` : "Not set up";
       case "llama":
         return ready.llama ? "Downloaded" : "Not set up";
       case "local":
@@ -148,21 +123,11 @@ export function AiChoice({
     return o !== null && o !== "cloud" && ready[o] && (o !== "local" || locals.includes(p));
   });
   const localOption = optionOf(localAi);
-  const nameOf = (p: ProviderConfig | undefined): string =>
-    p === undefined
-      ? "None"
-      : p.kind === "foundry_local" && draft.ai.foundry.model !== ""
-        ? `${p.name} · ${draft.ai.foundry.model}`
-        : p.name;
+  const nameOf = (p: ProviderConfig | undefined): string => (p === undefined ? "None" : p.name);
 
   const makeProvider = (o: AiOption) => {
     const ai = { ...draft.ai, cloudConsent: null };
-    if (o === "phi") {
-      const providers = [...draft.ai.providers.filter((p) => p.id !== PHI_ID), PHI_PROVIDER];
-      onChange({ ...draft, ai: { ...ai, providers, defaultProviderId: PHI_ID } });
-    } else if (o === "foundry") {
-      onChange({ ...draft, ai: { ...ai, defaultProviderId: "foundry" } });
-    } else if (o === "llama") {
+    if (o === "llama") {
       onChange({ ...draft, ai: { ...ai, defaultProviderId: "builtin" } });
     } else if (o === "local" && localId !== "") {
       onChange({ ...draft, ai: { ...ai, defaultProviderId: localId } });
@@ -171,7 +136,6 @@ export function AiChoice({
 
   const choose = (o: AiOption) => {
     setPicked(o);
-    if (o === "phi" && phi?.device.state === "warn") return;
     if (!ready[o]) return;
     if (o === "cloud") {
       const p = clouds.find((c) => c.id === cloudId);
@@ -184,7 +148,6 @@ export function AiChoice({
   /** The provider "Test it" asks: the one an AI on this computer stands for, once it is set up. */
   const testable = (o: AiOption): ProviderConfig | undefined => {
     if (!ready[o]) return undefined;
-    if (o === "foundry") return draft.ai.providers.find((p) => p.id === "foundry");
     if (o === "llama") return draft.ai.providers.find((p) => p.id === "builtin");
     if (o === "local") return locals.find((p) => p.id === localId) ?? locals[0];
     return undefined;
@@ -193,12 +156,6 @@ export function AiChoice({
   /** The setup of an AI, shown under its row while it is chosen. */
   const setupOf = (o: AiOption): ReactNode => {
     switch (o) {
-      case "phi":
-        return phi?.shown === true ? (
-          <PhiSilicaSettings draft={draft} onChange={onChange} status={phi} onStatus={setPhi} />
-        ) : null;
-      case "foundry":
-        return <FoundrySettings draft={draft} onChange={onChange} />;
       case "llama":
         return <BuiltInAiSettings draft={draft} onChange={onChange} />;
       case "local":
@@ -229,10 +186,8 @@ export function AiChoice({
               : platform?.os === "linux"
                 ? "Nexmio Work runs here on Linux"
                 : "Nexmio Work runs on this computer"}
-          {phi?.shown === true && phi.device.state !== "warn" ? " on a Copilot+ PC" : ""}. Click a
-          row to use it; the chosen row has its own setup under it. The built-in AIs are in beta and
-          what works best depends on your computer, so try them in turn and keep the one that works
-          best for you.
+          . Click a row to use it; the chosen row has its own setup under it. The built-in AI is in
+          beta: try it, and use an AI of your own if it does not suit your computer.
         </p>
       </div>
       <div className="flex gap-3" data-testid="two-ais">
@@ -304,8 +259,6 @@ export function AiChoice({
       <div role="radiogroup" aria-label="AI for Nexmio Work" className="flex flex-col gap-2">
         {order.map((o, i) => {
           const cloud = o === "cloud";
-          const offText = o === "phi" && phi?.device.state === "warn" ? phi.device.text : null;
-          const off = offText !== null;
           return (
             <div
               key={o}
@@ -322,8 +275,7 @@ export function AiChoice({
                 type="button"
                 role="radio"
                 aria-checked={selected === o}
-                disabled={off}
-                className="flex w-full items-start gap-3 rounded-lg p-3 text-left text-sm hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-start gap-3 rounded-lg p-3 text-left text-sm hover:bg-muted"
                 onClick={() => {
                   choose(o);
                 }}
@@ -356,7 +308,7 @@ export function AiChoice({
                       </span>
                     )}
                   </span>
-                  <span className="text-xs text-foreground/80">{offText ?? TEXTS[o]}</span>
+                  <span className="text-xs text-foreground/80">{TEXTS[o]}</span>
                 </span>
                 <span
                   className={cn(
@@ -367,7 +319,7 @@ export function AiChoice({
                   {state(o)}
                 </span>
               </PlainButton>
-              {selected === o && !off && (
+              {selected === o && (
                 <div
                   role="group"
                   aria-label={`Set up ${TITLES[o]}`}

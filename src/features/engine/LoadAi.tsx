@@ -1,17 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 
 /**
- * "Load AI" / "Unload AI" in the settings of a built-in AI: the same two buttons as in the status
+ * "Load AI" / "Unload AI" in the settings of the built-in AI: the same two buttons as in the status
  * bar. Load puts the model in memory (Nexmio Work also does it by itself when the AI is used); Unload
  * gives the memory back. Shown once the AI is set up (not while it is downloaded or broken).
  */
-export function LoadAi({ which }: { which: "foundry" | "builtin" }) {
-  const foundry = useFoundryStore((s) => s.status?.state);
-  const engine = useEngineStore((s) => s.status?.state);
-  const state = which === "foundry" ? foundry : engine;
-  const store = which === "foundry" ? useFoundryStore : useEngineStore;
+export function LoadAi() {
+  const state = useEngineStore((s) => s.status?.state);
   if (state !== "asleep" && state !== "awake" && state !== "waking" && state !== "sleeping") {
     return null;
   }
@@ -34,7 +30,7 @@ export function LoadAi({ which }: { which: "foundry" | "builtin" }) {
         variant="outline"
         disabled={working}
         onClick={() => {
-          const s = store.getState();
+          const s = useEngineStore.getState();
           void (loaded ? s.sleep() : s.wake());
         }}
       >

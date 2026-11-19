@@ -102,6 +102,10 @@ pub struct GitSettings {
     pub author_name: String,
     pub author_email: String,
     pub idle_commit_minutes: u32,
+    /// Save a version of a page in the history when its tab is closed.
+    pub commit_on_close: bool,
+    /// Save a version of the changes every this many minutes while you work (0 = never).
+    pub commit_every_minutes: u32,
 }
 
 impl Default for GitSettings {
@@ -110,6 +114,8 @@ impl Default for GitSettings {
             author_name: "Nexmio Work".into(),
             author_email: "nexmio-work@localhost".into(),
             idle_commit_minutes: 5,
+            commit_on_close: false,
+            commit_every_minutes: 0,
         }
     }
 }
@@ -130,17 +136,6 @@ pub enum ProviderKind {
     #[serde(rename = "builtin")]
     #[ts(rename = "builtin")]
     BuiltIn,
-    /// Microsoft's Foundry Local, run by Nexmio Work in a helper process (`foundry` module). Local at a
-    /// loopback address only. There is at most one, with the id `foundry`.
-    #[serde(rename = "foundry_local")]
-    #[ts(rename = "foundry_local")]
-    FoundryLocal,
-    /// Phi Silica, the model built into Windows on Copilot+ PCs (`phisilica` module). Runs on
-    /// this PC; only in the Microsoft Store package. There is at most one, with the id
-    /// `phi-silica`, and it cannot call tools.
-    #[serde(rename = "phi_silica")]
-    #[ts(rename = "phi_silica")]
-    PhiSilica,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -172,9 +167,7 @@ impl ProviderConfig {
     pub fn effective_location(&self) -> Location {
         match self.kind {
             ProviderKind::Anthropic => Location::Cloud,
-            // Windows runs it on this PC; there is no address to send anything to.
-            ProviderKind::PhiSilica => Location::Local,
-            ProviderKind::LmStudio | ProviderKind::BuiltIn | ProviderKind::FoundryLocal => {
+            ProviderKind::LmStudio | ProviderKind::BuiltIn => {
                 if is_loopback_url(&self.base_url) {
                     Location::Local
                 } else {
@@ -265,57 +258,6 @@ impl Default for BuiltInSettings {
     }
 }
 
-/// Settings of Foundry Local, the second built-in AI.
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase", default)]
-#[ts(export)]
-pub struct FoundrySettings {
-    /// The alias of the model that is woken (for example `qwen3-4b`); empty until one is downloaded.
-    pub model: String,
-    /// Whether that model can call tools. Without them the chat has no vault search or skills.
-    pub tools: bool,
-}
-
-impl Default for FoundrySettings {
-    fn default() -> Self {
-        Self {
-            model: String::new(),
-            // Before 0.15 only models with tools could be chosen.
-            tools: true,
-        }
-    }
-}
-
-/// The provider that stands for Foundry Local.
-fn foundry_provider() -> ProviderConfig {
-    ProviderConfig {
-        id: crate::foundry::FOUNDRY_ID.into(),
-        kind: ProviderKind::FoundryLocal,
-        name: "Built-in AI · Foundry Local".into(),
-        // The port is chosen each time Nexmio Work is woken and written here then.
-        base_url: "http://127.0.0.1:5272/v1".into(),
-        model: String::new(),
-        location: Location::Local,
-        supports_tools: true,
-        context_tokens: 16_000,
-    }
-}
-
-/// The provider that stands for Phi Silica.
-pub fn phi_silica_provider() -> ProviderConfig {
-    ProviderConfig {
-        id: crate::phisilica::PHI_ID.into(),
-        kind: ProviderKind::PhiSilica,
-        name: "Built-in AI · Phi Silica".into(),
-        base_url: String::new(),
-        model: "Phi Silica".into(),
-        location: Location::Local,
-        supports_tools: false,
-        // A small model: Nexmio Work keeps what it sends short. Windows says when it is still too long.
-        context_tokens: 4000,
-    }
-}
-
 /// The provider that stands for the built-in AI.
 fn builtin_provider(context_tokens: u32) -> ProviderConfig {
     ProviderConfig {
@@ -369,8 +311,6 @@ pub struct AiSettings {
     pub embeddings: EmbeddingSettings,
     /// The AI that Nexmio Work runs itself, without LM Studio.
     pub builtin: BuiltInSettings,
-    /// Foundry Local, the second built-in AI.
-    pub foundry: FoundrySettings,
     /// Let the AI check its own answer to a text command before it is shown. Off by default: it
     /// takes about twice as long, which matters most with a large model.
     pub check_answers: bool,
@@ -412,12 +352,10 @@ impl Default for AiSettings {
             answer_language: String::new(),
             embeddings: EmbeddingSettings::default(),
             builtin: BuiltInSettings::default(),
-            foundry: FoundrySettings::default(),
             cloud_consent: None,
             check_answers: false,
             providers: vec![
                 builtin_provider(BuiltInSettings::default().context_tokens),
-                foundry_provider(),
                 ProviderConfig {
                     id: "lmstudio-default".into(),
                     kind: ProviderKind::LmStudio,
@@ -535,8 +473,6 @@ impl Settings {
         }
         self.editor.own_words = words;
         self.normalize_builtin();
-        self.normalize_foundry();
-        self.normalize_phi_silica();
         for p in &mut self.ai.providers {
             p.location = p.effective_location();
             if p.context_tokens < 1000 {
@@ -557,13 +493,13 @@ impl Settings {
         let usable = self.provider(&emb.provider_id).is_some_and(|p| {
             p.kind != ProviderKind::Anthropic
                 && p.kind != ProviderKind::BuiltIn
-                && p.kind != ProviderKind::PhiSilica
                 && p.effective_location() == Location::Local
         });
         if !usable {
             self.ai.embeddings.enabled = false;
         }
         self.git.idle_commit_minutes = self.git.idle_commit_minutes.clamp(1, 60);
+        self.git.commit_every_minutes = self.git.commit_every_minutes.min(240);
         self.editor.font_size = self.editor.font_size.clamp(10, 32);
         self.editor.line_width = self.editor.line_width.clamp(400, 2000);
         for (key, default) in [
@@ -586,48 +522,6 @@ impl Settings {
 
     /// Keeps the built-in AI's settings in range and its provider in step with them: there is
     /// exactly one built-in provider, it is local, and it follows the context size.
-    /// Adds the Foundry Local provider when there is none (settings from before it existed).
-    pub fn ensure_foundry_provider(&mut self) {
-        if !self
-            .ai
-            .providers
-            .iter()
-            .any(|p| p.id == crate::foundry::FOUNDRY_ID)
-        {
-            self.ai.providers.push(foundry_provider());
-        }
-    }
-
-    /// Only one provider may be of the Foundry Local kind, with its own id, on this computer.
-    fn normalize_foundry(&mut self) {
-        let id = crate::foundry::FOUNDRY_ID;
-        self.ai
-            .providers
-            .retain(|p| p.kind != ProviderKind::FoundryLocal || p.id == id);
-        self.ensure_foundry_provider();
-        if let Some(p) = self.ai.providers.iter_mut().find(|p| p.id == id) {
-            p.kind = ProviderKind::FoundryLocal;
-            p.name = foundry_provider().name;
-            p.location = Location::Local;
-            p.supports_tools = self.ai.foundry.tools;
-            if !is_loopback_url(&p.base_url) {
-                p.base_url = foundry_provider().base_url;
-            }
-        }
-    }
-
-    /// At most one Phi Silica provider, with the fixed id, name and limits. It is only added when
-    /// the user chooses Phi Silica, so other computers never see it.
-    fn normalize_phi_silica(&mut self) {
-        let id = crate::phisilica::PHI_ID;
-        self.ai
-            .providers
-            .retain(|p| (p.kind == ProviderKind::PhiSilica) == (p.id == id));
-        if let Some(p) = self.ai.providers.iter_mut().find(|p| p.id == id) {
-            *p = phi_silica_provider();
-        }
-    }
-
     fn normalize_builtin(&mut self) {
         let b = &mut self.ai.builtin;
         b.context_tokens = b
@@ -742,6 +636,53 @@ pub fn is_loopback_url(url: &str) -> bool {
     }
 }
 
+/// Foundry Local and Phi Silica (Copilot+ PCs) were removed in 0.27. Settings from before have
+/// their providers and the `foundry` settings: they are dropped, and anything that chose one of them
+/// (the default AI, the local AI, the AI for search by meaning) falls back to the built-in AI.
+fn drop_removed_providers(mut value: serde_json::Value) -> serde_json::Value {
+    const REMOVED_KINDS: [&str; 2] = ["foundry_local", "phi_silica"];
+    let Some(ai) = value.get_mut("ai").and_then(|a| a.as_object_mut()) else {
+        return value;
+    };
+    ai.remove("foundry");
+    let mut removed: Vec<String> = Vec::new();
+    if let Some(list) = ai.get_mut("providers").and_then(|p| p.as_array_mut()) {
+        list.retain(|p| {
+            let gone = p
+                .get("kind")
+                .and_then(|k| k.as_str())
+                .is_some_and(|k| REMOVED_KINDS.contains(&k));
+            if gone {
+                if let Some(id) = p.get("id").and_then(|i| i.as_str()) {
+                    removed.push(id.to_string());
+                }
+            }
+            !gone
+        });
+    }
+    let fallback = serde_json::Value::String(preferred_default_provider().into());
+    for key in ["defaultProviderId", "localProviderId"] {
+        let hit = ai
+            .get(key)
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| removed.iter().any(|r| r == id));
+        if hit {
+            ai.insert(key.into(), fallback.clone());
+        }
+    }
+    if let Some(emb) = ai.get_mut("embeddings").and_then(|e| e.as_object_mut()) {
+        let hit = emb
+            .get("providerId")
+            .and_then(|v| v.as_str())
+            .is_some_and(|id| removed.iter().any(|r| r == id));
+        if hit {
+            emb.insert("providerId".into(), fallback);
+            emb.insert("enabled".into(), serde_json::Value::Bool(false));
+        }
+    }
+    value
+}
+
 /// Loads settings. Missing file → defaults. Unknown schema version → error (file untouched).
 pub fn load(path: &Path) -> AppResult<Settings> {
     if !path.exists() {
@@ -759,6 +700,7 @@ pub fn load(path: &Path) -> AppResult<Settings> {
             "settings.json has schema version {version}, which this version of Nexmio Work does not understand. The file was not changed."
         )));
     }
+    let value = drop_removed_providers(value);
     let mut s: Settings = serde_json::from_value(value)
         .map_err(|e| AppError::Settings(format!("settings.json could not be read: {e}")))?;
     s.normalize();
@@ -961,6 +903,25 @@ mod tests {
     }
 
     #[test]
+    fn settings_from_before_foundry_and_phi_silica_were_removed_still_load() {
+        let old = r#"{"schemaVersion":1,"ai":{"defaultProviderId":"phi-silica","foundry":{"model":"x","tools":true},
+          "embeddings":{"providerId":"foundry","enabled":true},
+          "providers":[
+            {"id":"foundry","kind":"foundry_local","name":"F","baseUrl":"http://127.0.0.1:1/v1","model":"","location":"local","supportsTools":true,"contextTokens":16000},
+            {"id":"phi-silica","kind":"phi_silica","name":"P","baseUrl":"","model":"Phi Silica","location":"local","supportsTools":false,"contextTokens":4000},
+            {"id":"lmstudio-default","kind":"lmstudio","name":"LM Studio","baseUrl":"http://localhost:1234/v1","model":"m","location":"local","supportsTools":true,"contextTokens":16000}]}}"#;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, old).unwrap();
+        let s = load(&path).unwrap();
+        assert!(s.provider("foundry").is_none());
+        assert!(s.provider("phi-silica").is_none());
+        assert!(s.provider("lmstudio-default").is_some());
+        assert_ne!(s.ai.default_provider_id, "phi-silica");
+        assert!(!s.ai.embeddings.enabled);
+    }
+
+    #[test]
     fn lm_studio_is_local_only_at_a_loopback_address() {
         let near = provider("a", ProviderKind::LmStudio, "http://localhost:1234/v1");
         let far = provider("b", ProviderKind::LmStudio, "https://models.example.com/v1");
@@ -969,33 +930,10 @@ mod tests {
     }
 
     #[test]
-    fn foundry_local_is_local_only_at_a_loopback_address_and_is_saved_as_foundry_local() {
-        let near = provider("a", ProviderKind::FoundryLocal, "http://127.0.0.1:5272/v1");
-        let far = provider(
-            "b",
-            ProviderKind::FoundryLocal,
-            "https://models.example.com/v1",
-        );
-        assert_eq!(near.effective_location(), Location::Local);
-        assert_eq!(far.effective_location(), Location::Cloud);
-        let json = serde_json::to_string(&near).unwrap();
-        assert!(json.contains("\"kind\":\"foundry_local\""), "{json}");
-        let back: ProviderConfig = serde_json::from_str(&json).unwrap();
-        assert_eq!(back.kind, ProviderKind::FoundryLocal);
-        // The managed provider is put right: a wrong address is replaced by the loopback one.
-        let mut s = Settings::default();
-        s.ai.providers.push(far);
-        s.normalize();
-        let p = s.provider("foundry").unwrap();
-        assert_eq!(p.location, Location::Local);
-        assert!(is_loopback_url(&p.base_url));
-    }
-
-    #[test]
     fn the_built_in_providers_get_clear_names_even_in_old_settings() {
         let mut s = Settings::default();
         for p in &mut s.ai.providers {
-            if p.kind == ProviderKind::BuiltIn || p.kind == ProviderKind::FoundryLocal {
+            if p.kind == ProviderKind::BuiltIn {
                 p.name = "Nexmio Work (old name)".into();
             }
         }
@@ -1003,10 +941,6 @@ mod tests {
         assert_eq!(
             s.provider("builtin").unwrap().name,
             "Built-in AI · llama.cpp"
-        );
-        assert_eq!(
-            s.provider("foundry").unwrap().name,
-            "Built-in AI · Foundry Local"
         );
     }
 
@@ -1037,61 +971,6 @@ mod tests {
         s.ai.default_provider_id = "lmstudio-default".into();
         s.normalize();
         assert!(s.ai.cloud_consent.is_none());
-    }
-
-    #[test]
-    fn phi_silica_is_local_without_tools_and_only_there_when_chosen() {
-        let mut s = Settings::default();
-        s.normalize();
-        assert!(s.provider(crate::phisilica::PHI_ID).is_none());
-        let mut stray = provider("stray", ProviderKind::PhiSilica, "https://example.com/v1");
-        stray.supports_tools = true;
-        s.ai.providers.push(stray);
-        let mut chosen = phi_silica_provider();
-        chosen.supports_tools = true;
-        chosen.name = "Renamed".into();
-        s.ai.providers.push(chosen);
-        s.ai.default_provider_id = crate::phisilica::PHI_ID.into();
-        s.ai.embeddings.provider_id = crate::phisilica::PHI_ID.into();
-        s.ai.embeddings.enabled = true;
-        s.normalize();
-        assert!(s.provider("stray").is_none());
-        let p = s.provider(crate::phisilica::PHI_ID).unwrap();
-        assert_eq!(p.effective_location(), Location::Local);
-        assert!(!p.supports_tools);
-        assert_eq!(p.name, "Built-in AI · Phi Silica");
-        assert_eq!(s.ai.default_provider_id, crate::phisilica::PHI_ID);
-        assert!(!s.ai.embeddings.enabled, "Phi Silica makes no embeddings");
-    }
-
-    #[test]
-    fn only_one_foundry_provider_exists_and_it_is_added_on_request() {
-        let mut s = Settings::default();
-        s.ai.providers.retain(|p| p.id != "foundry");
-        s.ai.providers.push(provider(
-            "stray",
-            ProviderKind::FoundryLocal,
-            "http://127.0.0.1:1/v1",
-        ));
-        s.normalize();
-        assert!(
-            s.provider("stray").is_none(),
-            "a Foundry provider with another id is dropped"
-        );
-        assert!(
-            s.provider("foundry").is_some(),
-            "the provider is always there"
-        );
-        s.ensure_foundry_provider();
-        s.ensure_foundry_provider();
-        s.normalize();
-        let n =
-            s.ai.providers
-                .iter()
-                .filter(|p| p.kind == ProviderKind::FoundryLocal)
-                .count();
-        assert_eq!(n, 1);
-        assert!(s.provider("foundry").unwrap().supports_tools);
     }
 
     #[test]

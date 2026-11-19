@@ -44,18 +44,9 @@ try {
       .first()
       .click();
     await shot("tasks");
-    await page
-      .getByRole("button", { name: /Start focus/ })
-      .first()
-      .click();
-    await shot("focus");
-    await page.keyboard.press("Escape");
-    // Leaving Focus asks for the next step: skip it.
-    await page
-      .getByRole("button", { name: "Skip" })
-      .click({ timeout: 3000 })
-      .catch(() => undefined);
-    await page.waitForTimeout(600);
+    // The timer lives in the right panel, beside the page.
+    await page.getByRole("tab", { name: "Timer" }).click();
+    await shot("timer");
     await rail(page, "Tasks");
     await page.getByText("Send the offer to Acme").first().click();
     await shot("task-page");

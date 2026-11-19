@@ -8,7 +8,6 @@ vi.mock("@/lib/api", () => ({ api: {}, toApiError: (e: unknown) => ({ message: S
 import { FirstRunDialog } from "./FirstRunDialog";
 import { needsAiSetup } from "./firstRun";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -21,11 +20,9 @@ const settings = (kind: string, id = "p"): Settings =>
 
 describe("needsAiSetup", () => {
   it("is true for a built-in AI without a model, false when a model or another AI exists", () => {
-    expect(needsAiSetup(settings("builtin"), 0, 0)).toBe(true);
-    expect(needsAiSetup(settings("builtin"), 1, 0)).toBe(false);
-    expect(needsAiSetup(settings("foundry_local"), 0, 0)).toBe(true);
-    expect(needsAiSetup(settings("foundry_local"), 0, 2)).toBe(false);
-    expect(needsAiSetup(settings("lmstudio"), 0, 0)).toBe(false);
+    expect(needsAiSetup(settings("builtin"), 0)).toBe(true);
+    expect(needsAiSetup(settings("builtin"), 1)).toBe(false);
+    expect(needsAiSetup(settings("lmstudio"), 0)).toBe(false);
   });
 });
 
@@ -41,10 +38,6 @@ describe("FirstRunDialog", () => {
     useSettingsStore.setState({ settings: settings("builtin", "builtin"), save } as never);
     useEngineStore.setState({
       status: engineStatus({ models: [] }),
-      load: vi.fn().mockResolvedValue(undefined),
-    } as never);
-    useFoundryStore.setState({
-      status: null,
       load: vi.fn().mockResolvedValue(undefined),
     } as never);
     useUiStore.setState({ settingsOpen: false });

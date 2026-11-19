@@ -24,14 +24,14 @@ import type { SearchHit } from "@/bindings/SearchHit";
 import type { SearchQuery } from "@/bindings/SearchQuery";
 import type { Catalog } from "@/bindings/Catalog";
 import type { AppPlatform } from "@/bindings/AppPlatform";
-import type { PhiStatus } from "@/bindings/PhiStatus";
-import type { PhiTest } from "@/bindings/PhiTest";
 import type { EngineStatus } from "@/bindings/EngineStatus";
 import type { HardwareInfo } from "@/bindings/HardwareInfo";
 import type { InstallRequest } from "@/bindings/InstallRequest";
 import type { RemoveWhat } from "@/bindings/RemoveWhat";
 import type { Settings } from "@/bindings/Settings";
 import type { TagCount } from "@/bindings/TagCount";
+import type { TagPreview } from "@/bindings/TagPreview";
+import type { TagUse } from "@/bindings/TagUse";
 import type { TreeNode } from "@/bindings/TreeNode";
 import type { VaultInfo } from "@/bindings/VaultInfo";
 import type { ChatSummary } from "@/bindings/ChatSummary";
@@ -49,9 +49,6 @@ import type { ExportRequest } from "@/bindings/ExportRequest";
 import type { ExportResult } from "@/bindings/ExportResult";
 import type { EmbeddingStatus } from "@/bindings/EmbeddingStatus";
 import type { SemanticHit } from "@/bindings/SemanticHit";
-import type { FoundryModel } from "@/bindings/FoundryModel";
-import type { FoundryRemove } from "@/bindings/FoundryRemove";
-import type { FoundryStatus } from "@/bindings/FoundryStatus";
 import type { ImageUsage } from "@/bindings/ImageUsage";
 import type { ImportEvent } from "@/bindings/ImportEvent";
 import type { ImportPlan } from "@/bindings/ImportPlan";
@@ -234,14 +231,6 @@ export const api = {
   helperCheckKey: (text: string) => call<KeyStatus>("helper_check_key", { text }),
   /** Closes the helper's small window. */
   quickClose: () => call<undefined>("quick_close"),
-  // Phi Silica (only in the Microsoft Store version)
-  phiStatus: () => call<PhiStatus>("phi_status"),
-  phiEnsureReady: () => call<PhiStatus>("phi_ensure_ready"),
-  phiTest: () => call<PhiTest>("phi_test"),
-  foundryCatalog: (refresh: boolean) => call<FoundryModel[]>("foundry_catalog", { refresh }),
-  foundryStatus: () => call<FoundryStatus>("foundry_status"),
-  foundryInstall: (alias: string, useForApp: boolean) =>
-    call<undefined>("foundry_install", { alias, useForApp }),
   listSkills: () => call<Skill[]>("list_skills"),
   // Tasks
   listTasks: () => call<Task[]>("list_tasks"),
@@ -287,10 +276,21 @@ export const api = {
   epicForNote: (note: string, folder?: string) =>
     call<Epic>("epic_for_note_cmd", { note, folder: folder ?? null }),
   listDailyDates: () => call<string[]>("list_daily_dates"),
+  taskMoveTo: (path: string, line: number, key: string, to: string) =>
+    call<Task[]>("task_move_to", { path, line, key, to }),
   taskMove: (path: string, line: number, key: string, up: boolean) =>
     call<Task[]>("task_move", { path, line, key, up }),
   taskSetLink: (path: string, line: number, key: string, link: string | null) =>
     call<Task[]>("task_set_link", { path, line, key, link }),
+  tagUse: (tag: string) => call<TagUse>("tag_use", { tag }),
+  tagMake: (tag: string) => call<string>("tag_make", { tag }),
+  tagDelete: (tag: string) => call<string[]>("tag_delete", { tag }),
+  folderTagPreview: (folder: string, tag: string, on: boolean) =>
+    call<TagPreview>("folder_tag_preview", { folder, tag, on }),
+  folderSetTag: (folder: string, tag: string, on: boolean) =>
+    call<string[]>("folder_set_tag", { folder, tag, on }),
+  taskSetTag: (path: string, line: number, key: string, tag: string, on: boolean) =>
+    call<Task[]>("task_set_tag", { path, line, key, tag, on }),
   taskSetTitle: (path: string, line: number, key: string, title: string) =>
     call<Task[]>("task_set_title", { path, line, key, title }),
   taskDelete: (path: string, line: number, key: string) =>
@@ -305,12 +305,6 @@ export const api = {
     call<Idea[]>("idea_set_status", { line, key, status }),
   taskAddToNote: (path: string, texts: string[]) =>
     call<Task[]>("task_add_to_note", { path, texts }),
-  foundrySetupHardware: () => call<undefined>("foundry_setup_hardware"),
-  foundryUseCpuOnly: () => call<undefined>("foundry_use_cpu_only"),
-  foundryCancelInstall: () => call<undefined>("foundry_cancel_install"),
-  foundryWake: () => call<undefined>("foundry_wake"),
-  foundrySleep: () => call<undefined>("foundry_sleep"),
-  foundryRemove: (what: FoundryRemove) => call<undefined>("foundry_remove", { what }),
   openExternal: (url: string) => call<undefined>("open_external", { url }),
   imageUsage: () => call<ImageUsage[]>("image_usage"),
 

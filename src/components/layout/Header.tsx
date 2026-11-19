@@ -82,6 +82,9 @@ export function Header() {
           {item("Write it down…", "Mod+Shift+N", () => {
             ui.openCapture();
           })}
+          {item("Your tags…", null, () => {
+            ui.setTagsOpen(true);
+          })}
           <DropdownMenuSeparator />
           {item(
             "Export…",

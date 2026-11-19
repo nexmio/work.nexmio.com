@@ -116,6 +116,7 @@ pub(crate) fn add_task_to(
     check_path(path)?;
     let existing = match fs_ops::read_note(&v.root, path) {
         Ok(n) => n.content,
+        Err(_) if path == epics::LOOSE => "# Loose tasks\n".to_string(),
         Err(_) if epics::is_epic_path(path) => {
             std::fs::create_dir_all(v.root.join(epics::EPICS_DIR))?;
             let title = if path == epics::INBOX {
@@ -355,6 +356,21 @@ pub async fn task_set_title(
     if let (Some(old), Some(now)) = (old, list.iter().find(|t| t.line == line)) {
         meta::rename_task(&v.root, &path, &old, &now.title)?;
     }
+    Ok(meta::overlaid(&v.root, list))
+}
+
+/// Puts a tag on a task, or takes it off (the tag is written as `#tag` in the task's line).
+#[tauri::command]
+pub async fn task_set_tag(
+    state: State<'_, AppState>,
+    path: String,
+    line: u32,
+    key: String,
+    tag: String,
+    on: bool,
+) -> Result<Vec<Task>, AppError> {
+    let v = state.current_vault()?;
+    let list = edit_note(&v, &path, |c| tasks::set_tag(c, line, &key, &tag, on))?;
     Ok(meta::overlaid(&v.root, list))
 }
 
@@ -710,6 +726,54 @@ pub async fn task_add_to_note(
     add_to_note(&v, &path, &texts)
 }
 
+/// Moves a task, with its steps and log, from its page into an epic (or any other page).
+pub(crate) fn move_task_to(
+    v: &OpenVault,
+    path: &str,
+    line: u32,
+    key: &str,
+    to: &str,
+) -> Result<Vec<Task>, AppError> {
+    check_path(path)?;
+    check_path(to)?;
+    if path == to {
+        return Ok(tasks_of(v, path));
+    }
+    let target = fs_ops::read_note(&v.root, to)?;
+    let source = fs_ops::read_note(&v.root, path)?;
+    let title = tasks::parse(path, &source.content)
+        .into_iter()
+        .find(|t| t.line == line)
+        .map(|t| t.title)
+        .ok_or_else(|| AppError::Conflict("The task has moved".into()))?;
+    v.commit(
+        CommitReason::new(
+            CommitKind::SnapshotBeforeDelete,
+            Some(format!("task \"{title}\" in {path}")),
+        ),
+        Some(&[path.to_string(), to.to_string()]),
+    )?;
+    let (block, rest) = tasks::take(&source.content, line, key)?;
+    ops::write_note(v, to, &tasks::append_block(&target.content, &block))?;
+    ops::write_note(v, path, &rest)?;
+    meta::move_task(&v.root, path, to, &title)?;
+    v.refresh_files();
+    Ok(tasks_of(v, path))
+}
+
+/// Moves a task into another page, usually an epic.
+#[tauri::command]
+pub async fn task_move_to(
+    state: State<'_, AppState>,
+    path: String,
+    line: u32,
+    key: String,
+    to: String,
+) -> Result<Vec<Task>, AppError> {
+    let v = state.current_vault()?;
+    move_task_to(&v, &path, line, &key, &to)
+}
+
 /// Adds a task to an epic (the Inbox when none is given) and returns that note's tasks.
 #[tauri::command]
 pub async fn task_add(
@@ -1020,6 +1084,25 @@ mod tests {
             )
         );
         assert!(add_to_note(&v, "../x.md", &["a".into()]).is_err());
+    }
+
+    #[test]
+    fn a_loose_task_is_moved_into_an_epic_with_its_steps_and_log() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        add_task_to(&v, epics::LOOSE, "Call Anna", "", &["Find number".into()]).unwrap();
+        let loose = std::fs::read_to_string(d.path().join(epics::LOOSE)).unwrap();
+        assert!(loose.starts_with("# Loose tasks"), "{loose}");
+        assert!(!loose.contains("epic"));
+        add_task_to(&v, "Tasks/Acme.md", "Draft offer", "", &[]).unwrap();
+        v.refresh_files();
+        let t = tasks_of(&v, epics::LOOSE).remove(0);
+        let left = move_task_to(&v, epics::LOOSE, t.line, &t.key, "Tasks/Acme.md").unwrap();
+        assert!(left.is_empty());
+        let acme = tasks_of(&v, "Tasks/Acme.md");
+        let moved = acme.iter().find(|x| x.title == "Call Anna").unwrap();
+        assert_eq!(moved.steps.len(), 1);
+        assert_eq!(acme.len(), 2);
     }
 
     #[test]

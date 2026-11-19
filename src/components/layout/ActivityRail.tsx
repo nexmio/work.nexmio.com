@@ -36,6 +36,7 @@ export function newAction(view: CenterView): { label: string; run: () => void } 
     case "tasks":
     case "epic":
     case "task":
+    case "time":
       return { label: "New task", run: () => ui.openCapture("task") };
     case "plans":
       return { label: "New plan", run: () => ui.requestNewPlan() };

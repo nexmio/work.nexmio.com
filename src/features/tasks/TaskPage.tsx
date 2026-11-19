@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, FileText, Layers, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, FileText, Layers, Pencil, Play, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,14 @@ import { Input } from "@/components/ui/input";
 import { latestLeftOff, noteName, shortDate, todayIso, waitersOf } from "@/lib/taskLogic";
 import { cn } from "@/lib/utils";
 import { findTask, useTaskStore } from "@/stores/taskStore";
+import { useTimerStore } from "@/stores/timerStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { BreakDownDialog } from "./BreakDownDialog";
 import { epicTrail } from "./epicTrail";
+import { goBackFromTask, taskBackLabel } from "./taskBack";
+import { MoveToEpic } from "./MoveToEpic";
+import { TaskTags } from "./TaskTags";
 import { WaitingFor } from "./WaitingFor";
 import { WaitingForTask } from "./WaitingForTask";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -253,8 +257,9 @@ export function TaskPage() {
   const [log, setLog] = useState("");
   const [breaking, setBreaking] = useState(false);
   const [showMd, setShowMd] = useState(false);
+  const from = useUiStore((s) => s.taskFrom);
   const back = (): void => {
-    useUiStore.getState().setCenterView("tasks");
+    useUiStore.getState().setCenterView(from === null || from === "task" ? "tasks" : from);
   };
   const store = useTaskStore.getState();
   const aiOff = useAiBlocked();
@@ -303,7 +308,24 @@ export function TaskPage() {
 
   return (
     <section aria-label="Task" className="flex h-full min-h-0 flex-col bg-background">
-      <ViewHeader title="Task" back={{ label: epic?.title ?? noteName(task.path), run: toEpic }}>
+      <ViewHeader
+        title="Task"
+        back={{
+          label: taskBackLabel(from, epic?.title ?? noteName(task.path)),
+          run: () => {
+            goBackFromTask(from, task.path);
+          },
+        }}
+      >
+        <Button
+          size="sm"
+          disabled={task.done}
+          onClick={() => {
+            void useTimerStore.getState().start(task);
+          }}
+        >
+          <Play /> Start timer
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -713,11 +735,8 @@ export function TaskPage() {
               >
                 <FileText /> Open the page
               </Button>
-              {task.tags.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {task.tags.map((t) => `#${t}`).join(" ")}
-                </span>
-              )}
+              <TaskTags task={task} />
+              <MoveToEpic task={task} />
             </div>
           </aside>
         </div>

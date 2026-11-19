@@ -16,4 +16,8 @@ backups: { [key in string]: VaultBackup },
 /**
  * The taskbar helper (Windows only): keys that work in every program, and the icon.
  */
-helper: HelperSettings, };
+helper: HelperSettings, 
+/**
+ * Debug mode: "Inspect element" is shown in every right-click menu. Off by default.
+ */
+debugMode: boolean, };

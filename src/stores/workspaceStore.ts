@@ -1,3 +1,4 @@
+import { commitOnClose } from "@/lib/commitOnClose";
 import { create } from "zustand";
 import { isInside } from "@/lib/utils";
 
@@ -206,6 +207,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
     set((s) => ({ layout: openPath(s.layout, path, to) }));
   },
   close: (path) => {
+    commitOnClose(path);
     set((s) => ({ layout: closePath(s.layout, path) }));
   },
   activate: (id, path) => {

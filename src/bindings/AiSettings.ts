@@ -2,7 +2,6 @@
 import type { BuiltInSettings } from "./BuiltInSettings";
 import type { CloudConsent } from "./CloudConsent";
 import type { EmbeddingSettings } from "./EmbeddingSettings";
-import type { FoundrySettings } from "./FoundrySettings";
 import type { ProviderConfig } from "./ProviderConfig";
 
 export type AiSettings = { 
@@ -28,10 +27,6 @@ answerLanguage: string, providers: Array<ProviderConfig>, embeddings: EmbeddingS
  * The AI that Nexmio Work runs itself, without LM Studio.
  */
 builtin: BuiltInSettings, 
-/**
- * Foundry Local, the second built-in AI.
- */
-foundry: FoundrySettings, 
 /**
  * Let the AI check its own answer to a text command before it is shown. Off by default: it
  * takes about twice as long, which matters most with a large model.

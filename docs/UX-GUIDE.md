@@ -78,7 +78,7 @@ Every control comes from `src/components/ui`, so a change to how one looks is ma
 - `Button`: anything that looks like a button. `PlainButton`: a button whose look belongs to the row, chip, tab or rail icon it is.
 - `Input` (a field in a form), `InlineInput` (a field inside a row or list: + Add a step, renaming in place, the file filter), `TagChip` and the Tags window (Nexmio Work's tags filled with a mark and what they do, the person's own outlined with a `#`), `TimeInput` (a time: type it, or pick it from a list of every quarter of an hour that opens under the box; a time that is not on the list is kept as written).
 - `MarkdownField` (several lines, written as Markdown, with live preview) and `MarkdownText` (shows saved Markdown formatted): every text of more than one line that is a page, a log or a meeting's notes. One line (a title, a task, a step, a name) is `Input` and is never Markdown. `Textarea` is for plain text that is not a page (instructions for the AI, a list of words); `Select`, `Checkbox`, `Radio`, `Label`.
-- `Dialog`, `ConfirmDialog`, `PromptDialog`, the menus (`menuStyles`), `ViewHeader`, `Trail` (the path above a task, an epic or a plan), `PanelHeader`, `RowActions`, `MoveButtons`, `InfoHint`, `MonthCalendar`.
+- `Dialog`, `ConfirmDialog`, `PromptDialog`, the menus (`menuStyles`), `ViewHeader`, `Trail` (the path above a task, an epic or a plan), `TagPicker` (the tags of a task or an epic, with suggestions), `PanelHeader`, `RowActions`, `MoveButtons`, `InfoHint`, `MonthCalendar`.
 
 ## Interaction patterns
 

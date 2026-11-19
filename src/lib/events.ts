@@ -52,21 +52,6 @@ export function onEngineStatus(
   });
 }
 
-export function onFoundryStatus(
-  handler: (e: import("@/bindings/FoundryStatus").FoundryStatus) => void,
-): Promise<UnlistenFn> {
-  return listen<import("@/bindings/FoundryStatus").FoundryStatus>("foundry://status", (e) => {
-    handler(e.payload);
-  });
-}
-
-/** Progress (0–100) while Windows gets Phi Silica's model ready. */
-export function onPhiProgress(handler: (pct: number) => void): Promise<UnlistenFn> {
-  return listen<number>("phi://progress", (e) => {
-    handler(e.payload);
-  });
-}
-
 export function onEmbeddingStatus(
   handler: (e: import("@/bindings/EmbeddingStatus").EmbeddingStatus) => void,
 ): Promise<UnlistenFn> {

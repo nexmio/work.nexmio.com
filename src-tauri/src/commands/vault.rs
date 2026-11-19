@@ -239,3 +239,49 @@ pub async fn open_attachment(
         .open_path(abs.to_string_lossy(), None::<&str>)
         .map_err(|e| AppError::Io(e.to_string()))
 }
+
+/// What a tag on every page of a folder or project would change (nothing is changed).
+#[tauri::command]
+pub async fn folder_tag_preview(
+    state: State<'_, AppState>,
+    folder: String,
+    tag: String,
+    on: bool,
+) -> Result<ops::TagPreview, AppError> {
+    let v = state.current_vault()?;
+    ops::tag_preview(&v, &folder, &tag, on)
+}
+
+/// What deleting a tag everywhere would change.
+#[tauri::command]
+pub async fn tag_use(state: State<'_, AppState>, tag: String) -> Result<ops::TagUse, AppError> {
+    let v = state.current_vault()?;
+    ops::tag_use(&v, &tag)
+}
+
+/// Makes a tag that nothing has yet.
+#[tauri::command]
+pub async fn tag_make(state: State<'_, AppState>, tag: String) -> Result<String, AppError> {
+    let v = state.current_vault()?;
+    ops::make_tag(&v, &tag)
+}
+
+/// Takes a tag off every page and task. A snapshot is saved before and after.
+#[tauri::command]
+pub async fn tag_delete(state: State<'_, AppState>, tag: String) -> Result<Vec<String>, AppError> {
+    let v = state.current_vault()?;
+    ops::delete_tag(&v, &tag)
+}
+
+/// Puts a tag on every page of a folder or project, or takes it off. A snapshot is saved before
+/// and after. Returns the pages that changed.
+#[tauri::command]
+pub async fn folder_set_tag(
+    state: State<'_, AppState>,
+    folder: String,
+    tag: String,
+    on: bool,
+) -> Result<Vec<String>, AppError> {
+    let v = state.current_vault()?;
+    ops::set_tag_in_folder(&v, &folder, &tag, on)
+}

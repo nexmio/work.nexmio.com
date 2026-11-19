@@ -57,7 +57,7 @@ describe("CaptureBox", () => {
     apiMock.createNote.mockResolvedValue("Quick/Cheat sheet.md");
     apiMock.writeNote.mockResolvedValue(undefined);
     useTaskStore.setState({
-      epics: [{ path: "Tasks/Work.md", title: "Work", source: null, description: "" }],
+      epics: [{ path: "Tasks/Work.md", title: "Work", source: null, description: "", tags: [] }],
       loaded: true,
     });
     useVaultStore.setState({

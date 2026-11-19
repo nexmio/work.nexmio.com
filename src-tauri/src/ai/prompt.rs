@@ -345,7 +345,6 @@ mod tests {
                 provider_id: None,
             },
             "",
-            false,
         );
         let chat = build_system_prompt(&input(None), None);
         for text in [chat, inline, DEFAULT_BASE_INSTRUCTION.to_string()] {

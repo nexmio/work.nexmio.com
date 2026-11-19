@@ -101,7 +101,7 @@ function Set-Field($obj, [string]$name, $value) {
 # The pictures: ten screenshots, the icon and the box art (docs/STORE-LISTING.md). A picture that is
 # missing from the repository is skipped with a warning; the Store keeps the ones it has for that type.
 $pictures = @()
-foreach ($n in "start-page", "note-editor", "tasks", "task-page", "focus", "meeting", "tags", "themes", "midnight", "ideas") {
+foreach ($n in "start-page", "note-editor", "tasks", "task-page", "timer", "meeting", "tags", "themes", "midnight", "ideas") {
   $pictures += @{ type = "Screenshot"; path = Join-Path $ImagesDir "screenshots/$n.png" }
 }
 $pictures += @{ type = "Icon"; path = Join-Path $ImagesDir "store/icon-300x300.png" }

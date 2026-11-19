@@ -61,22 +61,26 @@ describe("Settings → AI", () => {
     expect(next.ai.builtin).toMatchObject({ cpu: "amd", gpu: "amd", backend: "vulkan" });
   });
 
-  it("choosing a graphics card picks its default engine", async () => {
+  it("offers two engines only, the graphics card and the CPU, with their download sizes", () => {
     useEngineStore.setState({ hardware: null });
     render(<BuiltInAiSettings draft={settings()} onChange={onChange} />);
-    await userEvent.setup().selectOptions(screen.getByLabelText("Graphics card (GPU)"), "nvidia");
-    const next = onChange.mock.calls.at(-1)?.[0] as Settings;
-    expect(next.ai.builtin).toMatchObject({ gpu: "nvidia", backend: "cuda12" });
+    const group = screen.getByRole("radiogroup", { name: "Run the AI on" });
+    expect(within(group).getAllByRole("radio")).toHaveLength(2);
+    expect(within(group).getByText(/Graphics card \(Vulkan\)/)).toBeInTheDocument();
+    expect(within(group).getByText("CPU only")).toBeInTheDocument();
+    expect(within(group).getByText(/30\.5 MB/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Graphics card (GPU)")).toBeNull();
+    expect(screen.queryByText(/CUDA|ROCm|SYCL/)).toBeNull();
   });
 
-  it("lists advanced engines separately and shows the download sizes", () => {
+  it("choosing the CPU engine is saved", async () => {
     useEngineStore.setState({ hardware: null });
-    render(<BuiltInAiSettings draft={settings()} onChange={onChange} />);
-    const select = screen.getByLabelText("Engine to download");
-    const advanced = select.querySelector("optgroup[label='Advanced']");
-    expect(advanced).not.toBeNull();
-    expect(within(advanced as HTMLElement).getByText(/AMD \(ROCm\)/)).toBeInTheDocument();
-    expect(within(select).getByText(/Graphics card \(Vulkan\) · 30\.5 MB/)).toBeInTheDocument();
+    const draft = settings();
+    draft.ai.builtin = { ...draft.ai.builtin, backend: "vulkan" };
+    render(<BuiltInAiSettings draft={draft} onChange={onChange} />);
+    await userEvent.setup().click(screen.getByRole("radio", { name: /CPU only/ }));
+    const next = onChange.mock.calls.at(-1)?.[0] as Settings;
+    expect(next.ai.builtin.backend).toBe("cpu");
   });
 
   it("Download sends the choices, and says how much will be downloaded", async () => {

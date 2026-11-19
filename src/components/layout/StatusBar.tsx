@@ -7,6 +7,7 @@ import { appVersion, buildDateLabel, releaseStage } from "@/lib/version";
 import { saveStatusLabel, useFocusedSaveStatus } from "@/stores/editorStore";
 import { PlainButton } from "@/components/ui/plain-button";
 import { SpellingToggle } from "./SpellingToggle";
+import { TimerChip } from "./TimerChip";
 
 /** Save status · project · spelling · app version. */
 export function StatusBar() {
@@ -33,7 +34,8 @@ export function StatusBar() {
           {warning}
         </PlainButton>
       )}
-      <span className="ml-auto">
+      <span className="ml-auto flex items-center gap-3">
+        <TimerChip />
         <SpellingToggle />
       </span>
       <span

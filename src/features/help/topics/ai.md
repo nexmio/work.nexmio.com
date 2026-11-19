@@ -10,7 +10,7 @@
 - **The whole page:** the **AI** button above the page: fix spelling and grammar (in the whole page), improve the structure, a short summary at the top, a title and tags, find tasks, split into pages, and an e-mail from the page. **Link related pages** opens the Links panel; it finds pages by the title and tags and needs no AI.
 - **A folder:** right-click it → **AI**: sort into folders, find duplicates, an index page and more. **Make an index page** right under it makes a list of links without AI.
 - **Search:** a search that reads like a question ("what is the service desk number?") shows **Answer from my pages**. Press **Get an answer**: the AI reads the pages that fit and answers, with the pages it used.
-- **A task:** Break it down, **Write a status line from the log**, and in Focus **Help me start**.
+- **A task:** Break it down, **Write a status line from the log**.
 - **An idea:** **Think it through** (three questions) and **Suggest first steps** (they become one task with those steps).
 - **Any text box:** select text in a box (a task's note, the log, an idea, a project's text) and the same small bar appears, or press **Ctrl/Cmd+K** in the box. Name, search and password boxes have no AI.
 - **Spelling help** (made for dyslexia): turn it on in the status bar or in Settings. A moment after you stop typing, misspelt words get a wavy line. Click a word to fix it, ignore it or add it to your words. Nothing changes by itself.
@@ -41,7 +41,7 @@ The AI has no internet access and only knows what it learned in training, so it 
 
 ## Choose which AI to use
 
-Nexmio Work uses an AI that runs on your own computer: the **built-in AI** (Phi Silica on a Copilot+ PC in the Store version, Foundry Local, or llama.cpp), **LM Studio** or another OpenAI-compatible server on this computer. **Settings → AI** lists them in the order that suits where Nexmio Work runs, with the state of each; click one to use it, and its setup is right under it (a model to download, or an address and the steps for that kind of provider). The built-in AIs are in beta and none is recommended over the others: what works best depends on your computer, so try them in turn and keep the one that works best. **Test it** under an AI sends one short question, with none of your pages, and shows the answer or the error.
+Nexmio Work uses an AI that runs on your own computer: the **built-in AI** (llama.cpp), or an AI of your own: **LM Studio** or another OpenAI-compatible server on this computer, or a **cloud AI** (OpenAI and others), which you turn on yourself after a warning that your pages are then sent to it. **Settings → AI** lists them in the order that suits where Nexmio Work runs, with the state of each; click one to use it, and its setup is right under it (a model to download, or an address and the steps for that kind of provider). The built-in AI is in beta: what works best depends on your computer. **Test it** under an AI sends one short question, with none of your pages, and shows the answer or the error.
 
 **The AI is beta.** It is still being built, will change, and can make mistakes: the chat, the text commands and the other AI help are marked **Beta**, and every answer is yours to check before you keep it. Everything else in Nexmio Work works without an AI. Help → **About the AI beta…** shows the first-start notice again.
 

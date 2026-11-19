@@ -45,22 +45,8 @@ fn language_rule(req: &InlineRequest, answer_language: &str) -> String {
 
 /// Builds the system prompt and the single user message for an inline request. A fixed command
 /// does one thing, so it gets its task, the language rule and nothing else: not the "About me"
-/// text and not the project's. `small` is for a small model (Phi Silica): one short message with
-/// the task first and the text last.
-pub fn build_messages(
-    req: &InlineRequest,
-    answer_language: &str,
-    small: bool,
-) -> (String, ChatMessage) {
-    if small {
-        let user = format!(
-            "{}\n{}\n{ONLY_REPLACEMENT}\n\nText:\n{}",
-            task(req),
-            language_rule(req, answer_language),
-            req.text
-        );
-        return (String::new(), ChatMessage::user(user));
-    }
+/// text and not the project's.
+pub fn build_messages(req: &InlineRequest, answer_language: &str) -> (String, ChatMessage) {
     let system = format!(
         "You are the writing assistant inside Nexmio Work, a Markdown notes app. The user sends text; you transform it.\n{ONLY_REPLACEMENT}\n{}\nTask: {}",
         language_rule(req, answer_language),
@@ -87,12 +73,9 @@ pub async fn run_inline(
     let provider = router::select_notes(&settings, project.as_ref(), req.provider_id.as_deref())?;
     // The built-in AI must be awake (loaded) before anything is sent to it.
     crate::engine::service::require_awake(&state, provider.config())?;
-    crate::foundry::service::require_awake(&state, provider.config())?;
     crate::engine::service::touch(&state);
-    crate::foundry::service::touch(&state);
     let key = keychain::get_key(&provider.config().id);
-    let small = provider.config().kind == crate::settings::ProviderKind::PhiSilica;
-    let (system, user) = build_messages(&req, &settings.ai.answer_language, small);
+    let (system, user) = build_messages(&req, &settings.ai.answer_language);
     let llm = LlmRequest {
         system,
         messages: vec![user],
@@ -188,63 +171,41 @@ mod tests {
             InlineCommand::Expand,
             InlineCommand::RestructureList,
         ] {
-            let (sys, user) = build_messages(&req(c, None), "", false);
+            let (sys, user) = build_messages(&req(c, None), "");
             assert!(sys.contains("Return ONLY the replacement text"));
             assert_eq!(user.content, "hello wrld");
         }
-        let (sys, _) = build_messages(
-            &req(InlineCommand::Custom, Some("make it rhyme")),
-            "",
-            false,
-        );
+        let (sys, _) = build_messages(&req(InlineCommand::Custom, Some("make it rhyme")), "");
         assert!(sys.contains("make it rhyme"));
     }
 
     #[test]
     fn a_translation_is_not_told_to_keep_the_language_of_the_text() {
         let translate = "Translate the text into English.";
-        let (sys, _) = build_messages(&req(InlineCommand::Custom, Some(translate)), "", false);
+        let (sys, _) = build_messages(&req(InlineCommand::Custom, Some(translate)), "");
         assert!(!sys.contains("Answer in the language of the text"), "{sys}");
         assert!(sys.ends_with(&format!(
             "Task: Apply this instruction to the text: {translate}"
         )));
-        let (sys, _) = build_messages(&req(InlineCommand::FixSpelling, None), "", false);
+        let (sys, _) = build_messages(&req(InlineCommand::FixSpelling, None), "");
         assert!(sys.contains("Answer in the language of the text"));
     }
 
     #[test]
-    fn a_small_model_gets_one_short_message_with_the_text_last() {
-        let (sys, user) = build_messages(
-            &req(
-                InlineCommand::Custom,
-                Some("Translate the text into English."),
-            ),
-            "Danish",
-            true,
-        );
-        assert!(sys.is_empty());
-        assert!(user
-            .content
-            .starts_with("Apply this instruction to the text: Translate"));
-        assert!(user.content.ends_with("Text:\nhello wrld"));
-    }
-
-    #[test]
     fn the_chosen_answer_language_applies_to_fixed_commands_but_not_to_a_custom_one() {
-        let (sys, _) = build_messages(&req(InlineCommand::Rewrite, None), "Danish", false);
+        let (sys, _) = build_messages(&req(InlineCommand::Rewrite, None), "Danish");
         assert!(sys.contains("Answer in Danish."));
         assert!(!sys.contains("Answer in the language of the text"));
         let (sys, _) = build_messages(
             &req(InlineCommand::Custom, Some("Translate it into English.")),
             "Danish",
-            false,
         );
         assert!(!sys.contains("Answer in Danish"), "{sys}");
     }
 
     #[test]
     fn no_instruction_text_reaches_a_fixed_command() {
-        let (sys, user) = build_messages(&req(InlineCommand::Shorten, None), "", false);
+        let (sys, user) = build_messages(&req(InlineCommand::Shorten, None), "");
         assert!(!sys.contains("global instructions") && !sys.contains("About the user"));
         assert_eq!(user.content, "hello wrld");
     }

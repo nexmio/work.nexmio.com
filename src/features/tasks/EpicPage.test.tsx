@@ -38,7 +38,13 @@ describe("EpicPage", () => {
         makeTask({ path: epicNote, line: 4, title: "Test on a Mac", done: true }),
       ],
       epics: [
-        { path: epicNote, title: "VPN guide", source: "IT/VPN client guide", description: "" },
+        {
+          path: epicNote,
+          title: "VPN guide",
+          source: "IT/VPN client guide",
+          description: "",
+          tags: [],
+        },
       ],
       epicPath: epicNote,
       selected: null,
@@ -47,7 +53,7 @@ describe("EpicPage", () => {
       resolver: new LinkResolver(["IT/VPN client guide.md", epicNote]),
       openNote: vi.fn().mockResolvedValue(undefined),
     });
-    useUiStore.setState({ centerView: "epic", findTasksOpen: false, focusOpen: false });
+    useUiStore.setState({ centerView: "epic", findTasksOpen: false });
   });
 
   it("lists the open tasks first and the done ones last, under Done", () => {
@@ -120,7 +126,7 @@ describe("EpicPage", () => {
     render(<EpicPage />);
     expect(screen.getByRole("button", { name: /Suggest steps from the page/ })).toBeDisabled();
     expect(screen.getByLabelText("Add a task to this epic")).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Focus" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Start timer" })).toBeEnabled();
   });
 
   it("deletes the epic page only after asking", async () => {

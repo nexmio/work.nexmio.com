@@ -232,7 +232,6 @@ export async function launch({
           cloudConsent: null,
           answerLanguage: "",
           globalInstructions: "",
-          foundry: { model: "", tools: true },
           builtin: {
             cpu: "other",
             gpu: "none",
@@ -321,6 +320,7 @@ export async function launch({
             title: /^# (.*)$/m.exec(n.content)?.[1] ?? n.path,
             source: null,
             description: "",
+            tags: tagsOf(n.content).filter((t) => t !== "epic"),
           })),
         list_ideas: () => ideas,
         backlinks: () => [],

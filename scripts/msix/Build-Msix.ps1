@@ -21,22 +21,11 @@ param(
   [string]$Exe = "src-tauri\target\release\nexmio-work.exe",
   [string]$IconDir = "src-tauri\icons",
   [string]$OutDir = "msix-out",
-  # Foundry Local's native libraries (scripts/fetch-foundry-native.ps1). Packed next to nexmio-work.exe
-  # when the folder has them; without them the package still works but has no Foundry Local.
-  [string]$FoundryDir = "src-tauri\foundry-native",
   [string]$IdentityName = "Nexmio.Work.Placeholder",
   # The name shown in the Start menu and the Store. It must be the name reserved in Partner Center.
   [string]$DisplayName = "Nexmio Work",
   [string]$Publisher = "CN=00000000-0000-0000-0000-000000000000",
   [string]$PublisherDisplayName = "Nexmio",
-  # The Windows App SDK runtime the package depends on (for Phi Silica). Keep it in step with the
-  # bindings in src-tauri/src/phisilica/bindings.rs.
-  [string]$WinAppSdkVersion = "2.5.1.0",
-  # Microsoft's Limited Access Feature token for Phi Silica and its attestation sentence. They are
-  # written to phi-silica.json in the package, never into the program or the repository. Without
-  # them the package works, but Phi Silica stays locked.
-  [string]$PhiSilicaToken = $env:PHI_SILICA_TOKEN,
-  [string]$PhiSilicaAttestation = $env:PHI_SILICA_ATTESTATION,
   [switch]$TestSign
 )
 
@@ -73,21 +62,6 @@ New-Item -ItemType Directory -Path (Join-Path $stage "Assets") -Force | Out-Null
 
 # The program and the logos the manifest points at.
 Copy-Item $Exe (Join-Path $stage "nexmio-work.exe")
-if (Test-Path (Join-Path $FoundryDir "foundry_local.dll")) {
-  $native = Join-Path $stage "foundry-native"
-  New-Item -ItemType Directory -Path $native -Force | Out-Null
-  Copy-Item (Join-Path $FoundryDir "*.dll") $native
-  Write-Host "Packed Foundry Local from ${FoundryDir}"
-} else {
-  Write-Host "No Foundry Local libraries in ${FoundryDir}: the package will not have Foundry Local."
-}
-if ($PhiSilicaToken -and $PhiSilicaAttestation) {
-  $access = [ordered]@{ token = $PhiSilicaToken.Trim(); attestation = $PhiSilicaAttestation.Trim() } | ConvertTo-Json
-  [System.IO.File]::WriteAllText((Join-Path $stage "phi-silica.json"), $access, (New-Object System.Text.UTF8Encoding($false)))
-  Write-Host "Packed the Phi Silica access key"
-} else {
-  Write-Host "No Phi Silica access key (PHI_SILICA_TOKEN / PHI_SILICA_ATTESTATION): Phi Silica stays locked."
-}
 foreach ($logo in @("StoreLogo.png", "Square44x44Logo.png", "Square150x150Logo.png")) {
   $src = Join-Path $IconDir $logo
   if (-not (Test-Path $src)) { throw "Missing logo: $src" }
@@ -101,8 +75,7 @@ $manifest = $manifest.Replace("{{NAME}}", (Escape-Xml $IdentityName)).
   Replace("{{DISPLAY_NAME}}", (Escape-Xml $DisplayName)).
   Replace("{{PUBLISHER}}", (Escape-Xml $Publisher)).
   Replace("{{PUBLISHER_DISPLAY}}", (Escape-Xml $PublisherDisplayName)).
-  Replace("{{VERSION}}", $msixVersion).
-  Replace("{{WINAPPSDK_VERSION}}", $WinAppSdkVersion)
+  Replace("{{VERSION}}", $msixVersion)
 if ($manifest -match '\{\{[A-Z_]+\}\}') { throw "The manifest still has an unfilled value: $($Matches[0])" }
 [System.IO.File]::WriteAllText((Join-Path $stage "AppxManifest.xml"), $manifest, (New-Object System.Text.UTF8Encoding($false)))
 

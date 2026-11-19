@@ -30,8 +30,6 @@ pub struct AppState {
     pub embedding_status: Mutex<crate::embeddings::EmbeddingStatus>,
     /// The AI that Nexmio Work runs itself (download, wake, sleep).
     pub engine: crate::engine::EngineRuntime,
-    /// Foundry Local, the second built-in AI (download, wake, sleep).
-    pub foundry: crate::foundry::FoundryRuntime,
     /// What the daily-note trace has written today.
     pub trace: crate::trace::SeenCell,
 }
@@ -52,7 +50,6 @@ impl AppState {
             open_lock: Mutex::new(()),
             embedding_status: Mutex::new(crate::embeddings::EmbeddingStatus::default()),
             engine: crate::engine::EngineRuntime::new(),
-            foundry: crate::foundry::FoundryRuntime::new(),
             trace: Default::default(),
         }
     }

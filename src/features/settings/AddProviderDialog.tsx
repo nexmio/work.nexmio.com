@@ -113,8 +113,7 @@ export function AddProviderDialog({ open, onCancel, onAdd }: Props) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          The built-in AI (llama.cpp and Foundry Local) is not added here: it has its own tab,
-          Built-in AI.
+          The built-in AI (llama.cpp) is not added here: it has its own tab, Built-in AI.
         </p>
         <DialogFooter>
           <Button

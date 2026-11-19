@@ -29,8 +29,8 @@ describe("TasksPanel", () => {
         makeTask({ path: "Tasks/B.md", title: "Three", done: true }),
       ]);
     apiMock.listEpics.mockReset().mockResolvedValue([
-      { path: "Tasks/A.md", title: "Alpha", source: null },
-      { path: "Tasks/B.md", title: "Beta", source: null },
+      { path: "Tasks/A.md", title: "Alpha", source: null, description: "", tags: [] },
+      { path: "Tasks/B.md", title: "Beta", source: null, description: "", tags: [] },
     ]);
     useTaskStore.setState({
       tasks: [],
@@ -82,5 +82,42 @@ describe("TasksPanel", () => {
     expect(
       screen.queryByRole("button", { name: /All open|Moved from earlier|This week/ }),
     ).toBeNull();
+  });
+});
+
+describe("TasksPanel tag filter", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useTaskStore.setState({
+      tasks: [
+        makeTask({ path: "Tasks/A.md", title: "One", key: "a" }),
+        makeTask({ path: "Tasks/B.md", title: "Two", key: "b", tags: ["intern"] }),
+      ],
+      epics: [
+        { path: "Tasks/A.md", title: "Alpha", source: null, description: "", tags: ["kunde-x"] },
+        { path: "Tasks/B.md", title: "Beta", source: null, description: "", tags: [] },
+      ],
+      loaded: true,
+      chosenArea: null,
+      tagFilter: null,
+      load: vi.fn().mockResolvedValue(undefined),
+    });
+    useUiStore.setState({ centerView: "tasks" });
+  });
+
+  it("lists the tags of the epics and tasks, and a tag narrows the areas to what has it", async () => {
+    render(<TasksPanel />);
+    const user = userEvent.setup();
+    const tags = screen.getByRole("list", { name: "Show only a tag" });
+    expect(tags).toHaveTextContent("#kunde-x");
+    expect(tags).toHaveTextContent("#intern");
+    await user.click(screen.getByRole("button", { name: "#kunde-x" }));
+    expect(screen.getByRole("button", { name: /Alpha/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Beta/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "#intern" }));
+    expect(screen.getByRole("button", { name: /Beta/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Alpha/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "#intern" }));
+    expect(screen.getByRole("button", { name: /Alpha/ })).toBeInTheDocument();
   });
 });

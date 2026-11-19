@@ -74,7 +74,6 @@ vi.mock("@/lib/events", () => ({
   onFlushRequested: vi.fn().mockResolvedValue(() => undefined),
   onHelperChanged: vi.fn().mockResolvedValue(() => undefined),
   onEmbeddingStatus: vi.fn().mockResolvedValue(() => undefined),
-  onFoundryStatus: vi.fn().mockResolvedValue(() => undefined),
   onEngineStatus: vi.fn().mockResolvedValue(() => undefined),
 }));
 vi.mock("@tauri-apps/api/window", () => ({

@@ -39,40 +39,6 @@ pub fn engine_files(os: Os, backend: Backend) -> Option<&'static [EngineFile]> {
             size: 32142425,
             sha256: "50f23bc8b87d611e332e1529fa849095719f4f5c257b6c4c847f62c0d391ff1c",
         }],
-        (Os::Windows, Backend::Cuda12) => &[
-            EngineFile {
-                name: "llama-b11636-bin-win-cuda-12.4-x64.zip",
-                size: 266564996,
-                sha256: "20ef9c858741ea3ceee71d73568d2d79764790d010cc57e57dc84937350513b2",
-            },
-            EngineFile {
-                name: "cudart-llama-bin-win-cuda-12.4-x64.zip",
-                size: 391443627,
-                sha256: "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6",
-            },
-        ],
-        (Os::Windows, Backend::Cuda13) => &[
-            EngineFile {
-                name: "llama-b11636-bin-win-cuda-13.4-x64.zip",
-                size: 154560092,
-                sha256: "78871ba54a3d66f55f14643dc13e556f316abacb157119df29eb933cca8c9830",
-            },
-            EngineFile {
-                name: "cudart-llama-bin-win-cuda-13.4-x64.zip",
-                size: 423535356,
-                sha256: "738f8c251ac22b70c3ae6f83a10cf222725df0395246a2cf58f32bdb85fbe668",
-            },
-        ],
-        (Os::Windows, Backend::Rocm) => &[EngineFile {
-            name: "llama-b11636-bin-win-rocm-10.0-x64.zip",
-            size: 258427247,
-            sha256: "f9174ace5c4d35f027908b480eaeb0db5a3c490fb40a9f09b6bb2a5cc09c4746",
-        }],
-        (Os::Windows, Backend::Sycl) => &[EngineFile {
-            name: "llama-b11636-bin-win-sycl-x64.zip",
-            size: 149016741,
-            sha256: "997bbb1ebb950e106e7ceba278be648605cc5125982d80138c47e9dc698d1a3a",
-        }],
         (Os::Linux, Backend::Cpu) => &[EngineFile {
             name: "llama-b11636-bin-ubuntu-x64.tar.gz",
             size: 17823415,
@@ -82,40 +48,6 @@ pub fn engine_files(os: Os, backend: Backend) -> Option<&'static [EngineFile]> {
             name: "llama-b11636-bin-ubuntu-vulkan-x64.tar.gz",
             size: 30450220,
             sha256: "23927de7c4080d3eceb32920d670205f495c345fb1b06de173637b549efa11f0",
-        }],
-        (Os::Linux, Backend::Cuda12) => &[
-            EngineFile {
-                name: "llama-b11636-bin-ubuntu-cuda-12.8-x64.tar.gz",
-                size: 172498547,
-                sha256: "4f09a755b61f646efee83f023c268528ad30d1654946af877c2ebce73fa8bfb5",
-            },
-            EngineFile {
-                name: "cudart-llama-b11636-bin-ubuntu-cuda-12.8-x64.tar.gz",
-                size: 594377288,
-                sha256: "809df42430de042514fc41666d2b09f22083446741f32e305f044853ff56c6a1",
-            },
-        ],
-        (Os::Linux, Backend::Cuda13) => &[
-            EngineFile {
-                name: "llama-b11636-bin-ubuntu-cuda-13.4-x64.tar.gz",
-                size: 153645260,
-                sha256: "42b8dacfe47f1770652e255779c6ecff1f2aeedf3697ab0950d67b8af0e97c0c",
-            },
-            EngineFile {
-                name: "cudart-llama-b11636-bin-ubuntu-cuda-13.4-x64.tar.gz",
-                size: 440236725,
-                sha256: "f51e53610988a195910ef5127212907958d062c80a1c81487dc8a04f1308ff27",
-            },
-        ],
-        (Os::Linux, Backend::Rocm) => &[EngineFile {
-            name: "llama-b11636-bin-ubuntu-rocm-10.0-x64.tar.gz",
-            size: 245031740,
-            sha256: "23941197f5325320f927a8efe8e1d07c9e82d7f78c6c59540d7c21c0ec53a198",
-        }],
-        (Os::Linux, Backend::Sycl) => &[EngineFile {
-            name: "llama-b11636-bin-ubuntu-sycl-fp16-x64.tar.gz",
-            size: 54522029,
-            sha256: "1c93a215725335c6b5e5b4f4a2165b7d403e7e2150089a4002f23fa75604ca3a",
         }],
         _ => return None,
     })
@@ -131,8 +63,6 @@ pub struct BackendInfo {
     pub description: String,
     /// The graphics cards this build is the default for.
     pub default_for: Vec<GpuVendor>,
-    /// Shown under "advanced" in the settings.
-    pub advanced: bool,
     #[ts(type = "number")]
     pub download_bytes: u64,
 }
@@ -145,53 +75,22 @@ pub fn backends(os: Os) -> Vec<BackendInfo> {
             "CPU only",
             "Runs on the processor. Works everywhere and is the slowest.",
             vec![GpuVendor::None],
-            false,
         ),
         (
             Backend::Vulkan,
             "Graphics card (Vulkan)",
             "Works with AMD, Intel and Nvidia graphics cards. Needs an up-to-date graphics driver.",
-            vec![GpuVendor::Amd, GpuVendor::Intel],
-            false,
-        ),
-        (
-            Backend::Cuda12,
-            "Nvidia (CUDA 12)",
-            "The fastest choice for Nvidia cards. Large download. Needs an Nvidia driver that supports CUDA 12.",
-            vec![GpuVendor::Nvidia],
-            false,
-        ),
-        (
-            Backend::Cuda13,
-            "Nvidia (CUDA 13)",
-            "For Nvidia cards with a very recent driver. Large download.",
-            vec![],
-            true,
-        ),
-        (
-            Backend::Rocm,
-            "AMD (ROCm)",
-            "For supported AMD cards. Try Vulkan first, it works with more cards.",
-            vec![],
-            true,
-        ),
-        (
-            Backend::Sycl,
-            "Intel (SYCL)",
-            "For Intel graphics. Try Vulkan first. On Linux it needs Intel's oneAPI runtime to be installed.",
-            vec![],
-            true,
+            vec![GpuVendor::Nvidia, GpuVendor::Amd, GpuVendor::Intel],
         ),
     ];
     all.into_iter()
-        .filter_map(|(id, label, description, default_for, advanced)| {
+        .filter_map(|(id, label, description, default_for)| {
             let files = engine_files(os, id)?;
             Some(BackendInfo {
                 id,
                 label: label.into(),
                 description: description.into(),
                 default_for,
-                advanced,
                 download_bytes: files.iter().map(|f| f.size).sum(),
             })
         })
@@ -333,14 +232,7 @@ pub fn catalog() -> Catalog {
 mod tests {
     use super::*;
 
-    const ALL: [Backend; 6] = [
-        Backend::Cpu,
-        Backend::Vulkan,
-        Backend::Cuda12,
-        Backend::Cuda13,
-        Backend::Rocm,
-        Backend::Sycl,
-    ];
+    const ALL: [Backend; 2] = [Backend::Cpu, Backend::Vulkan];
 
     fn is_sha256(s: &str) -> bool {
         s.len() == 64
@@ -370,14 +262,25 @@ mod tests {
     }
 
     #[test]
-    fn cuda_builds_come_with_their_runtime() {
+    fn only_the_cpu_and_the_vulkan_builds_are_offered() {
         for os in [Os::Windows, Os::Linux] {
-            for b in [Backend::Cuda12, Backend::Cuda13] {
-                let files = engine_files(os, b).unwrap();
-                assert_eq!(files.len(), 2);
-                assert!(files[1].name.starts_with("cudart-"));
+            let ids: Vec<Backend> = backends(os).iter().map(|b| b.id).collect();
+            assert_eq!(ids, vec![Backend::Cpu, Backend::Vulkan]);
+            // One file each: the build is a single archive, with no runtime to add.
+            for b in ALL {
+                assert_eq!(engine_files(os, b).unwrap().len(), 1);
             }
         }
+    }
+
+    #[test]
+    fn settings_from_before_still_read_the_old_engine_names_as_vulkan() {
+        for old in ["cuda12", "cuda13", "rocm", "sycl", "vulkan"] {
+            let b: Backend = serde_json::from_str(&format!("\"{old}\"")).unwrap();
+            assert_eq!(b, Backend::Vulkan, "{old}");
+        }
+        let cpu: Backend = serde_json::from_str("\"cpu\"").unwrap();
+        assert_eq!(cpu, Backend::Cpu);
     }
 
     #[test]

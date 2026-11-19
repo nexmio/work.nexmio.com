@@ -61,9 +61,6 @@
       "rpm"
     ],
     "category": "Productivity",
-    "resources": [
-      "foundry-native/*"
-    ],
     "shortDescription": "Markdown notes and tasks with a local AI",
     "icon": [
       "icons/32x32.png",

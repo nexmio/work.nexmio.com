@@ -1,4 +1,4 @@
-import { MoreHorizontal, Plus, Target } from "lucide-react";
+import { MoreHorizontal, Play, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PromptDialog } from "@/components/PromptDialog";
@@ -15,6 +15,7 @@ import { PlainButton } from "@/components/ui/plain-button";
 import { openFile } from "@/lib/actions";
 import {
   areaLists,
+  tasksWithTag,
   epicGroups,
   LOOSE_AREA,
   noteName,
@@ -27,7 +28,8 @@ import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { EpicProgress } from "./EpicProgress";
-import { focusEpic, firstOpenTask } from "./focusEpic";
+import { useTimerStore } from "@/stores/timerStore";
+import { EpicTags } from "./TaskTags";
 import { NowCard } from "./NowCard";
 import { TaskRow } from "./TaskRow";
 
@@ -92,6 +94,7 @@ export function TasksView() {
   const epicOrder = useTaskStore((s) => s.epicOrder);
   const loaded = useTaskStore((s) => s.loaded);
   const chosen = useTaskStore((s) => s.chosenArea);
+  const tagFilter = useTaskStore((s) => s.tagFilter);
   const activePath = useVaultStore((s) => s.activePath);
   const vaultPath = useVaultStore((s) => s.vault?.path ?? null);
   const aiOff = useAiBlocked();
@@ -112,6 +115,7 @@ export function TasksView() {
   const current = pickArea(groups, loose.length > 0, chosen);
   const group = groups.find((g) => g.path === current) ?? null;
   const isLoose = current === LOOSE_AREA;
+  const nowTask = group === null ? null : areaLists(tasksWithTag(group, epics, tagFilter)).now;
   const movable = groups.filter((g) => !g.allDone && g.path !== INBOX_PATH).map((g) => g.path);
   const at = group === null ? -1 : movable.indexOf(group.path);
 
@@ -209,9 +213,10 @@ export function TasksView() {
   );
 
   const body = (g: EpicGroup) => {
-    const lists = areaLists(g.tasks);
+    const lists = areaLists(tasksWithTag(g, epics, tagFilter));
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+        {g.adopted && <EpicTags path={g.path} />}
         {lists.now !== null && <NowCard task={lists.now} others={lists.after} />}
         {lists.now === null && g.tasks.length > 0 && lists.waiting.length === 0 && (
           <p className="rounded-xl border bg-card p-4 text-base">
@@ -265,15 +270,15 @@ export function TasksView() {
     <section aria-label="Tasks" className="flex h-full min-h-0 flex-col bg-background">
       <ViewHeader title={group?.title ?? (isLoose ? "Loose tasks" : "Tasks")}>
         {group !== null && <EpicProgress group={group} />}
-        {group !== null && firstOpenTask(group) !== undefined && (
+        {nowTask !== null && (
           <Button
             size="sm"
-            aria-label={`Start focus on ${group.title}`}
+            aria-label={`Start the timer on ${nowTask.title}`}
             onClick={() => {
-              focusEpic(group);
+              void useTimerStore.getState().start(nowTask);
             }}
           >
-            <Target /> Start focus
+            <Play /> Start timer
           </Button>
         )}
         {menu}

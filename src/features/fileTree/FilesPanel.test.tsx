@@ -183,6 +183,13 @@ describe("FilesPanel", () => {
     expect(screen.getByTestId("tree-Home.md")).toBeInTheDocument();
   });
 
+  it("a folder and a project have Tags in their menu", async () => {
+    render(<FilesPanel />);
+    fireEvent.contextMenu(screen.getByTestId("project-Work/Security"));
+    expect(await screen.findByRole("menuitem", { name: /Tags/ })).toBeInTheDocument();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+  });
+
   it("right-clicking a project offers the same choices as a folder in All files", async () => {
     render(<FilesPanel />);
     fireEvent.contextMenu(screen.getByTestId("project-Work/Security"));

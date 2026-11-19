@@ -815,9 +815,7 @@ pub async fn run_skill<R: Runtime>(
     let provider = router::select_for_project(&settings, project.as_ref())?;
     let cfg = provider.config().clone();
     crate::engine::service::require_awake(&state, &cfg)?;
-    crate::foundry::service::require_awake(&state, &cfg)?;
     crate::engine::service::touch(&state);
-    crate::foundry::service::touch(&state);
     let scope = project.as_ref().map(|p| p.folder.clone());
 
     let current = if req.include_current_note {

@@ -9,7 +9,6 @@ import type { ProviderConfig } from "@/bindings/ProviderConfig";
 export function aiBlocked(
   provider: ProviderConfig | undefined,
   engineState: string | undefined,
-  foundryState: string | undefined,
 ): string | null {
   if (!provider) return "No AI is set up. Choose one in Settings → AI.";
   if (provider.location !== "local") {
@@ -20,9 +19,6 @@ export function aiBlocked(
     state === "awake" || state === "asleep" || state === "waking" || state === "installing";
   if (provider.kind === "builtin" && !ready(engineState)) {
     return "The built-in AI is not set up or has a problem. Open Settings → AI.";
-  }
-  if (provider.kind === "foundry_local" && !ready(foundryState)) {
-    return "Foundry Local is not set up or has a problem. Open Settings → AI.";
   }
   return null;
 }

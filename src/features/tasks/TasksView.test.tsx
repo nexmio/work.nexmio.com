@@ -30,6 +30,7 @@ vi.mock("@/lib/useAiBlocked", () => ({ useAiBlocked: () => null }));
 
 import { TasksView } from "./TasksView";
 import { useTaskStore } from "@/stores/taskStore";
+import { useTimerStore } from "@/stores/timerStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { LOOSE_AREA } from "@/lib/taskLogic";
@@ -98,7 +99,7 @@ describe("TasksView: one area at a time", () => {
     });
     // The area that was chosen last is kept per vault, on this computer.
     localStorage.setItem("nexmio.tasksArea:", "Tasks/VPN guide.md");
-    useUiStore.setState({ centerView: "tasks", focusOpen: false, rightTab: "outline" });
+    useUiStore.setState({ centerView: "tasks", rightTab: "outline" });
     useVaultStore.setState({ activePath: null });
   });
 
@@ -210,12 +211,16 @@ describe("TasksView: one area at a time", () => {
     expect(useUiStore.getState().rightCollapsed).toBe(false);
   });
 
-  it("starts Focus on the area, and has no Focus on a finished one", async () => {
+  it("starts a timer on the task to do now in the area", async () => {
+    const start = vi.fn().mockResolvedValue(undefined);
+    useTimerStore.setState({ start });
     render(<TasksView />);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Start focus on VPN guide" }));
-    expect(useUiStore.getState().focusOpen).toBe(true);
-    expect(useTaskStore.getState().selected?.title).toBe("Write the steps");
+    await user.click(
+      await screen.findByRole("button", { name: "Start the timer on Write the steps" }),
+    );
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(start.mock.calls[0]?.[0]).toMatchObject({ title: "Write the steps" });
   });
 
   it("shows the loose tasks of ordinary pages apart, and makes a page an epic", async () => {

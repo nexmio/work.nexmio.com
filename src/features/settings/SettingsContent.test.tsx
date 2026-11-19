@@ -82,7 +82,7 @@ describe("Settings → AI: which AI Nexmio Work uses", () => {
     const list = screen.getByRole("radiogroup", { name: "AI for Nexmio Work" });
     const lines = within(list).getAllByRole("radio");
     expect(lines.at(-1)).toHaveTextContent(/Cloud AI.*Pages leave this computer.*Off/);
-    expect(lines.length).toBeGreaterThanOrEqual(4);
+    expect(lines.length).toBe(3);
   });
 
   it("has one AI tab marked Beta, and the set-up sits in the rows, not in folded sections", async () => {
@@ -96,7 +96,7 @@ describe("Settings → AI: which AI Nexmio Work uses", () => {
       "Appearance",
       "Editor",
       "AIBeta",
-      "Tasks and focus",
+      "Tasks and time",
       "Pages and backup",
       "Shortcuts",
       "About",
@@ -305,8 +305,7 @@ describe("Settings: changes apply at once", () => {
 
   it("puts every control in a section: tasks, pages and backup", async () => {
     const user = open();
-    await user.click(screen.getByRole("button", { name: "Tasks and focus" }));
-    expect(screen.getByText(/Ask for the next step/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tasks and time" }));
     expect(screen.getByText(/Trace my work/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Pages and backup" }));
     expect(screen.getByLabelText("Author name")).toBeInTheDocument();

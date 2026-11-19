@@ -9,6 +9,8 @@ import { openFile } from "@/lib/actions";
 import { renderSnippet } from "@/lib/snippet";
 import { cn } from "@/lib/utils";
 import { useEmbeddingStore } from "@/stores/embeddingStore";
+import { noteName, taskHasTag, usedTags } from "@/lib/taskLogic";
+import { useTaskStore } from "@/stores/taskStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { InfoHint } from "@/components/InfoHint";
@@ -18,6 +20,9 @@ import { useAiBlocked } from "@/lib/useAiBlocked";
 import { AnswerCard } from "./AnswerCard";
 import { isManagedNote } from "@/features/fileTree/treeUtils";
 import { PlainButton } from "@/components/ui/plain-button";
+
+/** How many tasks a tag search lists. */
+const TASKS_SHOWN = 50;
 
 type Mode = "keyword" | "meaning" | "both";
 const MODES: { id: Mode; label: string }[] = [
@@ -44,7 +49,35 @@ export function SearchPanel() {
   const [searched, setSearched] = useState(false);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [tagHitPaths, setTagHitPaths] = useState<string[]>([]);
   const input = useRef<HTMLInputElement>(null);
+  const allTasks = useTaskStore((s) => s.tasks);
+  const allEpics = useTaskStore((s) => s.epics);
+  // A single word that is a tag you use counts as searching for that tag, with or without `tag:`.
+  const word = text.trim().replace(/^#/, "").toLowerCase();
+  const typedTag =
+    /^[^\s:]+$/.test(word) &&
+    (tags.some((t) => t.tag === word) || usedTags(allTasks, allEpics).includes(word))
+      ? word
+      : null;
+  // `tag:name` finds the tasks that have the tag too (their own, or from their epic).
+  const wanted = /(?:^|\s)tag:#?(\S+)/.exec(text)?.[1]?.toLowerCase() ?? typedTag;
+  const tagPaths = new Set(tagHitPaths);
+  const tagged =
+    wanted === null
+      ? []
+      : allTasks.filter((t) => taskHasTag(t, allEpics, wanted)).slice(0, TASKS_SHOWN);
+  // A page that is an epic has the tag only on its tasks: those are listed as tasks, and open as
+  // tasks, so the page itself is not listed a second time.
+  const shownHits = hits
+    .filter((h) => !isManagedNote(h.path))
+    .filter((h) => {
+      if (wanted === null) return true;
+      const epic = allEpics.find((e) => e.path === h.path);
+      return (
+        epic === undefined || epic.tags.includes(wanted) || !tagged.some((t) => t.path === h.path)
+      );
+    });
 
   useEffect(() => {
     setText(seed);
@@ -79,7 +112,18 @@ export function SearchPanel() {
       const run = async (): Promise<void> => {
         if (effective === "keyword") {
           const h = await api.search({ text, tag: null, folder: null });
-          if (!cancelled) setHits(h);
+          // A word that is a tag finds what has the tag as well as what says the word.
+          const byTag =
+            typedTag === null
+              ? []
+              : await api.search({ text: `tag:${typedTag}`, tag: null, folder: null });
+          const merged = [...byTag, ...h.filter((x) => !byTag.some((y) => y.path === x.path))];
+          if (!cancelled) {
+            setTagHitPaths(
+              /(^|\s)tag:/.test(text) ? merged.map((x) => x.path) : byTag.map((x) => x.path),
+            );
+            setHits(merged);
+          }
         } else if (effective === "meaning") {
           const h = await api.semanticSearch(text.trim());
           if (!cancelled)
@@ -112,7 +156,7 @@ export function SearchPanel() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [text, indexNonce, mode, semanticReady]);
+  }, [text, indexNonce, mode, semanticReady, typedTag]);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -220,31 +264,58 @@ export function SearchPanel() {
         {pending && text.trim() !== "" && (
           <p className="p-2 text-xs text-muted-foreground">Searching…</p>
         )}
-        {searched && !pending && hits.length === 0 && (
+        {searched && !pending && shownHits.length === 0 && tagged.length === 0 && (
           <p className="p-2 text-xs text-muted-foreground">No results.</p>
         )}
-        <ul>
-          {hits
-            .filter((h) => !isManagedNote(h.path))
-            .map((h) => (
-              <li key={h.path}>
-                <PlainButton
-                  type="button"
-                  className="w-full rounded px-2 py-1.5 text-left hover:bg-muted"
-                  onClick={() => {
-                    void openFile(h.path);
-                  }}
-                >
-                  <div className="truncate text-[13px] font-medium">{h.title}</div>
-                  <div className="truncate text-[11px] text-muted-foreground">{h.path}</div>
-                  {h.snippet !== "" && (
-                    <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                      {renderSnippet(h.snippet)}
+        {tagged.length > 0 && (
+          <section aria-label="Tasks with this tag" className="pb-2">
+            <h3 className="section-label px-1 pb-1">Tasks</h3>
+            <ul>
+              {tagged.map((t) => (
+                <li key={`${t.path}:${String(t.line)}`}>
+                  <PlainButton
+                    type="button"
+                    className="w-full rounded px-2 py-1.5 text-left hover:bg-muted"
+                    onClick={() => {
+                      useTaskStore.getState().open(t);
+                    }}
+                  >
+                    <div className="truncate text-[13px] font-medium">{t.title}</div>
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {noteName(t.path)} ·{" "}
+                      {t.tags.includes(wanted ?? "")
+                        ? `has the tag #${wanted ?? ""}`
+                        : `the epic has #${wanted ?? ""}`}
                     </div>
-                  )}
-                </PlainButton>
-              </li>
-            ))}
+                  </PlainButton>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <ul>
+          {shownHits.map((h) => (
+            <li key={h.path}>
+              <PlainButton
+                type="button"
+                className="w-full rounded px-2 py-1.5 text-left hover:bg-muted"
+                onClick={() => {
+                  void openFile(h.path);
+                }}
+              >
+                <div className="truncate text-[13px] font-medium">{h.title}</div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {h.path}
+                  {wanted !== null && tagPaths.has(h.path) && ` · has the tag #${wanted}`}
+                </div>
+                {h.snippet !== "" && (
+                  <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                    {renderSnippet(h.snippet)}
+                  </div>
+                )}
+              </PlainButton>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

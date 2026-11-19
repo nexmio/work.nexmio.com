@@ -50,12 +50,4 @@ describe("ProviderEditor help", () => {
     expect(screen.getByRole("option", { name: "Anthropic (cloud, not used)" })).toBeInTheDocument();
     expect(screen.getByTestId("provider-help")).toHaveTextContent("it is not used");
   });
-
-  it("Foundry Local is not made here: it is set up under Built-in AI", () => {
-    const options = [...document.querySelectorAll("option")];
-    expect(options.some((o) => o.value === "foundry_local")).toBe(false);
-    render(<Harness start={newProvider("foundry_local")} />);
-    expect(screen.getByTestId("provider-help")).toHaveTextContent("Settings → AI");
-    expect(screen.queryByRole("button", { name: /Detect/ })).toBeNull();
-  });
 });

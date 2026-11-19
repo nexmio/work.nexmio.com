@@ -11,6 +11,7 @@ export const RIGHT_LABELS: Record<RightTab, string> = {
   links: "Links",
   history: "History",
   images: "Images",
+  timer: "Timer",
   ai: "AI",
 };
 
@@ -34,7 +35,7 @@ export function RightTabs({ tabs, current }: { tabs: readonly RightTab[]; curren
             role="tab"
             aria-selected={current === id}
             className={cn(
-              "relative flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap px-1.5 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "relative flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap px-1 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring",
               current === id
                 ? "border-b-2 border-primary font-semibold text-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
