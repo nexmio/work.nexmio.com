@@ -322,6 +322,8 @@ export async function launch({
             description: "",
             tags: tagsOf(n.content).filter((t) => t !== "epic"),
           })),
+        // Stopping a timer writes a line in the task's log: the note's tasks come back as they are.
+        task_add_log: ({ path }) => parseTasks(path, notes[path] ?? ""),
         list_ideas: () => ideas,
         backlinks: () => [],
         list_chats: () => [],

@@ -44,9 +44,15 @@ try {
       .first()
       .click();
     await shot("tasks");
-    // The timer lives in the right panel, beside the page.
-    await page.getByRole("tab", { name: "Timer" }).click();
+    // A timer is started under Tasks > Time; while it runs, its tab is in the right panel.
+    await page.getByRole("button", { name: "Time", exact: true }).click();
+    await page
+      .getByRole("button", { name: /^Start the timer on/ })
+      .first()
+      .click();
+    await page.getByRole("tab", { name: "Timer" }).waitFor();
     await shot("timer");
+    await page.getByRole("button", { name: "Stop", exact: true }).click();
     await rail(page, "Tasks");
     await page.getByText("Send the offer to Acme").first().click();
     await shot("task-page");
