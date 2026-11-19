@@ -1,6 +1,6 @@
 # Nexmio Work (work.nexmio.com)
 
-Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.26. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
+Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.27. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
 
 ## Read first
 
@@ -42,7 +42,7 @@ The skills `/feature` and `/release` in `.claude/skills/` walk through these ste
 - **Areas stay apart.** A feature area uses shared areas, not another feature's inside files; something two features need moves to a shared area.
 - **Files never differ only by case** (Windows).
 - **No local paths, user names or environment details** in anything published (docs, artifacts, releases, commits).
-- **Secrets** (the Phi Silica token) are never pasted, logged or committed; they live only as GitHub secrets.
+- **Secrets** (the Store keys) are never pasted, logged or committed; they live only as GitHub secrets.
 - **Do not drive the owner's desktop** (mouse, keyboard) and never capture the full desktop; screenshots only of Nexmio Work, headless.
 - **English** in the app, the docs and the website (the website has no Danish version). Sentence case in buttons and labels. The owner is answered in Danish.
 - **The word is "page", not "note"**, in everything a person reads (labels, messages, help, docs, site, Store text). Kept as "note": a note on a task, an idea or a meeting (the **Notes** section of a meeting), folder names in older vaults, file formats (`## Notes`), SQL names and all code names. A bulk rename of words needs a check of formats and tests: never change a string that is read back from a file.
