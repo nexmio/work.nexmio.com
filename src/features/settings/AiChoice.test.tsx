@@ -5,15 +5,12 @@ import type { ProviderConfig } from "@/bindings/ProviderConfig";
 import type { Settings } from "@/bindings/Settings";
 import { aiOrder } from "@/lib/aiChoice";
 
-const apiMock = vi.hoisted(() => ({ appPlatform: vi.fn(), phiStatus: vi.fn(), aiTest: vi.fn() }));
+const apiMock = vi.hoisted(() => ({ appPlatform: vi.fn(), aiTest: vi.fn() }));
 vi.mock("@/lib/api", () => ({
   api: apiMock,
   toApiError: (e: unknown) => ({ message: String(e) }),
 }));
 
-vi.mock("@/features/engine/FoundrySettings", () => ({
-  FoundrySettings: () => <p>Foundry setup</p>,
-}));
 vi.mock("@/features/engine/BuiltInAiSettings", () => ({
   BuiltInAiSettings: () => <p>llama setup</p>,
 }));
@@ -48,7 +45,6 @@ function settings(): Settings {
       defaultProviderId: "lmstudio-default",
       localProviderId: "",
       providers: [lm, openai],
-      foundry: { model: "", tools: true },
       cloudConsent: null,
     },
   } as unknown as Settings;
@@ -58,20 +54,13 @@ describe("Settings → AI → Which AI to use", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     apiMock.appPlatform.mockResolvedValue({ os: "windows", store: false });
-    apiMock.phiStatus.mockResolvedValue({ shown: false });
   });
 
   it("orders the choices for where Nexmio Work runs, with cloud AI always last", () => {
-    const base = { os: "windows", store: false, phiShown: false, copilot: false };
-    expect(aiOrder(base)).toEqual(["llama", "foundry", "local", "cloud"]);
-    expect(aiOrder({ ...base, os: "linux" })).toEqual(["llama", "local", "foundry", "cloud"]);
-    expect(aiOrder({ ...base, store: true })).toEqual(["foundry", "local", "cloud"]);
-    expect(aiOrder({ ...base, store: true, phiShown: true, copilot: true })).toEqual([
-      "phi",
-      "foundry",
-      "local",
-      "cloud",
-    ]);
+    const base = { os: "windows", store: false };
+    expect(aiOrder(base)).toEqual(["llama", "local", "cloud"]);
+    expect(aiOrder({ ...base, os: "linux" })).toEqual(["llama", "local", "cloud"]);
+    expect(aiOrder({ ...base, store: true })).toEqual(["local", "cloud"]);
   });
 
   it("turns on a cloud AI only after the box is ticked, and records the agreement", async () => {
@@ -166,18 +155,18 @@ describe("Settings → AI → Which AI to use", () => {
       />,
     );
     const user = userEvent.setup();
-    const foundry = await screen.findByRole("radio", { name: /Foundry Local/ });
-    expect(foundry).toHaveTextContent("Not set up");
+    const llama = await screen.findByRole("radio", { name: /llama\.cpp/ });
+    expect(llama).toHaveTextContent("Not set up");
     // The AI in use (LM Studio) shows its providers; the others show nothing yet.
     expect(screen.getByRole("group", { name: /Set up LM Studio/ })).toHaveTextContent(
       "The providers",
     );
-    expect(screen.queryByText("Foundry setup")).toBeNull();
-    await user.click(foundry);
+    expect(screen.queryByText("llama setup")).toBeNull();
+    await user.click(llama);
     // Choosing one that is not set up changes nothing: its setup opens instead.
     expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("group", { name: "Set up Foundry Local" })).toHaveTextContent(
-      "Foundry setup",
+    expect(screen.getByRole("group", { name: "Set up Built-in AI · llama.cpp" })).toHaveTextContent(
+      "llama setup",
     );
     expect(screen.queryByText("The providers")).toBeNull();
     expect(
@@ -196,11 +185,11 @@ describe("Settings → AI → Which AI to use", () => {
     );
     const user = userEvent.setup();
     expect(await screen.findByRole("button", { name: "Test it" })).toBeInTheDocument();
-    await user.click(screen.getByRole("radio", { name: /Foundry Local/ }));
+    await user.click(screen.getByRole("radio", { name: /llama\.cpp/ }));
     expect(screen.queryByRole("button", { name: "Test it" })).toBeNull();
   });
 
-  it("marks the built-in AIs as beta and recommends none of them", async () => {
+  it("marks the built-in AI as beta and recommends none", async () => {
     render(
       <AiChoice
         draft={settings()}
@@ -210,7 +199,7 @@ describe("Settings → AI → Which AI to use", () => {
       />,
     );
     const list = await screen.findByRole("radiogroup", { name: "AI for Nexmio Work" });
-    expect(within(list).getByRole("radio", { name: /Foundry Local/ })).toHaveTextContent("Beta");
+    expect(within(list).getByRole("radio", { name: /llama\.cpp/ })).toHaveTextContent("Beta");
     expect(within(list).getByRole("radio", { name: /LM Studio/ })).not.toHaveTextContent("Beta");
     expect(screen.queryByText(/Recommended here/)).toBeNull();
     expect(screen.getByText(/in beta/)).toBeInTheDocument();

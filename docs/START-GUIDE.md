@@ -234,7 +234,7 @@ Semantic search only uses a provider on your own computer, so no page is sent to
 | Meeting and quick pages | **New** at the top of the file tree: **Meeting note…** (a small window for day, people and agenda, then **Start**) and **Quick page** (a small box that saves in Quick pages and leaves you where you are). **Meetings** in the navigation opens the meetings. |     |
 | Tasks and epics         | `Ctrl/Cmd+Shift+T`, or **Tasks** in the navigation. You see one epic at a time. Tasks are checklist lines in your pages; an epic is a page with the tag `epic` that holds tasks. A task's status shows as a label in the list.                                 |
 | Write it down           | `Ctrl/Cmd+Shift+N`, then **T**, **I** or **N**: a task, an idea or a quick page, each in its own box. **Ideas** in the navigation shows them as cards.                                                                                                         |
-| Trace my work           | **Settings → Tasks and focus** (or when you create a vault): one line a day under "Worked on" in the daily page for each page and task you work on.                                                                                                            |
+| Trace my work           | **Settings → Tasks and time** (or when you create a vault): one line a day under "Worked on" in the daily page for each page and task you work on.                                                                                                             |
 | Command palette         | `Ctrl/Cmd+Shift+P`: pages, AI commands and actions in one search.                                                                                                                                                                                              |
 | Switch vault            | Click the vault name in the header, or `Ctrl/Cmd+Shift+O`.                                                                                                                                                                                                     |
 | Index page              | Right-click a folder → **Make an index page** (no AI), or **AI** → **Create an index page**.                                                                                                                                                                   |
@@ -272,7 +272,3 @@ Logs are written to the application log folder: Linux `~/.local/share/com.nexmio
 - [`README.md`](../README.md): features and how to install.
 - [`docs/MANUAL_TESTS.md`](MANUAL_TESTS.md): the manual test checklist.
 - [`docs/DECISIONS.md`](DECISIONS.md): every technical decision and deviation from the specification.
-
-## Foundry Local in a development build
-
-Foundry Local's native libraries (about 90 MB on Linux) are not kept in git. Fetch them once into `src-tauri/foundry-native` with `scripts/fetch-foundry-native.sh` (Linux) or `scripts/fetch-foundry-native.ps1` (Windows). Without them Nexmio Work works, and Settings → AI says Foundry Local is not included in this build. The release build fetches them before it builds. The Foundry Local engine runs in a helper process: Nexmio Work started again as `nexmio-work --foundry-helper <command>` (see `src-tauri/src/foundry/helper.rs`).

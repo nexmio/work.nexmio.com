@@ -45,10 +45,9 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 **Tasks and ideas**
 
 - A task is a checklist line in any page. Nexmio Work reads them in every page and shows an outline of **epics** you can fold, each with its progress. A page is an epic when it has the tag `epic`.
-- A task has steps (indented checklist lines), a page, a status (Doing, Waiting, Dropped), a day it was made and a log of what happened. **Break it down** lets the AI propose steps you choose from. **Focus** shows one task at a time, with an optional timer and an Ultra focus for a single task.
+- A task has steps (indented checklist lines), a page, a status (Doing, Waiting, Dropped), a day it was made and a log of what happened. **Break it down** lets the AI propose steps you choose from. A **timer** in the right panel writes the time on a task as a line in its log, **Time** shows what each tag and task took, and tasks and epics can have the same tags as pages.
 - A task that is **Waiting** can say who or what it waits for, and which other task it waits for. That task says which tasks wait for it, and the waiting one says **Ready** when it is done.
 - The task list shows one epic at a time: the task to do now with its next step, the ones after it, the ones that wait for others, and the done ones folded away.
-- **Where you left off:** leaving Focus asks for the next step in one line. It shows on the task and on the start page's Continue card.
 - A task can point at a page with a `[[wiki-link]]` in its own line. Tasks and steps can be put in your own order.
 - **Write it down** from anywhere (`Ctrl/Cmd+Shift+N`): a quick page, a task or an idea, each in its own small box. Ideas are a list you turn into a task or a page later.
 - **A taskbar helper (Windows, off until you turn it on).** An icon in the taskbar and keys that work in every program: write something down, and say where you left off. You choose the keys under Settings → Pages and backup, and the settings tell you if another program uses them. Nexmio Work can stay in the taskbar when the window is closed. On other systems it is greyed out.
@@ -80,7 +79,7 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
   </tr>
   <tr>
     <td><img src="docs/screenshots/task-page.png" alt="A task with its note, its steps, its log and a card with its status and its epic"></td>
-    <td><img src="docs/screenshots/focus.png" alt="Focus: one epic as an outline, the task you work on open, with a timer"></td>
+    <td><img src="docs/screenshots/timer.png" alt="The Timer tab in the right panel, beside the task list"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/meeting.png" alt="A running meeting: the agenda, one text for the notes, the decisions and the actions"></td>
@@ -148,7 +147,7 @@ Download the build for your system from the **Releases** page. There are builds 
 
 ### Option A: the built-in AI (no other program needed)
 
-Open **Settings → AI** and choose the engine. **Foundry Local** (Microsoft; Windows 11 24H2 or later, and Linux; the only engine in the Microsoft Store version) picks the best hardware by itself, including a neural processor (NPU), and offers Qwen, Phi, Gemma and other models. The first time, it asks before it downloads the hardware parts from Microsoft. **llama.cpp** (Windows and Linux, not in the Store version) works with Nvidia, AMD and Intel graphics cards and with Google's Gemma models. Choose a model and press **Download**, then press **Wake** in the status bar. **Unload AI** unloads the model and frees the memory. On a Copilot+ PC, the Store version can also use **Phi Silica**, the small model built into Windows.
+Open **Settings → AI** and choose **Built-in AI · llama.cpp** (Windows and Linux; not in the Microsoft Store version yet). It runs on the graphics card (Vulkan) or the processor. Choose a model and press **Download**, then press **Load AI** in the status bar. **Unload AI** unloads the model and frees the memory.
 
 ### Option B: LM Studio
 

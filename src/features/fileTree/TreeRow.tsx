@@ -1,4 +1,5 @@
 import { countNotes, displayName, findFolder, topLevelPaths, type RowProps } from "./treeUtils";
+import { FolderTagMenu } from "./FolderTagMenu";
 import { SkillsSubmenu } from "./SkillsSubmenu";
 import { makeLinkIndex } from "@/lib/linkIndex";
 import {
@@ -291,6 +292,9 @@ export function TreeRow({
               >
                 <FolderPlus className="size-4" aria-hidden /> New folder
               </ContextMenuItem>
+              {node.isDir && (
+                <FolderTagMenu folder={node.path} name={displayName(node)} onAction={onAction} />
+              )}
               <ContextMenuSeparator />
               <ContextMenuItem
                 onSelect={() => {

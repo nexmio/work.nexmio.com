@@ -16,7 +16,7 @@ There are no due dates, no Today and no Later: a task is there to keep track of 
 - A task you make from a page elsewhere (**As a task** over selected text, or **Find tasks in a page**) goes into an epic of its own for that page: a page in **Tasks** with a `source:` line that points back. The page you were in is not changed. A page where you typed `- [ ]` yourself is an epic too.
 - Open an epic to add tasks, **Go to the epic's page**, go to the page it **Came from**, or **Suggest steps from the page**: the AI reads the page (and the page it came from) and suggests the next tasks, and only the ones you choose are added.
 - Delete the page and the epic and its tasks disappear from the lists (History still has the page).
-- A task typed in the write-it-down box goes into the epic you choose under **Into**, or a new one (**+ New epic…**). In Focus that is the epic you are working on, in a meeting it is the epic of the meeting, otherwise the one you used last. Nexmio Work never makes an epic by itself.
+- A task typed in the write-it-down box goes into the epic you choose under **Into**, or a new one (**+ New epic…**). In a meeting it is the epic of the meeting, otherwise the one you used last. Nexmio Work never makes an epic by itself.
 
 ### One task
 
@@ -56,18 +56,22 @@ Open a page and press **Find tasks in a page** in the task list (or use the comm
 
 Each kind has its own box. **New → Quick page**, **New → Task** and **New → Idea** (on the start page, in **File**, and in the command palette) open only that box: **Quick page**, **New task** or **New idea**. A task goes into the epic you choose under **Into**; a quick page gets a title and goes to the Quick pages folder. **Ctrl/Cmd+Shift+N** (**File → Write it down…**) asks first: press **T**, **I** or **N**. In a meeting, in Focus and on the start page there are three buttons, **+ Task**, **+ Idea** and **+ Quick page**; the box stays open after saving, so you can write the next one. The page you are writing is not changed.
 
-### Focus
+### Timer
 
-Press **Focus** on an epic (in its heading in the list, or at the top of its page). Everything else is hidden. You see the whole epic as one outline: every task is open, and the one you work on is marked **Working on it** (its status becomes Doing), with its page, its steps (the next one marked **Now**) and what has happened. Nothing is locked: fold or unfold any task, press **Work on this** to move the mark, move a task or a step up or down with the arrows that show when the mouse is over it (or Alt+Up and Alt+Down), and add a step under a task without leaving Focus. **Fold the rest** folds every task but the marked one.
+Start a timer under **Tasks → Time**. While it runs, the **Timer** tab appears in the right panel and keeps going beside the page you are writing, so you can write a page while it runs. To start one:
 
-The **Timer** box at the top turns the timer on and off; it is remembered, and with the timer off Focus is just the epic and what to do now. The length of the timer is chosen from a short list (15, 25, 45 and 60 minutes) or **Custom…** (1 to 180 minutes); the one you used last is kept. **Ultra focus** shows only the task you are working on, with its steps, its log and a box to write in the log, and the timer if it is on. **Back to the epic** returns to the whole epic.
+- **On a new task:** write what you are doing, choose the epic it belongs to (or press a tag, and the epic that has that tag is chosen), and press **Start timer**. The task is made in that epic and the timer starts on it. With **No epic (Loose tasks)** it goes into the page **Loose tasks**; open it later and press **Move** to put it into an epic.
+- **On a task you have:** press **Start timer** on the task in the right panel, on its page, in the heading of the list (the task to do Now) or at the top of an epic, or press **Start** in the list under **Or start on a task you have**.
 
-- **What has happened** under the marked task: write a line and press Enter. It is added to the log with today's date, and you stay in Focus.
-- **Done, next step** on the right ticks the Now step. After the last step it asks if the task is done too; then the next open task in the epic is marked. When every task is done, Focus says so and takes you back to the task list.
-- The timer (15, 25 or 45 minutes) is for you; nothing happens when it ends except a message.
-- **Help me start** is for when you sit and cannot begin. The AI suggests one tiny first step, something under five minutes, for example "open the file and write the heading". It is only added to the task if you press Add it as a step.
-- **Something popped into your head?** Use the same box as above: choose Task, Idea or Quick page and write it. A task goes into the epic you choose (the one in Focus at first). You stay in Focus.
-- **Esc** or **Leave focus** leaves focus. Nexmio Work then asks **What is the next step?** for the task you worked on (one line, optional). It is written in the task's log as "Left off: …" and shows on the task page and on the start page when you come back. **Do not ask me again** turns the question off; **Settings → Tasks and focus** turns it on again. On Windows the taskbar helper can write the same line from any program (see _The taskbar helper_).
+A running timer shows its clock in the Timer tab and in the status bar at the bottom. Only one timer runs at a time: starting another one stops the first and writes its time. Press **Stop**, and one line is added to the task's log, for example `⏱ 1 h 20 min · 09:00–10:20 · what you did` (you can write a note for the line before you stop). It is ordinary text in the page, so any editor reads it. The start of a running timer is kept on this computer, so it survives closing Nexmio Work.
+
+### Time
+
+**Time** at the bottom of the Tasks panel shows what each task took, from the time lines in the logs. Choose a **tag** (a task counts for the tags of its epic too) and a **period** (this week, this month, last month, this year or all time), and see the total, the number of entries and the tasks, **By task** (open one to see each entry with its hours and note) or **By day**. **Copy as CSV** copies the entries for a spreadsheet or an invoice. A task that has had a timer shows its total on its row in the list, for example `⏱ 6 h 10 min`.
+
+### Tags on tasks and epics
+
+A task or an epic can have tags, the same tags as on pages, for example a customer. In the right panel, on the task page and at the top of an epic, **Add a tag** (the tags you already use are offered as you type) and the cross takes one off. A tag on a task is written as `#tag` in its line; a tag on an epic is written in its page's properties, and it counts for all the tasks in the epic (shown dashed on the task). At the top of the Tasks panel the tags in use are listed: press one to see only the epics and tasks that have it, and press it again to see everything. Search finds them with `tag:name`.
 
 ## Tag a page as an epic or a meeting
 

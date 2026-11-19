@@ -14,6 +14,8 @@ vi.mock("@/lib/actions", () => ({ openFile: vi.fn() }));
 
 import { SearchPanel } from "./SearchPanel";
 import { useEmbeddingStore } from "@/stores/embeddingStore";
+import { useTaskStore } from "@/stores/taskStore";
+import { makeTask } from "@/test/taskFixtures";
 
 const readyStatus: EmbeddingStatus = {
   enabled: true,
@@ -102,6 +104,51 @@ describe("SearchPanel", () => {
     await screen.findByText("Firewall");
     expect(api.search).toHaveBeenCalledWith({ text: "tag:security", tag: null, folder: null });
     expect(api.semanticSearch).not.toHaveBeenCalled();
+  });
+
+  it("a tag search lists the tasks that have the tag, their own or from their epic", async () => {
+    useTaskStore.setState({
+      epics: [
+        { path: "Tasks/Acme.md", title: "Acme", source: null, description: "", tags: ["acme"] },
+      ],
+      tasks: [
+        makeTask({ path: "Tasks/Acme.md", title: "Draft the offer", line: 3, key: "a" }),
+        makeTask({
+          path: "Tasks/Home.md",
+          title: "Fix the door",
+          line: 3,
+          key: "b",
+          tags: ["acme"],
+        }),
+        makeTask({ path: "Tasks/Home.md", title: "Buy milk", line: 5, key: "c" }),
+      ],
+    });
+    render(<SearchPanel />);
+    await typeQuery("tag:acme");
+    expect(await screen.findByText("Draft the offer")).toBeInTheDocument();
+    expect(screen.getByText("Fix the door")).toBeInTheDocument();
+    expect(screen.queryByText("Buy milk")).toBeNull();
+  });
+
+  it("a word that is a tag finds what has the tag, without typing tag:", async () => {
+    api.allTags.mockResolvedValue([{ tag: "acme", count: 1 }]);
+    api.search.mockImplementation(({ text }: { text: string }) =>
+      Promise.resolve(
+        text === "tag:acme" ? [{ path: "Acme.md", title: "Acme page", snippet: "" }] : [keywordHit],
+      ),
+    );
+    useTaskStore.setState({
+      epics: [],
+      tasks: [
+        makeTask({ path: "Tasks/E.md", title: "Own tagged", line: 3, key: "a", tags: ["acme"] }),
+      ],
+    });
+    render(<SearchPanel />);
+    await typeQuery("acme");
+    expect(await screen.findByText("Acme page")).toBeInTheDocument();
+    expect(screen.getByText(/Acme.md · has the tag #acme/)).toBeInTheDocument();
+    expect(screen.getByText("Own tagged")).toBeInTheDocument();
+    expect(screen.getByText("Firewall")).toBeInTheDocument();
   });
 
   it("falls back to keyword results and says so when semantic search fails", async () => {

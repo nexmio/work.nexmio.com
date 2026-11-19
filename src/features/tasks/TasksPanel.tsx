@@ -1,8 +1,15 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PanelHeader } from "@/components/PanelHeader";
 import { PlainButton } from "@/components/ui/plain-button";
-import { epicGroups, LOOSE_AREA, pickArea, type EpicGroup } from "@/lib/taskLogic";
+import {
+  epicGroups,
+  groupHasTag,
+  LOOSE_AREA,
+  pickArea,
+  usedTags,
+  type EpicGroup,
+} from "@/lib/taskLogic";
 import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
@@ -30,6 +37,7 @@ export function TasksPanel() {
   const epics = useTaskStore((s) => s.epics);
   const epicOrder = useTaskStore((s) => s.epicOrder);
   const chosen = useTaskStore((s) => s.chosenArea);
+  const tag = useTaskStore((s) => s.tagFilter);
   const loaded = useTaskStore((s) => s.loaded);
   const centerView = useUiStore((s) => s.centerView);
   const vaultPath = useVaultStore((s) => s.vault?.path ?? null);
@@ -47,8 +55,11 @@ export function TasksPanel() {
   const loose = all.filter((g) => !g.adopted);
   const looseCount = loose.reduce((n, g) => n + g.tasks.filter((t) => !t.done).length, 0);
   const current = pickArea(groups, loose.length > 0, chosen);
-  const open = groups.filter((g) => !g.allDone);
-  const done = groups.filter((g) => g.allDone);
+  const tags = useMemo(() => usedTags(tasks, epics), [tasks, epics]);
+  // A tag that nothing has any more is not a filter any more.
+  const activeTag = tag !== null && tags.includes(tag) ? tag : null;
+  const open = groups.filter((g) => !g.allDone && groupHasTag(g, epics, activeTag));
+  const done = groups.filter((g) => g.allDone && groupHasTag(g, epics, activeTag));
   const choose = (path: string): void => {
     useTaskStore.getState().chooseArea(path);
     useUiStore.getState().setCenterView("tasks");
@@ -84,6 +95,32 @@ export function TasksPanel() {
     <div className="flex h-full min-h-0 flex-col">
       <PanelHeader title="Tasks" />
       <div className="flex min-h-0 flex-1 flex-col overflow-auto px-2 py-2">
+        {tags.length > 0 && (
+          <div className="flex flex-col gap-1 px-2 pb-3">
+            <h3 className="section-label">Tags</h3>
+            <ul aria-label="Show only a tag" className="flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <li key={t}>
+                  <PlainButton
+                    type="button"
+                    aria-pressed={activeTag === t}
+                    className={cn(
+                      "rounded-full border px-2.5 py-0.5 text-xs focus-visible:ring-2 focus-visible:ring-ring",
+                      activeTag === t
+                        ? "border-primary bg-accent text-accent-foreground"
+                        : "hover:bg-muted",
+                    )}
+                    onClick={() => {
+                      useTaskStore.getState().setTagFilter(activeTag === t ? null : t);
+                    }}
+                  >
+                    #{t}
+                  </PlainButton>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <h3 className="section-label px-2 pb-1">Choose one area</h3>
         {loaded && open.length === 0 && loose.length === 0 && (
           <p className="px-2 text-xs text-muted-foreground">
@@ -123,6 +160,19 @@ export function TasksPanel() {
             {showDone && <ul className="flex flex-col gap-0.5">{done.map(row)}</ul>}
           </>
         )}
+        <PlainButton
+          type="button"
+          aria-current={centerView === "time"}
+          className={cn(
+            "mt-3 flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+            centerView === "time" && "bg-accent text-accent-foreground",
+          )}
+          onClick={() => {
+            useUiStore.getState().setCenterView("time");
+          }}
+        >
+          <Timer className="size-4" aria-hidden /> Time
+        </PlainButton>
         <p className="mt-auto px-2 pt-4 text-xs leading-relaxed text-muted-foreground">
           You see one area at a time. The rest is put away, not gone.
         </p>

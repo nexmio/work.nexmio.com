@@ -12,6 +12,10 @@ pub const EPICS_DIR: &str = "Tasks";
 /// The epic that quick tasks (written without choosing an epic) go into.
 pub const INBOX: &str = "Tasks/Inbox.md";
 
+/// The plain page that holds tasks started without an epic. It has no `epic` tag, so its tasks
+/// are the "Loose tasks" until they are moved into an epic.
+pub const LOOSE: &str = "Loose tasks.md";
+
 /// One epic task: a note in `Tasks/`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -25,6 +29,8 @@ pub struct Epic {
     pub source: Option<String>,
     /// The text between the heading and the first task: what the epic is about.
     pub description: String,
+    /// The page's own tags, without `epic` (the tag that makes it an epic): for example a customer.
+    pub tags: Vec<String>,
 }
 
 /// Whether a path is a note in the epic folder.
@@ -79,6 +85,12 @@ pub fn read_epic(path: &str, content: &str) -> Epic {
         title,
         source: source_of(content),
         description: description_of(content),
+        tags: crate::markdown::frontmatter::split(content)
+            .map(|fm| crate::markdown::frontmatter::tags(fm.yaml))
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|t| t != EPIC_TAG)
+            .collect(),
     }
 }
 
@@ -244,6 +256,16 @@ mod tests {
         let plain = read_epic("Tasks/Plain.md", "- [ ] A\n");
         assert_eq!(plain.title, "Plain");
         assert_eq!(plain.source, None);
+    }
+
+    #[test]
+    fn the_tags_of_the_page_are_the_tags_of_the_epic_without_epic_itself() {
+        let e = read_epic(
+            "Tasks/Acme.md",
+            "---\ntags: [epic, kunde-x, juridisk]\n---\n# Acme\n\n- [ ] A\n",
+        );
+        assert_eq!(e.tags, vec!["kunde-x", "juridisk"]);
+        assert!(read_epic("Tasks/Plain.md", "- [ ] A\n").tags.is_empty());
     }
 
     #[test]

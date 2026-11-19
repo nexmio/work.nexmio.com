@@ -2,7 +2,6 @@
 import type { BuiltInSettings } from "./BuiltInSettings";
 import type { CloudConsent } from "./CloudConsent";
 import type { EmbeddingSettings } from "./EmbeddingSettings";
-import type { FoundrySettings } from "./FoundrySettings";
 import type { ProviderConfig } from "./ProviderConfig";
 
 export type AiSettings = { 
@@ -10,6 +9,11 @@ export type AiSettings = {
  * The local provider used by Nexmio Work (the notes AI), inline commands and project help.
  */
 defaultProviderId: string, 
+/**
+ * The Local AI: an AI on this computer that a project marked Local AI only uses, even when
+ * the app's AI is a cloud AI. Empty: the app's AI when it is local, else the first local AI.
+ */
+localProviderId: string, 
 /**
  * "About me and my notes": background the chat and the skills read (who the person is, what
  * their terms mean). The fixed commands do not read it.
@@ -23,10 +27,6 @@ answerLanguage: string, providers: Array<ProviderConfig>, embeddings: EmbeddingS
  * The AI that Nexmio Work runs itself, without LM Studio.
  */
 builtin: BuiltInSettings, 
-/**
- * Foundry Local, the second built-in AI.
- */
-foundry: FoundrySettings, 
 /**
  * Let the AI check its own answer to a text command before it is shown. Off by default: it
  * takes about twice as long, which matters most with a large model.

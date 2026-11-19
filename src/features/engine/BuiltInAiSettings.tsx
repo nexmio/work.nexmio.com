@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Backend } from "@/bindings/Backend";
-import type { CpuVendor } from "@/bindings/CpuVendor";
 import type { FlashAttention } from "@/bindings/FlashAttention";
 import type { GpuUse } from "@/bindings/GpuUse";
-import type { GpuVendor } from "@/bindings/GpuVendor";
 import type { Settings } from "@/bindings/Settings";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { InfoHint } from "@/components/InfoHint";
@@ -24,18 +21,6 @@ interface Props {
   draft: Settings;
   onChange: (next: Settings) => void;
 }
-
-const CPUS: { id: CpuVendor; label: string }[] = [
-  { id: "amd", label: "AMD" },
-  { id: "intel", label: "Intel" },
-  { id: "other", label: "Other / not sure" },
-];
-const GPUS: { id: GpuVendor; label: string }[] = [
-  { id: "nvidia", label: "Nvidia" },
-  { id: "amd", label: "AMD" },
-  { id: "intel", label: "Intel" },
-  { id: "none", label: "None: use the processor only" },
-];
 
 /** Settings → AI: choose hardware and model, download, tune, and clean up. */
 export function BuiltInAiSettings({ draft, onChange }: Props) {
@@ -149,7 +134,7 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
         Your pages never leave this computer.
       </p>
 
-      <LoadAi which="builtin" />
+      <LoadAi />
 
       <section className="flex flex-col gap-3" aria-label="Your computer">
         <h3 className="text-sm font-semibold">1. Your computer</h3>
@@ -164,79 +149,33 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
             .
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="bi-cpu">Processor (CPU)</Label>
-            <Select
-              id="bi-cpu"
-              value={b.cpu}
-              disabled={busy || awake}
-              onChange={(e) => {
-                setB({ cpu: e.target.value as CpuVendor });
-              }}
+        <div role="radiogroup" aria-label="Run the AI on" className="flex flex-col gap-1.5">
+          {catalog.backends.map((x) => (
+            <label
+              key={x.id}
+              className="flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-accent/40"
             >
-              {CPUS.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="bi-gpu">Graphics card (GPU)</Label>
-            <Select
-              id="bi-gpu"
-              value={b.gpu}
-              disabled={busy || awake}
-              onChange={(e) => {
-                const gpu = e.target.value as GpuVendor;
-                const next = catalog.backends.find((x) => x.defaultFor.includes(gpu))?.id;
-                setB({ gpu, ...(next ? { backend: next } : {}) });
-              }}
-            >
-              {GPUS.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-1.5">
-            <Label htmlFor="bi-backend">Engine to download</Label>
-            <InfoHint
-              label="Engine"
-              text="The program that runs the model. Choosing your graphics card picks the best one. The same processor engine works for AMD and Intel. If a graphics engine fails, try CPU only."
-              topic="ai"
-            />
-          </div>
-          <Select
-            id="bi-backend"
-            value={b.backend}
-            disabled={busy || awake}
-            onChange={(e) => {
-              setB({ backend: e.target.value as Backend });
-            }}
-          >
-            {catalog.backends
-              .filter((x) => !x.advanced)
-              .map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.label} · {formatBytes(x.downloadBytes)}
-                </option>
-              ))}
-            <optgroup label="Advanced">
-              {catalog.backends
-                .filter((x) => x.advanced)
-                .map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.label} · {formatBytes(x.downloadBytes)}
-                  </option>
-                ))}
-            </optgroup>
-          </Select>
-          {backend && <p className="text-xs text-muted-foreground">{backend.description}</p>}
+              <Radio
+                name="bi-backend"
+                className="mt-1"
+                checked={b.backend === x.id}
+                disabled={busy || awake}
+                onChange={() => {
+                  setB({ backend: x.id });
+                }}
+              />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{x.label}</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {formatBytes(x.downloadBytes)}
+                </span>
+                <span className="block text-xs text-muted-foreground">{x.description}</span>
+              </span>
+            </label>
+          ))}
+          <p className="text-xs text-muted-foreground">
+            If the graphics card does not work, choose CPU only: it works everywhere, but is slower.
+          </p>
         </div>
       </section>
 

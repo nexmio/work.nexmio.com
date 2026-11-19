@@ -7,7 +7,9 @@ export type Action =
   | { kind: "rename"; node: TreeNode }
   | { kind: "delete"; node: TreeNode }
   | { kind: "deleteMany"; paths: string[] }
-  | { kind: "moveMany"; paths: string[] };
+  | { kind: "moveMany"; paths: string[] }
+  /** Put a tag on every page in a folder or project, or take one off. */
+  | { kind: "tagFolder"; folder: string; name: string; on: boolean };
 
 export function displayName(n: TreeNode): string {
   return n.isDir ? n.name : isMarkdown(n.name) ? n.name.replace(/\.md$/i, "") : n.name;

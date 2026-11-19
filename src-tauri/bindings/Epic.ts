@@ -19,4 +19,8 @@ source: string | null,
 /**
  * The text between the heading and the first task: what the epic is about.
  */
-description: string, };
+description: string, 
+/**
+ * The page's own tags, without `epic` (the tag that makes it an epic): for example a customer.
+ */
+tags: Array<string>, };

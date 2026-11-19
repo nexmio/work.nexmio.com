@@ -28,6 +28,8 @@ The **Sort** button above the file tree has **My own order**. Then nothing is so
 
 **Ctrl/Cmd+click** items in the file tree to tick them, or click one and **Shift+click** another to tick everything between. Then right-click a ticked item and choose **Move N items to…** or **Delete N items**, or drag them together onto a folder or a project. A plain click clears the selection. Deleted pages can be brought back with **File → Recover deleted pages**.
 
+**Tags on a whole folder.** Right-click a folder or a project and choose **Tags › Add a tag to all pages…** (or **Remove a tag from all pages…**). Type a tag (the ones you already use are offered), and the window says how many pages in the folder and its folders will change. When you press the button, the tag is written in the properties of each of those pages (so any editor sees it), and only pages that change are touched. A snapshot is saved before and after, so History can bring every page back. Pages added to the folder later do not get the tag, and the folder itself has no tag: nothing is inherited.
+
 ## Recent, Projects and All files
 
 The file panel has three parts. **Recent** lists the pages you opened last (4 by default; change it in **Settings → Pages and backup → Recent pages shown**, 0 hides it). **Projects** shows every project with its own pages. **All files** holds everything that is not in a project or in Landing.

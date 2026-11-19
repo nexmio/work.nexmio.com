@@ -40,7 +40,6 @@ export const CATALOG: Catalog = {
       label: "CPU only",
       description: "Runs on the processor.",
       defaultFor: ["none"],
-      advanced: false,
       downloadBytes: 17_823_415,
     },
     {
@@ -48,24 +47,7 @@ export const CATALOG: Catalog = {
       label: "Graphics card (Vulkan)",
       description: "Works with AMD, Intel and Nvidia graphics cards.",
       defaultFor: ["amd", "intel"],
-      advanced: false,
       downloadBytes: 30_450_220,
-    },
-    {
-      id: "cuda12",
-      label: "Nvidia (CUDA 12)",
-      description: "The fastest choice for Nvidia cards.",
-      defaultFor: ["nvidia"],
-      advanced: false,
-      downloadBytes: 766_875_835,
-    },
-    {
-      id: "rocm",
-      label: "AMD (ROCm)",
-      description: "For supported AMD cards.",
-      defaultFor: [],
-      advanced: true,
-      downloadBytes: 245_031_740,
     },
   ],
   models: [

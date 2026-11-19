@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This list is kept short: it tells what Nexmio Work can do in each version. A small release that only fixed the one before it is folded into the last version of its series (for example 0.8.0 to 0.8.10 is one entry), and something that was removed and later came back is described only where it is in the app now.
 
+## [Unreleased]
+
+## [0.27.0] - 2026-11-19
+
+### Added
+
+- **A timer for tasks.** Start it under **Tasks → Time** on a new task or on one you have. While it runs, a **Timer** tab in the right panel and a clock in the status bar keep going beside the page you are writing. When you stop it, one line is added to the task's log, like `⏱ 1 h 20 min · 09:00–10:20`, so it is ordinary text in the page.
+- **Time.** A new view at the bottom of the Tasks panel shows what each task took. Choose a tag and a period, see it by task or by day, and copy it as CSV for an invoice or a time sheet.
+- **Loose tasks.** A timer can start on a task with no epic. It goes into the page **Loose tasks**, and **Move** on the task page or in the right panel puts it into an epic with its steps and log.
+- **Tags on tasks and epics.** The same tags as on pages. Add them in the right panel, on the task page or on an epic; a tag on an epic counts for all its tasks. At the top of the Tasks panel you can show only what has a tag.
+- **Tags on a whole folder.** Right-click a folder or a project and choose **Tags** to put a tag on every page in it, or take one off. The window says how many pages change first, and History can bring them back.
+- **Your tags** (File menu). See the tags you use, make a new one, find everything that has one, or delete one everywhere after Nexmio Work has said how many pages and tasks change.
+- **Search finds a tag.** Search for a tag, with or without `tag:`, and you also get the tasks that have it, and are told that it is the tag that found each one.
+- **Save a version when you want.** Settings → Version history can save a version when you close a page, and every so many minutes while you write.
+
+### Changed
+
+- **The built-in AI runs on the graphics card (Vulkan) or the processor, and that is the whole choice.** The CUDA, ROCm and SYCL engines and the boxes for processor and graphics card are gone. What you chose before is read as the graphics card.
+- **Settings → AI has three choices:** the built-in AI, an AI of your own on this computer (LM Studio and others), and a cloud AI, which you turn on yourself after being told that your pages are then sent to it.
+- A task opened as a full page is only there, and **Back** goes to where you came from. If the right panel was shut and the task opened it, the full page shuts it again.
+- Settings → **Tasks and time** (it was Tasks and focus).
+
+### Removed
+
+- **Focus and Ultra focus** are replaced by the timer.
+- **Foundry Local and the AI built into Copilot+ PCs (Phi Silica).** They translated wrongly and some models did not run. Settings that chose one of them use the built-in AI instead. The Microsoft Store version has no built-in AI for now, but works with LM Studio or a cloud AI.
+
 ## [0.26.0] - 2026-11-17
 
 ### Changed

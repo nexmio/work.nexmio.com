@@ -19,11 +19,15 @@ describe("chipState", () => {
   it("is green with the device when the built-in AI is awake", () => {
     const s = chipState({
       ...base,
-      provider: p("foundry_local"),
+      provider: p("builtin"),
       engineState: "awake",
-      device: "NPU",
+      device: "Graphics card",
     });
-    expect(s).toEqual({ tone: "ok", label: "Built-in AI · Phi-4-mini · NPU", action: null });
+    expect(s).toEqual({
+      tone: "ok",
+      label: "Built-in AI · Phi-4-mini · Graphics card",
+      action: null,
+    });
   });
   it("offers Wake when asleep and Fix on a problem", () => {
     expect(chipState({ ...base, provider: p("builtin"), engineState: "asleep" })).toMatchObject({

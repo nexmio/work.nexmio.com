@@ -18,4 +18,4 @@ Open the **History** tab of the right panel (or press **Ctrl/Cmd+Shift+H**). Pic
 
 - Names in the history tell what happened: _Save_, _Autosave_, _Snapshot before AI_, _AI: …_, _Rename …_, _Delete …_, _Import: …_.
 - The history only grows. Nexmio Work never rewrites it.
-- Your name and how often it saves while idle are in **Settings → Version history**.
+- Your name and how often it saves while idle are in **Settings → Version history**. There you can also choose to save a version when you close a page, and every so many minutes while you write.

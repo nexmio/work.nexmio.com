@@ -65,6 +65,8 @@ pub struct Meta {
     pub pinned: Vec<String>,
     /// The tasks that have something kept, by `task_ref`.
     pub tasks: BTreeMap<String, TaskMeta>,
+    /// Tags made in Your tags before anything has them. A tag in use needs no entry here.
+    pub tags: Vec<String>,
 }
 
 /// The words that name a task: the note's path without `.md`, `#`, and the title.
@@ -102,6 +104,8 @@ fn write(root: &Path, mut meta: Meta) -> AppResult<()> {
     meta.schema_version = 1;
     meta.pinned.sort();
     meta.pinned.dedup();
+    meta.tags.sort();
+    meta.tags.dedup();
     meta.pinned.truncate(MAX_PINNED);
     meta.tasks.retain(|_, t| !t.is_empty());
     for t in meta.tasks.values_mut() {
@@ -109,7 +113,7 @@ fn write(root: &Path, mut meta: Meta) -> AppResult<()> {
         t.history.drain(..extra);
     }
     let abs = paths::resolve_internal(root, FILE)?;
-    if meta.pinned.is_empty() && meta.tasks.is_empty() && !abs.exists() {
+    if meta.pinned.is_empty() && meta.tasks.is_empty() && meta.tags.is_empty() && !abs.exists() {
         return Ok(()); // nothing to keep, and no file yet: do not make one
     }
     fs_ops::write_atomic(&abs, serde_json::to_string_pretty(&meta)?.as_bytes())
@@ -227,6 +231,29 @@ pub fn rename_task(root: &Path, path: &str, old_title: &str, new_title: &str) ->
     .map(|_| ())
 }
 
+/// A task moved to another note: its entry, and the tasks that wait for it, follow.
+pub fn move_task(root: &Path, from: &str, to: &str, title: &str) -> AppResult<()> {
+    let (old, new) = (task_ref(from, title), task_ref(to, title));
+    if old == new {
+        return Ok(());
+    }
+    change(root, |m| {
+        let mut changed = false;
+        if let Some(e) = m.tasks.remove(&old) {
+            m.tasks.insert(new.clone(), e);
+            changed = true;
+        }
+        for e in m.tasks.values_mut() {
+            if e.after.as_deref() == Some(old.as_str()) {
+                e.after = Some(new.clone());
+                changed = true;
+            }
+        }
+        changed
+    })
+    .map(|_| ())
+}
+
 /// A task was deleted: what is kept about it goes too.
 pub fn forget_task(root: &Path, path: &str, title: &str) -> AppResult<()> {
     let key = task_ref(path, title);
@@ -285,6 +312,25 @@ pub fn rename_path(root: &Path, from: &str, to: &str) -> bool {
         changed
     })
     .unwrap_or(false)
+}
+
+/// Makes a tag, or forgets one made before (a tag in use is kept by the pages that have it).
+pub fn set_declared_tag(root: &Path, tag: &str, on: bool) -> AppResult<()> {
+    change(root, |m| {
+        let had = m.tags.iter().any(|t| t == tag);
+        match (on, had) {
+            (true, false) => {
+                m.tags.push(tag.to_string());
+                true
+            }
+            (false, true) => {
+                m.tags.retain(|t| t != tag);
+                true
+            }
+            _ => false,
+        }
+    })
+    .map(|_| ())
 }
 
 /// Pins a note to the start page, or unpins it.

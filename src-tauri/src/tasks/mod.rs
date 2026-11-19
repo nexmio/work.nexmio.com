@@ -528,6 +528,35 @@ pub fn set_title(content: &str, line: u32, key: &str, title: &str) -> AppResult<
     Ok(out)
 }
 
+/// The tag as it is written in a task line: no `#`, only letters, digits, `_`, `-` and `/`, and at
+/// least one letter. `None` for anything else.
+pub fn clean_tag(tag: &str) -> Option<String> {
+    let t = tag.trim().trim_start_matches('#');
+    let ok = !t.is_empty()
+        && t.chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '-' | '/'))
+        && t.chars().any(char::is_alphabetic);
+    ok.then(|| t.to_string())
+}
+
+/// Puts `#tag` on a task line (at its end), or takes it off. A tag that is already there is not
+/// added again, and the title, the words and the other tags stay as they are.
+pub fn set_tag(content: &str, line: u32, key: &str, tag: &str, on: bool) -> AppResult<String> {
+    let tag = clean_tag(tag).ok_or_else(|| AppError::InvalidPath(format!("{tag} is not a tag")))?;
+    let re = Regex::new(&format!(r"\s#{}(\s|$)", regex::escape(&tag))).expect("valid tag regex");
+    edit_line(content, line, key, |l| {
+        let has = re.is_match(l);
+        if on && !has {
+            format!("{} #{tag}", l.trim_end())
+        } else if !on && has {
+            let out = re.replace_all(l, "$1");
+            out.trim_end().to_string()
+        } else {
+            l.to_string()
+        }
+    })
+}
+
 /// Points a task at a note (`[[link]]` after its title), or removes the link when `link` is
 /// `None`. A task points at one note: an earlier link is replaced.
 pub fn set_link(content: &str, line: u32, key: &str, link: Option<&str>) -> AppResult<String> {
@@ -865,6 +894,38 @@ pub fn move_item(content: &str, line: u32, key: &str, up: bool) -> AppResult<Str
     Ok(moved)
 }
 
+/// Takes a task, with its steps and log, out of the note: the lines it had, and the note without it.
+pub fn take(content: &str, line: u32, key: &str) -> AppResult<(Vec<String>, String)> {
+    let (start, end, _) = block_end(content, line, key)?;
+    let lines: Vec<&str> = content.split('\n').collect();
+    let block = lines[start..=end]
+        .iter()
+        .map(|l| l.trim_end_matches('\r').to_string())
+        .collect();
+    let mut rest = lines;
+    rest.drain(start..=end);
+    Ok((block, rest.join("\n")))
+}
+
+/// Adds the lines of a task (from `take`) at the end of a note.
+pub fn append_block(content: &str, block: &[String]) -> String {
+    let mut out = content.trim_end_matches('\n').to_string();
+    if !out.is_empty() {
+        out.push('\n');
+        if !out
+            .trim_end()
+            .lines()
+            .last()
+            .is_some_and(|l| TASK_RE.is_match(l))
+        {
+            out.push('\n');
+        }
+    }
+    out.push_str(&block.join("\n"));
+    out.push('\n');
+    out
+}
+
 /// Removes a task, with its steps and log, from the note.
 pub fn delete(content: &str, line: u32, key: &str) -> AppResult<String> {
     let mut lines: Vec<&str> = content.split('\n').collect();
@@ -925,6 +986,41 @@ mod tests {
     use super::*;
 
     const NOTE: &str = "---\ntags: [x]\n---\n# Møde med Acme\n\n- [ ] Renew the Acme licence #acme #licence due:2026-11-01 status:waiting est:1h30m\n  - [x] Send the price list\n  - [ ] Ask Peter about a discount\n  > 2026-10-14 Mette wants 40 users.\n  > 2026-10-16 Waiting for Peter.\n- [x] Book the room\n\nSome text.\n\n```\n- [ ] not a task\n```\n\n- Shopping\n  - [ ] milk\n";
+
+    #[test]
+    fn a_tag_is_put_on_a_task_line_and_taken_off_again() {
+        let task = parse("N.md", NOTE)
+            .into_iter()
+            .find(|t| t.title == "Book the room")
+            .unwrap();
+        let tagged = set_tag(NOTE, task.line, &task.key, "kunde-x", true).unwrap();
+        assert!(tagged.contains("- [x] Book the room #kunde-x\n"));
+        // Putting it on twice changes nothing.
+        let now = parse("N.md", &tagged)
+            .into_iter()
+            .find(|t| t.title == "Book the room")
+            .unwrap();
+        assert_eq!(now.tags, vec!["kunde-x"]);
+        assert_eq!(
+            set_tag(&tagged, now.line, &now.key, "#kunde-x", true).unwrap(),
+            tagged
+        );
+        let off = set_tag(&tagged, now.line, &now.key, "kunde-x", false).unwrap();
+        assert_eq!(off, NOTE);
+    }
+
+    #[test]
+    fn a_tag_keeps_the_words_and_the_other_tags_of_the_line() {
+        let task = parse("N.md", NOTE)
+            .into_iter()
+            .find(|t| t.title.starts_with("Renew"))
+            .unwrap();
+        let off = set_tag(NOTE, task.line, &task.key, "licence", false).unwrap();
+        assert!(off.contains("#acme due:2026-11-01 status:waiting est:1h30m"));
+        assert!(!off.contains("#licence"));
+        assert!(set_tag(NOTE, task.line, &task.key, "not a tag", true).is_err());
+        assert!(set_tag(NOTE, task.line, &task.key, "123", true).is_err());
+    }
 
     #[test]
     fn the_agenda_of_a_meeting_note_is_not_tasks() {

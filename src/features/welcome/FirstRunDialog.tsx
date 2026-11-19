@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -30,8 +29,6 @@ export function FirstRunDialog() {
   const settings = useSettingsStore((s) => s.settings);
   const save = useSettingsStore((s) => s.save);
   const builtinModels = useEngineStore((s) => s.status?.models.length ?? null);
-  const foundry = useFoundryStore((s) => s.status);
-  const foundryModels = foundry ? foundry.installed.length : null;
   const [dismissed, setDismissed] = useState(firstRunDone);
   const [choice, setChoice] = useState<Choice>("builtin");
 
@@ -41,13 +38,9 @@ export function FirstRunDialog() {
   useEffect(() => {
     if (!candidate) return;
     void useEngineStore.getState().load();
-    void useFoundryStore.getState().load();
   }, [candidate]);
 
-  const open =
-    candidate &&
-    builtinModels !== null &&
-    needsAiSetup(settings, builtinModels, foundryModels ?? 0);
+  const open = candidate && builtinModels !== null && needsAiSetup(settings, builtinModels);
   if (!open) return null;
 
   const finish = (): void => {
@@ -58,8 +51,7 @@ export function FirstRunDialog() {
   const next = async (): Promise<void> => {
     try {
       if (choice === "builtin") {
-        const id = foundry?.available ? "foundry" : "builtin";
-        await save({ ...settings, ai: { ...settings.ai, defaultProviderId: id } });
+        await save({ ...settings, ai: { ...settings.ai, defaultProviderId: "builtin" } });
         useUiStore.getState().openBuiltInSettings();
       } else if (choice === "lmstudio") {
         await save({ ...settings, ai: { ...settings.ai, defaultProviderId: "lmstudio-default" } });

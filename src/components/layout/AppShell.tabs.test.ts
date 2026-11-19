@@ -7,10 +7,23 @@ describe("the tabs of the right panel", () => {
     expect(rightTabsFor("start")).toEqual(["outline", "links", "history", "images", "ai"]);
   });
 
-  it("adds Task in front for every part of the Tasks area", () => {
-    for (const v of ["tasks", "epic", "task"] as const) {
+  it("adds Task in front for the task list and an epic, but not for a task page", () => {
+    for (const v of ["tasks", "epic"] as const) {
       expect(rightTabsFor(v)[0]).toBe("task");
     }
+    expect(rightTabsFor("task")).toEqual(["outline", "links", "history", "images", "ai"]);
+  });
+
+  it("has the Timer tab only while a timer runs", () => {
+    expect(rightTabsFor("notes", true)).toEqual([
+      "outline",
+      "links",
+      "history",
+      "images",
+      "timer",
+      "ai",
+    ]);
+    expect(rightTabsFor("notes", false)).not.toContain("timer");
   });
 
   it("adds Part in front in the Plans area", () => {

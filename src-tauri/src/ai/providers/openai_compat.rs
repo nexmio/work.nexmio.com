@@ -172,15 +172,15 @@ pub(crate) async fn error_from_response(resp: reqwest::Response) -> AppError {
     ))
 }
 
-/// True for an error from the server's chat template (for example Foundry Local's template
-/// engine on SmolLM3: `Unknown method: replace at row 23, column 48`), as opposed to the model.
+/// True for an error from the server's chat template (for example
+/// on SmolLM3: `Unknown method: replace at row 23, column 48`), as opposed to the model.
 pub fn is_template_error(e: &AppError) -> bool {
     let m = e.to_string();
     m.contains("Unknown method")
         || (m.contains("at row") && m.contains("column") && m.contains("{%"))
 }
 
-/// True when the server refuses tool calls for this model (Foundry Local: "structured tool
+/// True when the server refuses tool calls for this model (for example "structured tool
 /// calling requires model-published opening and closing tool markers"), although it was
 /// offered tools. The request can be sent again without them.
 pub fn is_tool_support_error(e: &AppError) -> bool {
@@ -203,7 +203,7 @@ pub fn without_system(req: &LlmRequest) -> LlmRequest {
 }
 
 /// Streams a chat completion. When the server's chat template fails before any text came (some
-/// models in Foundry Local cannot take a system message), it is asked once more with the system
+/// models cannot take a system message), it is asked once more with the system
 /// text in the first user message. When the server says the model cannot call tools (but was
 /// offered them), it is asked once more without tools: the chat then answers as plain text, with
 /// no vault search or skills. Other errors and other models are not affected.

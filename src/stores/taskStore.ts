@@ -7,6 +7,7 @@ import type { TaskStep } from "@/bindings/TaskStep";
 import { api, toApiError } from "@/lib/api";
 import { flushPendingWrites } from "@/lib/flush";
 import { taskRef, taskText, todayIso } from "@/lib/taskLogic";
+import { useTagStore } from "./tagStore";
 import { reportError, useUiStore } from "./uiStore";
 import { useVaultStore } from "./vaultStore";
 
@@ -62,6 +63,13 @@ interface TaskState {
   moveEpic: (path: string, up: boolean, shown: readonly string[]) => Promise<void>;
   /** Moves a task (with its steps) or a step one place up or down in its note. */
   move: (path: string, line: number, key: string, up: boolean) => Promise<void>;
+  /** The tag the task list is narrowed to (a tag of an epic or a task), or null for all. */
+  tagFilter: string | null;
+  setTagFilter: (tag: string | null) => void;
+  /** Puts a tag on a task (written as `#tag` in its line) or takes it off. */
+  setTaskTag: (t: Task, tag: string, on: boolean) => Promise<void>;
+  /** Puts a tag on an epic (in its page's properties) or takes it off. */
+  setEpicTag: (path: string, tag: string, on: boolean) => Promise<void>;
   /** Changes the title of an epic (its heading; the note keeps its name). */
   renameEpic: (path: string, title: string) => Promise<void>;
   /** Makes a note that has tasks an epic (it gets the tag `epic`). */
@@ -85,6 +93,8 @@ interface TaskState {
   createEpic: (title: string, open?: boolean, folder?: string) => Promise<string | null>;
   /** The epic note for a note: itself when it is in `Tasks/`, else the one made for it. */
   epicFor: (note: string, folder?: string) => Promise<string | null>;
+  /** Moves a task, with its steps and log, into an epic. The task page follows it. */
+  moveToEpic: (t: Task, epicPath: string) => Promise<void>;
   select: (ref: TaskRef | null) => void;
   /** Opens a task on the task page. */
   open: (t: Task) => void;
@@ -196,6 +206,28 @@ export const useTaskStore = create<TaskState>((set, get) => {
     openEpic: (path) => {
       set({ epicPath: path });
       useUiStore.getState().setCenterView("epic");
+    },
+    tagFilter: null,
+    setTagFilter: (tagFilter) => {
+      set({ tagFilter });
+    },
+    setTaskTag: async (t, tag, on) => {
+      await mutate(t.path, () => api.taskSetTag(t.path, t.line, t.key, tag, on));
+      void useTagStore.getState().load();
+    },
+    setEpicTag: async (path, tag, on) => {
+      try {
+        await flushPendingWrites();
+        // The page's own tags come back; the epic's tags are those without `epic` itself.
+        const tags = (await api.noteSetTag(path, tag, on)).filter((t) => t !== "epic");
+        set((s) => ({ epics: s.epics.map((e) => (e.path === path ? { ...e, tags } : e)) }));
+        if (useVaultStore.getState().activePath === path) {
+          useVaultStore.setState((s) => ({ reloadNonce: s.reloadNonce + 1 }));
+        }
+        void useTagStore.getState().load();
+      } catch (e) {
+        reportError(e);
+      }
     },
     renameEpic: async (path, title) => {
       try {
@@ -332,6 +364,17 @@ export const useTaskStore = create<TaskState>((set, get) => {
     },
     move: async (path, line, key, up) => {
       await mutate(path, () => api.taskMove(path, line, key, up));
+    },
+    moveToEpic: async (t, epicPath) => {
+      const fresh = await mutate(t.path, () => api.taskMoveTo(t.path, t.line, t.key, epicPath));
+      if (fresh === null) return;
+      await get().load();
+      const now = get().tasks.find((x) => x.path === epicPath && x.title === t.title);
+      const sel = get().selected;
+      if (now !== undefined && sel !== null && sel.path === t.path && sel.title === t.title) {
+        set({ selected: { path: now.path, line: now.line, title: now.title } });
+      }
+      useUiStore.getState().toast(`Moved “${t.title}” into the epic.`);
     },
     select: (selected) => {
       set({ selected });

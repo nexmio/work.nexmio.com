@@ -44,16 +44,6 @@ export const PROVIDER_HELP: Record<ProviderKind, ProviderHelp> = {
     steps: ["Remove it, or leave it: nothing is ever sent to it."],
     notes: ["Nexmio Work, which reads your pages, never uses a cloud provider."],
   },
-  foundry_local: {
-    summary: "Nexmio Work's Foundry Local, set up under Settings → AI.",
-    steps: ["Open Settings → AI, choose Foundry Local and press Download."],
-    notes: [],
-  },
-  phi_silica: {
-    summary: "Phi Silica, built into Windows on Copilot+ PCs, chosen under Settings → AI.",
-    steps: ["Open Settings → AI, choose Windows AI · Phi Silica and press Test Phi Silica."],
-    notes: ["Only in the Microsoft Store version. It cannot call tools."],
-  },
   builtin: {
     summary: "Nexmio Work's own AI, set up under Settings → AI.",
     steps: ["Open Settings → AI and press Download."],

@@ -9,8 +9,4 @@ export type BackendInfo = { id: Backend, label: string, description: string,
 /**
  * The graphics cards this build is the default for.
  */
-defaultFor: Array<GpuVendor>, 
-/**
- * Shown under "advanced" in the settings.
- */
-advanced: boolean, downloadBytes: number, };
+defaultFor: Array<GpuVendor>, downloadBytes: number, };

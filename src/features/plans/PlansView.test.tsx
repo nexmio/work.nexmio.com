@@ -44,7 +44,13 @@ tags: [plan]
 `;
 
 const epics = [
-  { path: "Tasks/Find the place.md", title: "Find the place", source: null, description: "" },
+  {
+    path: "Tasks/Find the place.md",
+    title: "Find the place",
+    source: null,
+    description: "",
+    tags: [],
+  },
 ];
 const tasks = [
   makeTask({ path: "Tasks/Find the place.md", line: 3, title: "Visit the offices", done: true }),

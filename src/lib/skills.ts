@@ -6,7 +6,6 @@ import { wakeIfNeeded } from "@/lib/wake";
 import { MAX_MENTIONS } from "@/lib/mentionQuery";
 import { useChatStore } from "@/stores/chatStore";
 import { useEngineStore } from "@/stores/engineStore";
-import { useFoundryStore } from "@/stores/foundryStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -22,13 +21,9 @@ export function skillFits(skill: Skill, isDir: boolean): boolean {
  */
 export async function localAiProblem(): Promise<string | null> {
   const { provider } = activeAi(useSettingsStore.getState().settings, useVaultStore.getState());
-  const blocked = aiBlocked(
-    provider,
-    useEngineStore.getState().status?.state,
-    useFoundryStore.getState().status?.state,
-  );
+  const blocked = aiBlocked(provider, useEngineStore.getState().status?.state);
   if (blocked !== null || !provider) return blocked;
-  if (provider.kind === "builtin" || provider.kind === "foundry_local") return wakeIfNeeded();
+  if (provider.kind === "builtin") return wakeIfNeeded();
   try {
     const r = await api.testProvider(provider.id);
     return r.ok ? null : `${provider.name} is not reachable: ${r.message}`;

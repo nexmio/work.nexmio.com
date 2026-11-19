@@ -13,7 +13,7 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] **Try the demo vault** (empty folder): pages, epics with tasks and two meetings are there.
 - [ ] Write in a page and watch the status bar: **Saved**. Rename the page and make a link `[[…]]` to it: the link follows.
 - [ ] **···** → **Tags…**: add a tag of your own by typing in the box and pressing Enter; tick **Epic**; the chips above the page change. Search shows the tag in **Your tags**.
-- [ ] Tasks: add a task in the write-it-down box, tick a step, open **Focus** and press **Done, next step**.
+- [ ] Tasks: add a task in the write-it-down box, tick a step, start a timer on it in the **Timer** tab of the right panel and stop it.
 - [ ] Meetings: **New** → pick a time from the list, tick **Agenda** and **Actions**, **Create and start**; type in the pages, add a decision and an action; **Esc** leaves; the meeting page shows what you wrote.
 - [ ] Press **Ctrl+S** or wait: History of the page lists the change; restore the earlier version and then undo it.
 - [ ] Settings → Vault → Backup: choose a folder, **Back up now**: "Backed up today …".
@@ -24,7 +24,7 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] Help → **What's new** shows the changes of this version; **Help → Check for new version…** opens the releases page in the browser.
 - [ ] **File → Export** a page to HTML and open the file; **Import** a small folder of Markdown.
 - [ ] Resize the window narrow: the panels fold and nothing runs off the screen.
-- [ ] The Microsoft Store package (when there is one, `nexmio-work-msix-test` from the workflow): install it with `Install-TestMsix.ps1`, start it, open a vault, and Foundry Local is the only built-in engine.
+- [ ] The Microsoft Store package (when there is one, `nexmio-work-msix-test` from the workflow): install it with `Install-TestMsix.ps1`, start it, open a vault; the built-in AI says it is not in the Store version yet, and LM Studio works if it is running.
 - [ ] Close Nexmio Work with a page just changed; start it again: the change is there, and History has it.
 - [ ] The website (https://work.nexmio.com/) shows the new version in its top line, and the README's pictures load.
 - [ ] `PRIVACY.md` and `docs/STORE-LISTING.md` still say what the app does (a cloud AI only after consent, no automatic update check).
@@ -42,7 +42,7 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] At start the Nexmio Work picture is shown for about two seconds with the version; a click or any key skips it.
 - [ ] First start (no vault): the Welcome screen has **Open folder as vault**, **Create new vault**, the recent list, **How to use Nexmio Work** and **About**, on the Nexmio Work picture.
 - [ ] **Create new vault** → pick a parent folder → the window asks for a name and has **Trace my work in today's daily page** (off). A name like `PAM div.` is refused with a red box that says why. Create: the vault opens with `.git`, `.gitignore` (with `.vault/index.db`), `.vault/config.json`, the folders `Meetings` and `Quick notes`, and the templates `Meeting` and `Quick note` in `.vault/templates/`.
-- [ ] Tick **Trace my work** when creating a vault: Settings → Tasks and focus shows it on.
+- [ ] Tick **Trace my work** when creating a vault: Settings → Tasks and time shows it on.
 - [ ] A recent vault whose folder is gone shows **Folder not found** with **Locate** and remove.
 - [ ] Close and start again: the last vault opens straight away with its tabs. Start a second copy: the first window comes to the front.
 - [ ] Window size and position are remembered.
@@ -57,8 +57,8 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] **Meeting note…**: everything can be left empty. With a day and time, the page is `Meetings/<day> <title>.md` with `meeting:` and `with:` at the top, the agenda as a checklist and a `###` part per item. **Create** keeps you where you are; **Create and start** opens the meeting screen.
 - [ ] **Meeting screen**: the first open item is **Now**; typing writes to the page (open it in another tab to see it); **Next item** ticks the item; **+ Add an item** adds it; the write-it-down box does not change the pages; **Esc** leaves. **Start meeting** shows above pages in the Meetings folder.
 - [ ] **After the meeting**: next to **Start meeting**, **Prepare next meeting…** fills in the window: same title and people, a week later, only the agenda items that were not ticked.
-- [ ] **Where a task goes**: in the write-it-down box (Focus, meeting screen, Ctrl+Shift+N) a task has **Into**. Focus starts on the epic in focus, a meeting on its own epic (made when the first task is saved), else the one used last; **+ New epic…** asks for a name; nothing is made without one; no "Inbox" appears.
-- [ ] **Pencil and waste bin**: over an epic, a task and a step (list, epic page, task page, Focus) the pencil opens a field (Enter saves, Esc and the cross go back, clicking away changes nothing) and the waste bin deletes. Epic and task ask first and say how much goes with them; a step goes at once and **Undo** in the message puts it back at the end. Tab reaches both buttons.
+- [ ] **Where a task goes**: in the write-it-down box (the meeting screen, Ctrl+Shift+N) a task has **Into**. A meeting on its own epic (made when the first task is saved), else the one used last; **+ New epic…** asks for a name; nothing is made without one; no "Inbox" appears.
+- [ ] **Pencil and waste bin**: over an epic, a task and a step (list, epic page, task page) the pencil opens a field (Enter saves, Esc and the cross go back, clicking away changes nothing) and the waste bin deletes. Epic and task ask first and say how much goes with them; a step goes at once and **Undo** in the message puts it back at the end. Tab reaches both buttons.
 - [ ] **Landing** has one line with the next meeting of today or tomorrow and **Start**; **+N** shows the others; with no meeting today or tomorrow there is no line.
 - [ ] Folders first, then pages, A–Z ignoring case; `.md` is hidden. Files and folders starting with `.` never show. Folders show how many pages they hold.
 - [ ] Rename (right-click → **Rename**, or F2), drag a page onto a folder, delete (the dialog says it can be restored from history).
@@ -86,7 +86,6 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] Right-click an empty place (for example the status bar): nothing happens. Settings → About → **Debug mode** on: the same click shows **Inspect element**, and so do the menus of the file tree, the plan map and selected text. Off again: they are gone.
 - [ ] The **New page** button above the left panel (Pages) opens the name window, in the folder you are in.
 - [ ] Pictures on the website (work.nexmio.com): click one; it opens large; Escape, a click outside it or **Close** closes it; Tab to a picture and Enter does the same.
-- [ ] Foundry Local with a model whose chat template has no tool markers: the chat answers (without vault search) instead of showing the error "structured tool calling requires … tool markers".
 - [ ] Tabs: no duplicate tab; close with ×, middle-click or `Ctrl/Cmd+W`; `Ctrl/Cmd+PageUp/PageDown` switch; `Ctrl/Cmd+\` splits and merges; right-click → **Open in split view**. Two pages with the same name show their folder in the tab. Quit with a split: it comes back.
 
 ### 4. Links, tags, pictures and diagrams
@@ -125,7 +124,7 @@ Check with `git log --oneline` in the vault folder.
 - [ ] `Ctrl/Cmd+Shift+T` or the Tasks icon: one outline of epics, each a box with "N of M" and a bar; the left panel lists the epics. There is no Today, Later, due date or "Moved from earlier" anywhere.
 - [ ] Tasks shows one epic at a time. Choose each epic at the left; restart: the last choice is kept. **Loose tasks** has the tasks of pages that are not epics, each with **Make an epic**. Finished epics are under **Finished areas · n**.
 - [ ] The **Now** card shows the task that is Doing (else the first open one) with its next step. **Step done** ticks the step (**Task done** when there is none); **I am waiting for someone** moves it under **Waiting for others** and shows it in the right panel; **Choose another** makes another task Doing. The lists **After that**, **Waiting for others** and **Done · n** are right, with no filter buttons and no struck-through text.
-- [ ] Press a task's name: the right panel's **Task** tab shows its status, steps and what happened; **Open as full page** opens the task page. **Start focus**, and everything in **More** (New epic, Rename, Open the page, Find tasks in a page, Move this area, Delete) work.
+- [ ] Press a task's name: the right panel's **Task** tab shows its status, steps and what happened; **Open as full page** opens the task page. **Start timer**, and everything in **More** (New epic, Rename, Open the page, Find tasks in a page, Move this area, Delete) work.
 - [ ] Task page, status **Waiting**: **Waiting for (optional)**, type "the customer: reply on the quote" and click away. The file has `status:waiting for:"the customer: reply on the quote"`, the log has "Waiting for: …", and the list shows the text next to **Waiting**. Change the status to Doing: the text and the link are gone from the line.
 - [ ] **Waiting for a task…**: type part of another task's title, choose it. The page shows it with its steps; the file has `after:"<note>#<title>"`. Tick that task: this one says **Ready** (page and list). Rename that task: the link still finds it. Open that other task: it says **Waiting for this task** with the task that waits, and the list shows "1 waiting for this". Press the cross: the link is gone.
 - [ ] **+ Add a task to …** at the bottom of an open epic: type "Print the guide tomorrow" and press Enter. The title is exactly that (no date is read from it) and the file has `made:<today>` at the end of the line; the list shows the day it was made.
@@ -136,36 +135,38 @@ Check with `git log --oneline` in the vault folder.
 - [ ] "What has happened": a new line is written as `  - <today> text` (a list item). Hold the mouse over a line: the pencil changes its text and date, the bin deletes it (it asks; History of the page still has it).
 - [ ] Old file: a task with `> 2026-10-19 …` log lines and a `> note` line still shows its log and page. Add a log line: that task's lines are now all in the new form; other tasks are untouched. Words like `due:2026-10-23` stay in the file but are not shown.
 - [ ] Open the epic's page in another Markdown editor (or GitHub): every log line is on its own line, and the page reads as text under the task.
-- [ ] **Focus** in the Tasks panel starts with the first open task of the epic that is open (or of the first epic).
 - [ ] **(AI)** **Break it down** suggests steps; only the ticked ones are added. **Write a status line from the log** uses the written lines, the steps and the page, not the "Status:" lines. **Suggest steps from the page** on an epic adds only the ticked ones.
 - [ ] Order: hover an epic, a task and a step and use the arrows; then the same with **Alt+↑/↓** (the focus stays on the item, so it can be pressed again). The page has the new order (a task moves with its steps, page and log). Restart Nexmio Work: the epic order is kept. Change a step's text with the pencil on the task page: Enter saves, Esc goes back; no title or step is a text field before the pencil is pressed. Rename a task: `made:` stays.
 - [ ] Delete a task: it asks; History has "Snapshot before delete".
 
-### 8. Ideas, write it down and Focus
+- [ ] **Tasks → Time** has a form to start a timer (no Timer tab until one runs); once started the **Timer** tab appears in the right panel and goes when you stop. Start: write what you are doing, press a tag (the epic with that tag is chosen; with several, choose one) and **Start timer**: a task is made in that epic and the clock runs in the tab and in the status bar. Write in a page meanwhile. **Stop** (with a note): the task's log has one line like `⏱ 1 h 20 min · 09:00–10:20 · note`, the row in the list shows `⏱ …`. Close Nexmio Work with a timer running and open it again: it is still running. **Start timer** on a task, on the task page, at the top of an epic and on the Now task of the list; starting a second timer stops the first and writes its time.
+- [ ] **No epic (Loose tasks)** in the Timer tab: write a name, start. The task is in **Loose tasks** in the Tasks panel. Open it (task page or right panel): **Move it into an epic**, choose one, **Move**: the task, its steps and its log are in the epic and gone from Loose tasks, and the timer keeps running.
+- [ ] Shut the right panel, click a task in the list (the panel opens), then **Open as full page**: the panel shuts again. With the panel open before, it stays open.
+- [ ] **File → Your tags…**: your tags with counts; type a name and **Make** a tag (it shows "not used yet" and is offered when you tag something); **Show** puts `tag:name` in the search and lists pages and the tasks with the tag; **Delete** says how many pages and tasks change, **Delete the tag** takes it off everywhere (a `#tag` in running text stays) and History has a snapshot.
+- [ ] **Time** (bottom of the Tasks panel): the total, entries and tasks of the period; **Tag** narrows it (also to the tasks of an epic that has the tag); **This week / This month / Last month / This year / All time**; **By task** opens each entry with hours and note; **By day**; **Copy as CSV** pastes into a spreadsheet.
+- [ ] Tags: on a task (right panel and task page) and on an epic (list, epic page) **Add a tag** with suggestions; the task's line has `#tag`, the epic's page has the tag in its properties; a tag of the epic shows dashed on its tasks. At the top of the Tasks panel press a tag: only the epics and tasks that have it are listed; press it again for all.
+- [ ] Right-click a folder or a project in Files → **Tags › Add a tag to all pages…**: type a tag; the window says "N pages … · M will change" and the first names; **Add the tag to M pages** writes it in the properties of each page (open one in another editor to see it), a snapshot is in History before and after, and a page added later has no tag. **Remove a tag from all pages…** takes it off the same way. Nexmio Work's own tags are refused.
+- [ ] Open a task from the list: the panel's Task tab shows it; **Open as full page**: the panel has no Task tab, the page is only in the middle; **Back** goes to the list (or to the epic, a plan, the start page, a page: wherever it was opened from).
+
+### 8. Ideas and write it down
 
 - [ ] The light bulb: ideas Open / Used / Archived; **New idea**; change the title and page, click away: `Ideas.md` has the page indented under the line (hidden from the tree and not a task).
 - [ ] **Make a task**: asks which epic (or a new one), then puts it there with the idea's note as the task's note; the idea is Used. **Make a page**: a page in Quick pages opens. Archive and Bring back work.
-- [ ] `Ctrl/Cmd+Shift+N` from inside a page asks first (T, I, N or the buttons) and then shows only that box; each saves and closes with a message that has **Open**; the page you were writing is unchanged. **New → Task**, **New → Idea** and **Quick page** (start page, File, palette) show only that box, with no choice of kind. In a meeting, Focus and the start-page widget: **+ Task**, **+ Idea**, **+ Quick page** open one box, which stays open after saving; the cross closes it.
-- [ ] **Focus** is only on an epic: in its heading in the task list and at the top of the epic page (not in the left panel, not on task rows, not on the task page). It shows the whole epic as an outline, every task open, the task marked **Working on it** (its status is Doing), its next step marked **Now**. Fold any task (also the marked one), **Work on this** moves the mark, **Fold the rest** folds all but the marked one. Move tasks and steps with the arrows (or Alt+Up/Down), and add a step under a task with Enter.
-- [ ] In Focus, write in **What has happened** and press Enter: the line is in the task's log with today's date and you stay in Focus. **Done, next step** on the last step asks "Tick the task too?"; yes marks the next open task. When the epic is done: "Epic done" and **Back to the task list**. The timer can be paused; the write-it-down box keeps you in Focus; Esc leaves.
-- [ ] Focus → **Timer** box: off hides the ring, the length and Start timer, and "Do this now" with Done stays; close Focus and open it again: still off; on brings the timer back. **How long** lists 15, 25, 45, 60 and Custom… (1–180, a wrong number is refused); the length is kept next time and cannot be changed while the timer runs. **Ultra focus** shows only the marked task with timer (if on), steps, a box for the log and the log; **Back to the epic** and Esc work.
-- [ ] **(AI)** **Help me start** in Focus, **Think it through** and **Suggest first steps** on an idea: nothing is added until you press the button.
+- [ ] `Ctrl/Cmd+Shift+N` from inside a page asks first (T, I, N or the buttons) and then shows only that box; each saves and closes with a message that has **Open**; the page you were writing is unchanged. **New → Task**, **New → Idea** and **Quick page** (start page, File, palette) show only that box, with no choice of kind. In a meeting and in the start-page widget: **+ Task**, **+ Idea**, **+ Quick page** open one box, which stays open after saving; the cross closes it.
+- [ ] **(AI)** **Think it through** and **Suggest first steps** on an idea: nothing is added until you press the button.
 
 ### 9. Daily pages and Trace my work
 
 - [ ] `Ctrl/Cmd+Shift+D` makes `Daily/<today>.md`; again opens the same page. Settings → Vault: daily folder, date format and template are used.
-- [ ] Settings → Tasks and focus → **Trace my work** on: write in a page, make a task, add a log line, tick it. Today's daily page has "## Worked on" with one line for each; task lines end with `in [[Tasks/…]]`, a link to the epic's page. Write in the same page again: no second line. Remove a line: it stays removed while Nexmio Work runs. Off: nothing is written.
+- [ ] Settings → Tasks and time → **Trace my work** on: write in a page, make a task, add a log line, tick it. Today's daily page has "## Worked on" with one line for each; task lines end with `in [[Tasks/…]]`, a link to the epic's page. Write in the same page again: no second line. Remove a line: it stays removed while Nexmio Work runs. Off: nothing is written.
 
 ### 10. Setting up the AI
 
-- [ ] **Settings → AI**: two engine cards, **Foundry Local** and **llama.cpp**; none is chosen for a new user.
-- [ ] llama.cpp: the hardware found is shown and pre-selected; a model shows its size and memory; **Download** shows progress, Cancel and continue work; the built-in AI becomes Nexmio Work's provider. **Add my own model file…** copies a `.gguf`.
-- [ ] Outside the Store version there is no Phi Silica card. In the **Store version on a Copilot+ PC**: a third card **Windows AI · Phi Silica**, llama.cpp greyed out. "Phi Silica on this PC" shows Access, This PC and The model (green, or the reason in plain words with Windows' answer in grey). **Test Phi Silica** answers the test sentence; **Use Phi Silica for my pages** makes it the AI; Fix on a selected paragraph and a chat question about the open page work; the chat says tools are not available. **Copy for a bug report** copies the lines. On a PC that is not Copilot+: the card is greyed out with the reason, and Foundry Local still works.
-- [ ] **Settings → AI**: one list "Which AI Nexmio Work uses", in the order for this computer (Store on Copilot+: Phi Silica, Foundry Local, LM Studio, Cloud AI; Windows installer: llama.cpp first; Linux: llama.cpp, LM Studio, Foundry Local). Each line shows its state; choosing a ready one makes it the app's AI; the chosen row shows its own setup right under it. No line says Recommended; the built-in AIs are marked **Beta**. **Test it** (under an AI that is set up) sends one short question and shows the answer, or the error with **Copy for a bug report**.
+- [ ] **Old settings:** open Nexmio Work with a settings file that has Foundry Local or Phi Silica as the chosen AI: it opens, the AI falls back to the built-in AI, and nothing says the settings could not be read.
+- [ ] **Settings → AI**: one built-in engine, **llama.cpp**; none is chosen for a new user.
+- [ ] llama.cpp: the hardware found is shown and the engine is pre-selected. There are two engines only, **Graphics card (Vulkan)** and **CPU only** (no CUDA, ROCm, SYCL, and no boxes for processor or graphics card); with a graphics card **Vulkan** is selected, without one **CPU only**. A settings file that says `cuda12` opens and shows Vulkan. Then: a model shows its size and memory; **Download** shows progress, Cancel and continue work; the built-in AI becomes Nexmio Work's provider. **Add my own model file…** copies a `.gguf`.
+- [ ] **Settings → AI**: one list "Which AI to use" with three lines: **Built-in AI · llama.cpp** (Beta), **LM Studio, or another AI on this computer**, and **Cloud AI** (last, off). Each line shows its state; the chosen line has its own setup under it. No line for Foundry Local, Phi Silica or Windows AI.
 - [ ] **Cloud AI**: add an OpenAI-compatible provider with a cloud address and key; choose Cloud AI: the warning lists what is sent, **Use the cloud AI** is greyed out until "I understand…" is ticked; **Keep the AI on this computer** changes nothing. After using it: the status bar shows **Cloud AI**, the chat page is orange ("your pages go to …"), and a chat answer comes from it. A project with **Local AI only** uses a local AI instead. Choose another AI, then Cloud AI again: the warning comes again.
-- [ ] Foundry Local list (a drop-down: the chosen model in a box, pressing it opens search, the filters and the list, which scrolls inside the panel; choosing closes it): every chat model (also "No tools"), each with "good for", maker, size, runs on, reads about N words, licence. Search, Writing/Reasoning/Code, Can use tools, Downloaded, Runs on, Size and Sort work; **All Foundry Local models at Microsoft** opens the browser. Download a model without tools: text commands work, the chat says tools are not available.
-- [ ] Translate to English on Danish text (Phi Silica and a Foundry model): the answer is in English.
-- [ ] Foundry Local (Windows 11 24H2 or later; Linux is experimental), on a computer that has never used it (or after **Remove all**): there is no model list, only the question about the hardware parts, and nothing is downloaded. **Use only the processor**: the list shows CPU models, **Find my hardware** is offered, and downloading a model or waking it fetches no hardware parts. **Download and find my hardware**: progress, then the list shows GPU/NPU where the computer can. A small model downloads.
 - [ ] **Load AI** (status bar, and in the settings of the AI) loads the model; **Unload AI** frees the memory (no `llama-server` or helper `nexmio-work` process left). An AI command while the AI is not loaded loads it by itself. Closing or killing Nexmio Work stops the engine. **Sleep after** 1 minute works.
 - [ ] A problem (too large a context, missing driver) shows a red box with steps, **Show details** and **Copy details**.
 - [ ] **Remove** a model and all files (with a confirmation) cleans the folder shown in the settings.
@@ -209,7 +210,7 @@ Check with `git log --oneline` in the vault folder.
 
 ### 14. Without an AI
 
-- [ ] No provider chosen (or the built-in AI not loaded and not set up): every AI button is greyed out with the reason and **Set up AI**. Pages, search, tasks, ideas, Focus, the calendar, outline, links, history, images, import and export all work; the system spellcheck still underlines.
+- [ ] No provider chosen (or the built-in AI not loaded and not set up): every AI button is greyed out with the reason and **Set up AI**. Pages, search, tasks, ideas, the calendar, outline, links, history, images, import and export all work; the system spellcheck still underlines.
 
 ### 15. Projects
 
@@ -248,7 +249,7 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] Windows 11: the `…-setup.exe` installs **without** an administrator prompt; Nexmio Work starts from the Start menu with the purple "M" icon; pictures show; **Reveal in file manager** opens Explorer; uninstalling (which also removes `nexmio-work-ai` next to the program) leaves the vaults untouched.
 - [ ] Linux: the `.AppImage` starts and Help → Report a bug… opens the browser (or a dialog shows the address). The `.rpm` installs.
-- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the llama.cpp card says it is not available in the Store version and Foundry Local works; the Windows App SDK runtime was installed with it (the test copy: `Install-TestMsix.ps1` installs it); uninstalling leaves the pages.
+- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the built-in AI says it is not available in the Store version yet; uninstalling leaves the pages.
 - [ ] The release run has the artifacts `nexmio-work-msix` (unsigned) and `nexmio-work-msix-test`.
 
 ### 20. Help, About and reporting
@@ -274,7 +275,7 @@ Check with `git log --oneline` in the vault folder.
 ## A page for a task
 
 - [ ] Task page → **Linked page** → **Make a page for this task**: name is the task title, folder is the task note's folder. The page opens with the heading and a line `Task in [[…]]`. The task line gets `[[Name]]` after its title, before `#tags` and `due:`/`made:`.
-- [ ] A small chip with the page's name shows in the task list, in Focus and on the task page; a click opens the page.
+- [ ] A small chip with the page's name shows in the task list and on the task page; a click opens the page.
 - [ ] **Link a page…** picks an existing page. The pencil changes it; the cross unlinks (the page stays).
 - [ ] Rename the linked page in the tree: the link in the task line follows. Delete it: the chip is dimmed and says "Page missing"; on the task page **Make the page** makes it again.
 - [ ] Rename the task title: the link stays. The link is not in the title anywhere.
@@ -355,7 +356,7 @@ Check with `git log --oneline` in the vault folder.
 - [ ] **Settings → Editor → Reading**: Line spacing, Letter spacing, Text font and **Follow the line** change the open page and the preview at once and are kept after a restart; **Undo the last change** puts the last one back. With Follow the line on, only the line the cursor is in is clear.
 - [ ] A long page → **AI → In short**: points and things to do; the page is unchanged; tick some and **Add N tasks to the epic**; **Copy** copies Markdown; **Try again** asks again. Without an AI the entry is greyed out with the reason.
 - [ ] Select a text that describes a flow → **AI ▾ → Draw as a diagram**: a diagram code appears next to the text; **Add under the text** adds a ```mermaid block and the diagram is drawn; the original text is unchanged. Not offered in a one-line field.
-- [ ] Focus on a task, then Esc: **What is the next step?**. Type a line, **Save and leave**: the task page shows **Where you left off** and the log has "Left off: …"; the start page's Continue card shows it too (for a week). **Skip** writes nothing. **Do not ask me again** stops the question; Settings → Tasks and focus turns it on again.
+- [ ] Stop a timer: nothing is asked. (Where you left off is still written by the taskbar helper.)
 - [ ] **Windows:** Settings → Pages and backup → **Taskbar helper**. It is off. Turn it on: a Nexmio Work icon is in the taskbar; under each key it says **Works**. **Ctrl+Alt+N** in another program opens the small window: task (the epic box) or idea, Enter saves, the window closes and the item is in Nexmio Work. **Ctrl+Alt+P**: pick the task (the one in progress is first), write a line, Save: it is in the task's log. Esc closes the window without saving. With no vault open it says to open one.
 - [ ] Choose other keys (click the box, press the keys): they work after Save and the old ones do not. Choose keys another program uses: it says **Another program already uses these keys**. The same keys for both: it says they need different keys. **Use Ctrl+Alt+N** puts the standard keys back.
 - [ ] **Keep Nexmio Work running** on: closing the window hides it, the icon stays; click the icon or **Open Nexmio Work** to show it; **Quit Nexmio Work** ends it (the pages are saved). Off: closing ends Nexmio Work as before. Turn the helper off and Save: the icon and the keys are gone.
@@ -368,7 +369,6 @@ Check with `git log --oneline` in the vault folder.
 - [ ] **Old vault (a page with `tags: [pinned]`, a task line with `for:"…"`):** opening it asks **Move what Nexmio Work keeps to its own file?** with the counts, and says the next version only reads the new place. **Not now**: nothing changes and the pin and the waiting still work. **Move them now**: the tag and the words are gone from the pages, the pins and the waiting still show, History has the pages as they were, and opening the vault again does not ask.
 - [ ] Break `.vault/meta.json` (type nonsense in it): Nexmio Work starts, pins show as empty, and pinning something says the file cannot be read and leaves it as it is.
 - [ ] The file is in the vault's Git history (File → History of the vault, or `git log -- .vault/meta.json`) after the next autosave.
-- [ ] **Foundry Local crash:** with a model that crashes the engine (some AMD neural-processor models), **Test it** answers within seconds with "the Foundry Local engine crashed", the code `0xC0000005 (access violation …)` and what to try; Nexmio Work is still running, and **Load AI** works again. A model for the graphics card or the processor answers the test.
 
 ### Plans
 
@@ -404,7 +404,6 @@ Check with `git log --oneline` in the vault folder.
 - [ ] **Archive plan…** puts a plan under **Archived**; **Open it again** brings it back. The start page's **Plans** widget lists plans that are going.
 - [ ] Meeting: the small arrow on an agenda point writes it on a new line at the bottom of the pages.
 - [ ] Help → **Diagrams (Mermaid)**: copy an example into a page and see it drawn.
-- [ ] **(AI, AMD)** Foundry Local: set up the hardware parts; if only the AMD graphics part fails, the others are used and no error shows.
 
 ## The new layout
 

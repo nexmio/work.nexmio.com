@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Play } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +8,9 @@ import { MarkdownText } from "@/components/MarkdownText";
 import { shortDate, todayIso } from "@/lib/taskLogic";
 import { cn } from "@/lib/utils";
 import { findTask, useTaskStore } from "@/stores/taskStore";
-import { useUiStore } from "@/stores/uiStore";
+import { useTimerStore } from "@/stores/timerStore";
+import { MoveToEpic } from "./MoveToEpic";
+import { TaskTags } from "./TaskTags";
 import { WaitingFor } from "./WaitingFor";
 import { WaitingForTask } from "./WaitingForTask";
 
@@ -80,6 +82,8 @@ export function TaskDetail() {
           </PlainButton>
         ))}
       </div>
+      <TaskTags task={task} />
+      <MoveToEpic task={task} />
       {status === "waiting" && <WaitingFor task={task} />}
       {status === "waiting" && <WaitingForTask task={task} />}
 
@@ -161,16 +165,24 @@ export function TaskDetail() {
         </form>
       </section>
 
-      <Button
-        variant="outline"
-        className="mt-auto"
-        onClick={() => {
-          store.open(task);
-          useUiStore.getState().setCenterView("task");
-        }}
-      >
-        Open as full page
-      </Button>
+      <div className="mt-auto flex flex-col gap-2">
+        <Button
+          disabled={task.done}
+          onClick={() => {
+            void useTimerStore.getState().start(task);
+          }}
+        >
+          <Play /> Start timer on this task
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            store.open(task);
+          }}
+        >
+          Open as full page
+        </Button>
+      </div>
     </div>
   );
 }

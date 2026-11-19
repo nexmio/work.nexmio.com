@@ -61,7 +61,7 @@ describe("TaskPage", () => {
       tasks: [task],
       selected: { path: task.path, line: task.line, title: task.title },
     });
-    useUiStore.setState({ centerView: "task", focusOpen: false });
+    useUiStore.setState({ centerView: "task" });
   });
 
   it("shows the task with its progress, the next step and the log, newest first", () => {
@@ -183,11 +183,17 @@ describe("TaskPage", () => {
     expect(screen.getByText("Mon 19 Oct")).toBeInTheDocument();
   });
 
-  it("goes back to its epic, and has no Focus button of its own", async () => {
+  it("goes back to where it was opened from,", async () => {
+    useUiStore.setState({ taskFrom: "plans" });
     render(<TaskPage />);
     const user = userEvent.setup();
-    expect(screen.queryByRole("button", { name: "Focus" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Acme" }));
+    await user.click(screen.getByRole("button", { name: "Plans" }));
+    expect(useUiStore.getState().centerView).toBe("plans");
+  });
+
+  it("opens its epic from the Epic button", async () => {
+    render(<TaskPage />);
+    await userEvent.setup().click(screen.getByRole("button", { name: /^Epic: Acme/ }));
     expect(useUiStore.getState().centerView).toBe("epic");
   });
 

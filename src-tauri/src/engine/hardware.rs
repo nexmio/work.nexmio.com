@@ -25,8 +25,10 @@ pub enum GpuVendor {
     None,
 }
 
-/// Which build of the engine to use.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+/// Which build of the engine to use. Only these two are offered: one build for any graphics card
+/// (Vulkan) and one for the processor. The names of the builds that were offered before 0.27 (CUDA,
+/// ROCm, SYCL) are still read from old settings, as Vulkan.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "lowercase")]
 #[ts(export)]
 pub enum Backend {
@@ -34,26 +36,26 @@ pub enum Backend {
     Cpu,
     /// Any modern graphics card (AMD, Intel, Nvidia) through the Vulkan driver.
     Vulkan,
-    /// Nvidia, with CUDA 12 (works with most drivers).
-    Cuda12,
-    /// Nvidia, with CUDA 13 (needs a recent driver).
-    Cuda13,
-    /// AMD, with ROCm.
-    Rocm,
-    /// Intel, with SYCL.
-    Sycl,
+}
+
+impl<'de> Deserialize<'de> for Backend {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let id = String::deserialize(d)?;
+        match id.as_str() {
+            "cpu" => Ok(Backend::Cpu),
+            // The graphics builds that were offered before 0.27 all become Vulkan.
+            "vulkan" | "cuda12" | "cuda13" | "rocm" | "sycl" => Ok(Backend::Vulkan),
+            other => Err(serde::de::Error::unknown_variant(other, &["cpu", "vulkan"])),
+        }
+    }
 }
 
 impl Backend {
-    /// The short name used in folder names and settings (`vulkan`, `cuda12`, …).
+    /// The short name used in folder names and settings (`vulkan`, `cpu`).
     pub const fn id(self) -> &'static str {
         match self {
             Backend::Cpu => "cpu",
             Backend::Vulkan => "vulkan",
-            Backend::Cuda12 => "cuda12",
-            Backend::Cuda13 => "cuda13",
-            Backend::Rocm => "rocm",
-            Backend::Sycl => "sycl",
         }
     }
 }
@@ -105,11 +107,10 @@ pub struct HardwareInfo {
     pub recommended_gpu: GpuVendor,
 }
 
-/// The engine build that suits a graphics card best.
+/// The engine build that suits a graphics card: Vulkan for any card, the CPU build for none.
 pub fn default_backend(gpu: GpuVendor) -> Backend {
     match gpu {
-        GpuVendor::Nvidia => Backend::Cuda12,
-        GpuVendor::Amd | GpuVendor::Intel => Backend::Vulkan,
+        GpuVendor::Nvidia | GpuVendor::Amd | GpuVendor::Intel => Backend::Vulkan,
         GpuVendor::None => Backend::Cpu,
     }
 }
@@ -345,7 +346,7 @@ mod tests {
 
     #[test]
     fn each_graphics_vendor_has_a_default_engine() {
-        assert_eq!(default_backend(GpuVendor::Nvidia), Backend::Cuda12);
+        assert_eq!(default_backend(GpuVendor::Nvidia), Backend::Vulkan);
         assert_eq!(default_backend(GpuVendor::Amd), Backend::Vulkan);
         assert_eq!(default_backend(GpuVendor::Intel), Backend::Vulkan);
         assert_eq!(default_backend(GpuVendor::None), Backend::Cpu);

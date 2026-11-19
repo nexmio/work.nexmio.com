@@ -8,7 +8,6 @@ pub mod engine;
 pub mod error;
 pub mod export;
 pub mod external;
-pub mod foundry;
 pub mod git;
 pub mod helper;
 pub mod import;
@@ -16,7 +15,6 @@ pub mod links;
 pub mod markdown;
 pub mod meta;
 pub mod order;
-pub mod phisilica;
 pub mod projects;
 pub mod search;
 pub mod settings;
@@ -97,7 +95,6 @@ pub fn run() {
             helper::apply(app.handle(), &helper_choice);
             git::autosave::spawn_idle_task(app.handle().clone());
             engine::service::startup(app.handle());
-            foundry::service::startup(app.handle());
             // If the frontend never reports in (a broken start), show the window anyway.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -226,6 +223,13 @@ pub fn run() {
             commands::tasks::idea_delete,
             commands::tasks::task_delete,
             commands::tasks::task_set_title,
+            commands::tasks::task_set_tag,
+            commands::tasks::task_move_to,
+            commands::vault::tag_use,
+            commands::vault::tag_delete,
+            commands::vault::tag_make,
+            commands::vault::folder_tag_preview,
+            commands::vault::folder_set_tag,
             commands::tasks::task_set_link,
             commands::tasks::task_move,
             commands::tasks::list_epics,
@@ -238,18 +242,6 @@ pub fn run() {
             commands::order::get_epic_order,
             commands::order::set_epic_order,
             commands::external::open_external,
-            commands::foundry::foundry_catalog,
-            commands::phisilica::phi_status,
-            commands::phisilica::phi_ensure_ready,
-            commands::phisilica::phi_test,
-            commands::foundry::foundry_status,
-            commands::foundry::foundry_install,
-            commands::foundry::foundry_setup_hardware,
-            commands::foundry::foundry_use_cpu_only,
-            commands::foundry::foundry_cancel_install,
-            commands::foundry::foundry_wake,
-            commands::foundry::foundry_sleep,
-            commands::foundry::foundry_remove,
             commands::images::add_images,
             commands::images::image_usage,
             commands::import::scan_import,
@@ -286,7 +278,6 @@ pub fn run() {
             // The built-in AI must never outlive Nexmio Work: it holds gigabytes of memory.
             if matches!(event, tauri::RunEvent::Exit) {
                 engine::service::shutdown(app);
-                foundry::service::shutdown(app);
             }
         });
 }

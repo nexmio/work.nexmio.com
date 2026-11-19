@@ -15,10 +15,6 @@ The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release wo
    - the **name you reserved** (`Nexmio Work`): it is the name the package shows in the Start menu and the Store, and Microsoft checks it against the reserved name
 4. In the GitHub repository, **Settings → Secrets and variables → Actions → Variables**, add `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER`, `MSIX_PUBLISHER_DISPLAY_NAME` and `MSIX_DISPLAY_NAME` (the reserved name) with those values. (They are not secrets.) Without them the workflow uses placeholders, which is fine for test packages only.
 
-5. **Phi Silica (once):** Microsoft unlocks Phi Silica for one package identity with a Limited Access Feature token (requested with the "LAF Access Token Request Form"; feature `com.microsoft.windows.ai.languagemodel`). Under **Settings → Secrets and variables → Actions → Secrets** add `PHI_SILICA_TOKEN` (the token value) and `PHI_SILICA_ATTESTATION` (the whole attestation sentence, ending "…agrees to the terms of use."). `Build-Msix.ps1` writes them to `phi-silica.json` inside the package only; they are not in the program, the repository or the Windows installer. Without them the package works, and Phi Silica shows "no access key". The token stays valid for new versions, because it is tied to the package identity, not the version.
-
-The package depends on the **Windows App SDK runtime** (`Microsoft.WindowsAppRuntime.2`, the version in `Build-Msix.ps1`) and declares the `systemAIModels` capability, both for Phi Silica. The Store installs the runtime with Nexmio Work; the test copy (`nexmio-work-msix-test`) carries it, and `Install-TestMsix.ps1` installs it when Windows does not have it.
-
 ## Connect the Store (once, so releases reach it by themselves)
 
 1. **Reserve both names** in Partner Center: **Nexmio Work** and **Nexmio Work Preview**. Each is its own product with its own identity.
@@ -48,10 +44,10 @@ On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 ```powershell
 pnpm install
 pnpm tauri build
-./scripts/msix/Build-Msix.ps1 -Version 0.26.0 -TestSign -DisplayName "Nexmio Work"
+./scripts/msix/Build-Msix.ps1 -Version 0.27.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.26.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.26.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.27.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.27.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
 
 **Windows Sandbox** (Windows 11 Pro, feature "Windows Sandbox" turned on): edit `scripts/msix/sandbox.wsb` so that `HostFolder` is the full path of `msix-out`, and double-click it. The sandbox installs Nexmio Work; start it from the Start menu. Everything is gone when you close the sandbox.
 
@@ -62,7 +58,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 ## 3. What to check in the Store version
 
 - Nexmio Work starts, opens a folder as a vault and saves a page (`Ctrl+S`), and the version history works.
-- Foundry Local works as the built-in AI (Settings → AI), and LM Studio works if it is installed. Settings → AI says that the llama.cpp engine is not available in the Store version.
+- LM Studio (or another AI on the computer) works if it is installed. Settings → AI says that the built-in llama.cpp engine is not available in the Store version yet.
 - Settings are kept after closing and starting again. Uninstalling (Settings → Apps) removes the app's own data but not your pages.
 
 ## 4. Send it in
@@ -78,13 +74,12 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 
 The Store package **does not run the llama.cpp engine** (`engine::catalog::unavailable_reason`): a downloaded program was blocked from starting on a managed laptop, and the Store's policy 10.2.2 is against apps that extend themselves with downloaded code. Settings → AI says so for that engine.
 
-The Store package has **Foundry Local** instead (Microsoft's runtime, MIT-licensed SDK). Its native libraries (`foundry-native\`, about 40 MB, fetched by `scripts/fetch-foundry-native.ps1` and packed by `Build-Msix.ps1`) are inside the package, so they are signed by the Store like the rest. The engine runs in a helper process, which is the same `nexmio-work.exe` started with `--foundry-helper`, so no separate program has to be allowed. Only data is downloaded at the user's request: the hardware parts (execution providers for the NPU or graphics card, from Microsoft) and the model.
+The built-in AI in the Store package is planned as `llama-server` (CPU and Vulkan builds) inside the package, signed by the Store like the rest, with only the models downloaded. It is not built yet; until it is, the Store package has no built-in AI. Foundry Local and Phi Silica (Copilot+ PCs) were removed in 0.27: they did not translate well, some models did not run, and they could not be made to work reliably.
 
 Versions 0.8.7 to 0.8.9 also built a second package, `nexmio-work-msix-with-ai`, that could download the llama.cpp engine. It was removed in 0.8.10 because that engine is blocked from starting.
 
 ## Known risks
 
-- **Foundry Local in the Store package** is new and untested in a real Store install: Windows 11 version 24H2 or later is needed for it, and the hardware parts and models are downloaded from Microsoft's servers. Policy 10.2.2 (no extending the app with dynamically included code) is the question to watch: only data is downloaded, not programs. LM Studio works if it is installed.
 - **The Store's rules about AI apps** have not been checked either. Nexmio Work lets the user chat with a local model of their own choice; **Help → Report inappropriate AI content…** is the means to report AI content (policy 11.16).
 - **WebView2**: Windows 11 has it. On Windows 10 the user may need to install the Edge WebView2 runtime.
 - An organisation can still block the Store, or block Store apps that are not approved. Check that the Microsoft Store opens on the computer where you want to use Nexmio Work.

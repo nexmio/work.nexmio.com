@@ -63,24 +63,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Foundry Local's native libraries are packed into the installer, the AppImage and the Store
-      # package (src-tauri/foundry-native). A failure here stops the release on purpose: a build
-      # without them would silently have no Foundry Local.
-      - name: Fetch Foundry Local's native libraries (Linux)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: ./scripts/fetch-foundry-native.sh
-
-      - name: Fetch Foundry Local's native libraries (Windows)
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: ./scripts/fetch-foundry-native.ps1
-
       # Preview is its own app ("Nexmio Work Preview", its own identity), so both can be installed.
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # The AppImage tool follows the libraries' dependencies; Foundry Local's sit in this folder.
-          LD_LIBRARY_PATH: ${{ github.workspace }}/src-tauri/foundry-native
         with:
           releaseId: ${{ inputs.release_id }}
           args: ${{ inputs.edition == 'preview' && '--config src-tauri/tauri.preview.conf.json' || '' }}
@@ -107,10 +93,6 @@ jobs:
             -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=00000000-0000-0000-0000-000000000000' }}" `
             -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Nexmio' }}" `
             -TestSign
-        env:
-          # Microsoft's key for Phi Silica; written into the package only (see docs/MSIX.md).
-          PHI_SILICA_TOKEN: ${{ secrets.PHI_SILICA_TOKEN }}
-          PHI_SILICA_ATTESTATION: ${{ secrets.PHI_SILICA_ATTESTATION }}
 
       - name: Keep the Microsoft Store package
         if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
@@ -139,16 +121,6 @@ jobs:
 
       # The copy for trying the package on a test Windows (Sandbox or a virtual machine), signed with
       # a throw-away certificate that is NOT valid in the Store. See docs/MSIX.md.
-      - name: Add the Windows App SDK runtime to the test copy
-        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $nupkg = "winappsdk-runtime.zip"
-          Invoke-WebRequest -Uri "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.runtime/2.5.1/microsoft.windowsappsdk.runtime.2.5.1.nupkg" -OutFile $nupkg
-          Expand-Archive $nupkg -DestinationPath winappsdk-runtime -Force
-          Copy-Item "winappsdk-runtime/tools/MSIX/win10-x64/Microsoft.WindowsAppRuntime.2.msix" msix-out/
-
       - name: Keep the test copy of the Microsoft Store package
         if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
         continue-on-error: true
@@ -158,6 +130,5 @@ jobs:
           path: |
             msix-out/*_test.msix
             msix-out/nexmio-work-test.cer
-            msix-out/Microsoft.WindowsAppRuntime.2.msix
             msix-out/Install-TestMsix.ps1
           if-no-files-found: warn

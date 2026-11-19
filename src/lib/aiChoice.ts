@@ -3,31 +3,20 @@ import type { Settings } from "@/bindings/Settings";
 import { effectiveLocation } from "@/lib/providers";
 
 /** The kinds of AI on the AI tab, one line each. */
-export type AiOption = "phi" | "foundry" | "llama" | "local" | "cloud";
+export type AiOption = "llama" | "local" | "cloud";
 
 export interface Where {
   os: string;
   /** The Microsoft Store package. */
   store: boolean;
-  /** Phi Silica is offered (the Store package on Windows). */
-  phiShown: boolean;
-  /** This PC can run Phi Silica (a Copilot+ PC). */
-  copilot: boolean;
 }
 
 /**
- * The AI choices in the order that suits where Nexmio Work runs. Cloud AI is always last. Phi Silica
- * only on a Copilot+ PC with the Store version; llama.cpp is not in the Store version; Foundry
- * Local is in every Windows version, and on Linux it comes after LM Studio (experimental).
+ * The AI choices: the built-in AI first (llama.cpp, not in the Microsoft Store version yet), then an
+ * AI of your own on this computer, and the cloud AI last.
  */
 export function aiOrder(w: Where): AiOption[] {
-  if (w.store) {
-    return w.phiShown && w.copilot
-      ? ["phi", "foundry", "local", "cloud"]
-      : ["foundry", "local", "cloud"];
-  }
-  if (w.os === "windows") return ["llama", "foundry", "local", "cloud"];
-  return ["llama", "local", "foundry", "cloud"];
+  return w.store ? ["local", "cloud"] : ["llama", "local", "cloud"];
 }
 
 /** True when `p` is the cloud AI the user agreed to, at the address they agreed to. */
@@ -60,8 +49,6 @@ export function otherLocalProviders(settings: Settings): ProviderConfig[] {
 /** Which line of the list a provider belongs to. */
 export function optionOf(p: ProviderConfig | undefined): AiOption | null {
   if (!p) return null;
-  if (p.kind === "phi_silica") return "phi";
-  if (p.kind === "foundry_local") return "foundry";
   if (p.kind === "builtin") return "llama";
   if (p.kind === "anthropic") return null;
   return effectiveLocation(p) === "cloud" ? "cloud" : "local";

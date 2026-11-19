@@ -28,6 +28,7 @@ import { isProjectOpen, useTreeStore } from "@/stores/treeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { FileTree } from "./FileTree";
+import { FolderTagMenu } from "./FolderTagMenu";
 import { droppedPaths, moveMany } from "./treeMoves";
 import { SidebarSection } from "./SidebarSection";
 import { countNotes, filterTree, findFolder, withoutImages, type Action } from "./treeUtils";
@@ -145,6 +146,7 @@ function ProjectTree({ project, onAction }: { project: Project; onAction: (a: Ac
           >
             <FolderPlus className="size-4" aria-hidden /> New folder
           </ContextMenuItem>
+          <FolderTagMenu folder={project.folder} name={project.name} onAction={onAction} />
           {folder && (
             <>
               <ContextMenuSeparator />

@@ -21,18 +21,13 @@ export function markFirstRunDone(): void {
 }
 
 /**
- * True when there is no AI that could answer yet: the chosen AI is the built-in one or Foundry
- * Local and no model has been downloaded for it. Someone who already uses LM Studio, or has a
+ * True when there is no AI that could answer yet: the chosen AI is the built-in one and no model
+ * has been downloaded for it. Someone who already uses LM Studio, or has a
  * model, never sees the first-run help.
  */
-export function needsAiSetup(
-  settings: Settings,
-  builtinModels: number | null,
-  foundryModels: number | null,
-): boolean {
+export function needsAiSetup(settings: Settings, builtinModels: number | null): boolean {
   const provider = settings.ai.providers.find((p) => p.id === settings.ai.defaultProviderId);
   if (!provider) return true;
   if (provider.kind === "builtin") return builtinModels === 0;
-  if (provider.kind === "foundry_local") return foundryModels === 0;
   return false;
 }

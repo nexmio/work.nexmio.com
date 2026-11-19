@@ -46,20 +46,6 @@ pub fn apply_update(state: &AppState, settings: Settings) -> AppResult<IndexActi
         ) {
             p.base_url = url;
         }
-        // The same for Foundry Local: the address and the model name belong to the running helper.
-        let current_foundry = cur
-            .provider(crate::foundry::FOUNDRY_ID)
-            .map(|p| (p.base_url.clone(), p.model.clone()));
-        if let (Some((url, model)), Some(p)) = (
-            current_foundry,
-            new.ai
-                .providers
-                .iter_mut()
-                .find(|p| p.id == crate::foundry::FOUNDRY_ID),
-        ) {
-            p.base_url = url;
-            p.model = model;
-        }
         // How the last backup went is written by the backup, not by the settings window.
         for (key, b) in &mut new.backups {
             if let Some(old) = cur.backups.get(key) {

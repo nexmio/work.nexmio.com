@@ -19,6 +19,9 @@ import { TaskPage } from "@/features/tasks/TaskPage";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { PartSlot } from "@/features/plans/PartSlot";
 import { TaskDetail } from "@/features/tasks/TaskDetail";
+import { TimePage as TimeView } from "@/features/tasks/TimePage";
+import { TimerPanel } from "@/features/tasks/TimerPanel";
+import { useTimerStore } from "@/stores/timerStore";
 import { TasksView } from "@/features/tasks/TasksView";
 import { cn } from "@/lib/utils";
 import { FilesPanel } from "@/features/fileTree/FilesPanel";
@@ -27,7 +30,7 @@ import { ImagesPanel } from "@/features/images/ImagesPanel";
 import { SearchPanel } from "@/features/search/SearchPanel";
 import { panelStorage } from "@/lib/safeStorage";
 
-import { type CenterView, isTasksView, type RightTab, useUiStore } from "@/stores/uiStore";
+import { type CenterView, type RightTab, useUiStore } from "@/stores/uiStore";
 import { Header } from "./Header";
 import { StatusBar } from "./StatusBar";
 import { usePanelCollapse } from "./usePanelCollapse";
@@ -43,9 +46,20 @@ import { activeTitle, useVaultStore } from "@/stores/vaultStore";
  * The tabs of the right panel, in order. The panel always has the note panels and the AI; the
  * Tasks area adds "Task" in front, and the Plans area "Part".
  */
-export function rightTabsFor(view: CenterView): RightTab[] {
-  const base: RightTab[] = ["outline", "links", "history", "images", "ai"];
-  if (isTasksView(view)) return ["task", ...base];
+export function rightTabsFor(view: CenterView, timerRunning = false): RightTab[] {
+  // The Timer tab is there only while a timer runs (it is started under Tasks → Time).
+  const base: RightTab[] = [
+    "outline",
+    "links",
+    "history",
+    "images",
+    ...(timerRunning ? (["timer"] as const) : []),
+    "ai",
+  ];
+  // The Task tab is the quick view of a task in the list. A task opened as a full page is only
+  // there, so the panel does not show it a second time.
+  if (view === "tasks" || view === "epic") return ["task", ...base];
+  if (view === "task") return base;
   if (view === "plans") return ["part", ...base];
   return base;
 }
@@ -53,7 +67,8 @@ export function rightTabsFor(view: CenterView): RightTab[] {
 /** Title bar, three resizable/collapsible columns and the status bar. */
 export function AppShell() {
   const ui = useUiStore();
-  const tabs = rightTabsFor(ui.centerView);
+  const timerRunning = useTimerStore((s) => s.running !== null);
+  const tabs = rightTabsFor(ui.centerView, timerRunning);
   // A tab that does not belong to the area in the middle falls back to the first one.
   const rightTab: RightTab = tabs.includes(ui.rightTab) ? ui.rightTab : (tabs[0] ?? "outline");
   const activePath = useVaultStore((s) => s.activePath);
@@ -152,6 +167,7 @@ export function AppShell() {
               {ui.centerView === "tasks" && <TasksView />}
               {ui.centerView === "epic" && <EpicPage />}
               {ui.centerView === "task" && <TaskPage />}
+              {ui.centerView === "time" && <TimeView />}
               {ui.centerView === "ideas" && <IdeasView />}
               {ui.centerView === "meetings" && <MeetingsView />}
               {ui.centerView === "plans" && <PlansView />}
@@ -164,7 +180,7 @@ export function AppShell() {
             ref={right}
             id="right"
             order={3}
-            defaultSize={24}
+            defaultSize={26}
             minSize={16}
             maxSize={50}
             collapsible
@@ -190,13 +206,17 @@ export function AppShell() {
           >
             <div className="flex h-full min-h-0 flex-col">
               <RightTabs tabs={tabs} current={rightTab} />
-              {rightTab !== "ai" && rightTab !== "images" && activePath !== null && (
-                <p className="truncate border-b px-3 py-1 text-xs text-muted-foreground">
-                  {RIGHT_LABELS[rightTab]} · {activeTitle(activePath)}
-                </p>
-              )}
+              {rightTab !== "ai" &&
+                rightTab !== "images" &&
+                rightTab !== "timer" &&
+                activePath !== null && (
+                  <p className="truncate border-b px-3 py-1 text-xs text-muted-foreground">
+                    {RIGHT_LABELS[rightTab]} · {activeTitle(activePath)}
+                  </p>
+                )}
               <div className="min-h-0 flex-1">
                 {rightTab === "task" && <TaskDetail />}
+                {rightTab === "timer" && <TimerPanel />}
                 {rightTab === "part" && <PartSlot />}
                 {rightTab === "outline" && <OutlinePanel />}
                 {rightTab === "links" && <LinksPanel />}

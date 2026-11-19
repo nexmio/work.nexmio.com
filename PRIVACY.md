@@ -19,7 +19,7 @@ Nexmio Work is a pages app that runs on your own computer. This page says what i
 Only when you choose it:
 
 - **The AI** runs on your own computer by default: the built-in AI, LM Studio or another local server. The AI reads your pages only on your own machine. A cloud AI is possible, but only after you say yes, and never in a project you lock to local. You turn it on yourself in Settings → AI, in a window that says what is sent (the open page and the text you select, the pages the chat searches and reads, your questions and the chat history) and that it is your responsibility; it is used only after you tick "I understand". The status bar shows **Cloud AI** while it is on, and what the cloud company does with the text is governed by its own terms.
-- **The built-in AI download** (when you press Download) fetches, for llama.cpp, the engine from `github.com` and the model from `huggingface.co`; for Foundry Local, the hardware parts and the model from Microsoft's Foundry Local catalog. Those sites see your internet address, as for any download.
+- **The built-in AI download** (when you press Download) fetches, for llama.cpp, the engine from `github.com` and the model from `huggingface.co`. Those sites see your internet address, as for any download.
 - **A backup** (Settings → Vault → Backup) copies your pages and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.
 - **Export and import** write and read files on your computer only.
 - **Links** you click in Nexmio Work (for example **Report a bug…**) open in your web browser; Nexmio Work itself sends nothing.

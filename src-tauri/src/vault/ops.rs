@@ -409,6 +409,210 @@ pub fn undo_commit(v: &OpenVault, sha: &str) -> AppResult<Vec<String>> {
     Ok(touched)
 }
 
+/// What putting a tag on every page of a folder (or taking it off) would change.
+#[derive(Debug, Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TagPreview {
+    /// Every page in the folder and the folders under it.
+    pub total: u32,
+    /// The pages that would change: the ones that do not have the tag yet (or have it, to take off).
+    pub changing: Vec<String>,
+}
+
+/// The tag as pages keep it: lower case, letters, digits, `-` and `_`. `pinned` is not a tag that
+/// is written in pages, so it is refused here.
+pub fn page_tag(tag: &str) -> AppResult<String> {
+    let t = tag.trim().trim_start_matches('#').to_lowercase();
+    let ok = !t.is_empty()
+        && t.chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '-' | '_'));
+    if !ok || t == "pinned" {
+        return Err(AppError::InvalidPath(format!(
+            "“{t}” is not a tag that can be put on pages"
+        )));
+    }
+    Ok(t)
+}
+
+/// The pages in a folder, with what the tag would do to each.
+fn tag_changes(
+    v: &OpenVault,
+    folder: &str,
+    tag: &str,
+    on: bool,
+) -> AppResult<(u32, Vec<(String, String)>)> {
+    paths::resolve(&v.root, folder, None)?;
+    let prefix = format!("{folder}/");
+    let mut total = 0;
+    let mut changes = Vec::new();
+    for rel in v.file_list() {
+        if !rel.starts_with(&prefix) || !tree::is_markdown(&rel) || rel.starts_with(".vault/") {
+            continue;
+        }
+        total += 1;
+        let note = fs_ops::read_note(&v.root, &rel)?;
+        let new = if on {
+            crate::markdown::note_tags::add_tag(&note.content, tag)
+        } else {
+            crate::markdown::note_tags::remove_tag(&note.content, tag)
+        };
+        if new != note.content {
+            changes.push((rel, new));
+        }
+    }
+    Ok((total, changes))
+}
+
+/// Shows what a tag on every page of a folder would change, without changing anything.
+pub fn tag_preview(v: &OpenVault, folder: &str, tag: &str, on: bool) -> AppResult<TagPreview> {
+    let tag = page_tag(tag)?;
+    let (total, changes) = tag_changes(v, folder, &tag, on)?;
+    Ok(TagPreview {
+        total,
+        changing: changes.into_iter().map(|(p, _)| p).collect(),
+    })
+}
+
+/// Puts a tag on every page of a folder, or takes it off. Only the properties of a page change.
+/// A snapshot is committed before and the change after, so History brings every page back.
+/// Returns the pages that changed.
+pub fn set_tag_in_folder(
+    v: &OpenVault,
+    folder: &str,
+    tag: &str,
+    on: bool,
+) -> AppResult<Vec<String>> {
+    let tag = page_tag(tag)?;
+    let (_, changes) = tag_changes(v, folder, &tag, on)?;
+    if changes.is_empty() {
+        return Ok(Vec::new());
+    }
+    v.commit(
+        CommitReason::new(CommitKind::SnapshotBeforeTags, Some(folder.to_string())),
+        None,
+    )?;
+    let mut changed = Vec::new();
+    for (rel, new) in &changes {
+        write_note(v, rel, new)?;
+        changed.push(rel.clone());
+    }
+    v.commit(
+        CommitReason::new(
+            CommitKind::Tags,
+            Some(format!(
+                "{} {tag} in {folder}",
+                if on { "add" } else { "remove" }
+            )),
+        ),
+        Some(&changed),
+    )?;
+    Ok(changed)
+}
+
+/// Where a tag is written: the pages that have it in their properties or on a task line.
+#[derive(Debug, Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TagUse {
+    /// The pages that would change.
+    pub pages: Vec<String>,
+    /// How many tasks (and steps) have the tag on their line.
+    pub tasks: u32,
+}
+
+/// The tags Nexmio Work itself uses: they decide what a page is and are never deleted here.
+fn is_system_tag(tag: &str) -> bool {
+    matches!(tag, "epic" | "meeting" | "pinned")
+}
+
+/// Every page with `tag` taken off, in its properties and on its task lines. A `#tag` written in
+/// the running text of a page is the person's own text and stays.
+fn delete_tag_changes(v: &OpenVault, tag: &str) -> AppResult<(Vec<(String, String)>, u32)> {
+    let tag = page_tag(tag)?;
+    if is_system_tag(&tag) {
+        return Err(AppError::InvalidPath(format!(
+            "“{tag}” is one of Nexmio Work's tags and cannot be deleted"
+        )));
+    }
+    let mut changes = Vec::new();
+    let mut tasks_changed = 0;
+    for rel in v.file_list() {
+        if !tree::is_markdown(&rel) || rel.starts_with(".vault/") {
+            continue;
+        }
+        let note = fs_ops::read_note(&v.root, &rel)?;
+        let mut new = crate::markdown::note_tags::remove_tag(&note.content, &tag);
+        // Each pass takes the tag off one line; a line changes at most once.
+        for _ in 0..10_000 {
+            let found = crate::tasks::parse(&rel, &new)
+                .into_iter()
+                .flat_map(|t| std::iter::once((t.line, t.key, t.tags)))
+                .find(|(_, _, tags)| tags.contains(&tag));
+            let Some((line, key, _)) = found else { break };
+            let next = crate::tasks::set_tag(&new, line, &key, &tag, false)?;
+            if next == new {
+                break;
+            }
+            new = next;
+            tasks_changed += 1;
+        }
+        if new != note.content {
+            changes.push((rel, new));
+        }
+    }
+    Ok((changes, tasks_changed))
+}
+
+/// Makes a tag that nothing has yet, so it can be offered when tagging.
+pub fn make_tag(v: &OpenVault, tag: &str) -> AppResult<String> {
+    let tag = page_tag(tag)?;
+    if is_system_tag(&tag) {
+        return Err(AppError::InvalidPath(format!(
+            "“{tag}” is one of Nexmio Work's tags"
+        )));
+    }
+    crate::meta::set_declared_tag(&v.root, &tag, true)?;
+    Ok(tag)
+}
+
+/// What deleting a tag everywhere would change, without changing anything.
+pub fn tag_use(v: &OpenVault, tag: &str) -> AppResult<TagUse> {
+    let (changes, tasks) = delete_tag_changes(v, tag)?;
+    Ok(TagUse {
+        pages: changes.into_iter().map(|(p, _)| p).collect(),
+        tasks,
+    })
+}
+
+/// Takes a tag off every page and task of the vault. A snapshot is saved before and the change
+/// after, so History brings it back. Returns the pages that changed.
+pub fn delete_tag(v: &OpenVault, tag: &str) -> AppResult<Vec<String>> {
+    let tag = page_tag(tag)?;
+    let (changes, _) = delete_tag_changes(v, &tag)?;
+    crate::meta::set_declared_tag(&v.root, &tag, false)?;
+    if changes.is_empty() {
+        return Ok(Vec::new());
+    }
+    v.commit(
+        CommitReason::new(
+            CommitKind::SnapshotBeforeTags,
+            Some(format!("delete {tag}")),
+        ),
+        None,
+    )?;
+    let mut changed = Vec::new();
+    for (rel, new) in &changes {
+        write_note(v, rel, new)?;
+        changed.push(rel.clone());
+    }
+    v.commit(
+        CommitReason::new(CommitKind::Tags, Some(format!("delete {tag} everywhere"))),
+        Some(&changed),
+    )?;
+    Ok(changed)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -424,6 +628,39 @@ mod tests {
                 .collect())
         })
         .unwrap()
+    }
+
+    #[test]
+    fn a_tag_is_deleted_from_properties_and_task_lines_but_not_from_text() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        write_note(
+            &v,
+            "A.md",
+            "---\ntags: [acme, other]\n---\n# A\nbody #acme here\n",
+        )
+        .unwrap();
+        write_note(
+            &v,
+            "Tasks/E.md",
+            "---\ntags: [epic, acme]\n---\n# E\n\n- [ ] Call #acme #x\n",
+        )
+        .unwrap();
+        v.refresh_files();
+        v.commit(CommitReason::new(CommitKind::Save, Some("x".into())), None)
+            .unwrap();
+        let u = tag_use(&v, "acme").unwrap();
+        assert_eq!(u.pages.len(), 2);
+        assert_eq!(u.tasks, 1);
+        let changed = delete_tag(&v, "#Acme").unwrap();
+        assert_eq!(changed.len(), 2);
+        let a = fs_ops::read_note(&v.root, "A.md").unwrap().content;
+        assert!(a.contains("tags: [other]") && a.contains("body #acme here"));
+        let e = fs_ops::read_note(&v.root, "Tasks/E.md").unwrap().content;
+        assert!(e.contains("- [ ] Call #x") && !e.contains("acme"));
+        assert!(delete_tag(&v, "epic").is_err());
+        assert_eq!(make_tag(&v, "#Ny").unwrap(), "ny");
+        assert!(make_tag(&v, "epic").is_err());
     }
 
     #[test]
@@ -733,5 +970,79 @@ mod tests {
         let moved = v.project_list().into_iter().find(|x| x.id == p.id).unwrap();
         assert_eq!(moved.folder, "Manuals");
         assert_eq!(moved.name, "Manuals");
+    }
+
+    #[test]
+    fn a_tag_is_put_on_every_page_of_a_folder_with_a_snapshot_before_and_a_commit_after() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        write_note(&v, "Acme/Offer.md", "# Offer\nbody").unwrap();
+        write_note(
+            &v,
+            "Acme/Deep/Contract.md",
+            "---\ntags: [legal]\n---\n# Contract",
+        )
+        .unwrap();
+        write_note(&v, "Acme/Has.md", "---\ntags: [kunde-x]\n---\n# Has").unwrap();
+        write_note(&v, "Other/Page.md", "# Other").unwrap();
+        v.refresh_files();
+        v.commit(CommitReason::new(CommitKind::Save, Some("x".into())), None)
+            .unwrap();
+
+        let p = tag_preview(&v, "Acme", "Kunde-X", true).unwrap();
+        assert_eq!(p.total, 3);
+        assert_eq!(p.changing, vec!["Acme/Deep/Contract.md", "Acme/Offer.md"]);
+
+        // A change that is not committed yet is saved by the snapshot before the tags.
+        write_note(&v, "Acme/Offer.md", "# Offer\nedited").unwrap();
+        let before = log_messages(&v).len();
+        let changed = set_tag_in_folder(&v, "Acme", "kunde-x", true).unwrap();
+        assert_eq!(changed.len(), 2);
+        let offer = std::fs::read_to_string(d.path().join("Acme/Offer.md")).unwrap();
+        assert!(offer.starts_with("---\ntags: [kunde-x]\n---\n# Offer"));
+        let contract = std::fs::read_to_string(d.path().join("Acme/Deep/Contract.md")).unwrap();
+        assert!(contract.contains("tags: [legal, kunde-x]"));
+        // A page in another folder is left alone.
+        assert_eq!(
+            std::fs::read_to_string(d.path().join("Other/Page.md")).unwrap(),
+            "# Other"
+        );
+        let msgs = log_messages(&v);
+        assert!(msgs[0].starts_with("Tags"), "{msgs:?}");
+        assert!(
+            msgs.iter().any(|m| m.starts_with("Snapshot before tags")),
+            "{msgs:?}"
+        );
+        assert_eq!(msgs.len(), before + 2, "{msgs:?}");
+
+        // Putting it on again changes nothing and commits nothing.
+        let n = log_messages(&v).len();
+        assert!(set_tag_in_folder(&v, "Acme", "kunde-x", true)
+            .unwrap()
+            .is_empty());
+        assert_eq!(log_messages(&v).len(), n);
+    }
+
+    #[test]
+    fn a_tag_is_taken_off_every_page_of_a_folder() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        write_note(&v, "Acme/A.md", "---\ntags: [kunde-x, legal]\n---\n# A").unwrap();
+        write_note(&v, "Acme/B.md", "# B").unwrap();
+        v.refresh_files();
+        v.commit(CommitReason::new(CommitKind::Save, Some("x".into())), None)
+            .unwrap();
+        let changed = set_tag_in_folder(&v, "Acme", "kunde-x", false).unwrap();
+        assert_eq!(changed, vec!["Acme/A.md"]);
+        let a = std::fs::read_to_string(d.path().join("Acme/A.md")).unwrap();
+        assert!(a.contains("tags: [legal]") && !a.contains("kunde-x"), "{a}");
+    }
+
+    #[test]
+    fn only_a_plain_tag_can_be_put_on_pages() {
+        assert_eq!(page_tag("#Kunde-X").unwrap(), "kunde-x");
+        assert!(page_tag("two words").is_err());
+        assert!(page_tag("").is_err());
+        assert!(page_tag("pinned").is_err());
     }
 }
