@@ -12,6 +12,9 @@ interface MeetingState {
   /** Reads the notes tagged `meeting` again. */
   load: () => Promise<void>;
   select: (path: string | null) => void;
+  /** The middle shows every decision instead of one meeting. */
+  decisions: boolean;
+  showDecisions: (on: boolean) => void;
   setDay: (iso: string | null) => void;
 }
 
@@ -31,6 +34,10 @@ export const useMeetingStore = create<MeetingState>((set) => ({
   loaded: false,
   selected: null,
   day: null,
+  decisions: false,
+  showDecisions: (decisions) => {
+    set({ decisions });
+  },
   load: () => {
     if (running) {
       again = true;
@@ -52,7 +59,8 @@ export const useMeetingStore = create<MeetingState>((set) => ({
     return running;
   },
   select: (selected) => {
-    set({ selected });
+    // Choosing a meeting shows it, also when the decisions were shown.
+    set({ selected, decisions: false });
   },
   setDay: (day) => {
     set({ day });

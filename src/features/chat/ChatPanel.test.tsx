@@ -44,7 +44,13 @@ describe("ChatPanel: a plain chat", () => {
     for (const gone of [/Skills/, /Prompts/, /Wake/, /Change AI/]) {
       expect(screen.queryByRole("button", { name: gone })).toBeNull();
     }
-    expect(screen.getByText(/It does not change anything here/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/It can propose tasks and parts for you to accept/),
+    ).toBeInTheDocument();
+    // An empty chat offers questions to start with.
+    expect(screen.getByRole("list", { name: "Questions to start with" })).toHaveTextContent(
+      "What should I do next?",
+    );
   });
 
   it("sends a message with Enter, with the open page and without a skill", async () => {

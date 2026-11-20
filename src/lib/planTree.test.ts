@@ -20,6 +20,7 @@ import {
   removeMany,
   samePath,
   serializePlan,
+  setNote,
   setText,
   splitText,
   walk,
@@ -60,6 +61,31 @@ describe("parsePlan", () => {
 
   it("writes back exactly what it read when nothing changed", () => {
     expect(serializePlan(parsePlan(NOTE))).toBe(NOTE);
+  });
+
+  it("reads a part's note from its indented > lines, writes it back, and keeps other lines out", () => {
+    const page =
+      "# P\n\n- Server\n  > Only the physical ones\n  > Not the cloud\n  - Disks\n- Network\n";
+    const p = parsePlan(page);
+    expect(p.nodes[0]?.note).toBe("Only the physical ones\nNot the cloud");
+    expect(p.nodes[0]?.children.map((n) => n.text)).toEqual(["Disks"]);
+    expect(p.nodes[1]?.note).toBeUndefined();
+    expect(serializePlan(p)).toBe(page);
+    // An indented line without > still ends the list, as before.
+    const other = parsePlan("- Server\n  just some words\n- Network\n");
+    expect(other.nodes.map((n) => n.text)).toEqual(["Server"]);
+    expect(other.nodes[0]?.note).toBeUndefined();
+  });
+
+  it("sets and takes away a part's note, and keeps it when the list is changed", () => {
+    const nodes = parsePlan("- Server\n  - Disks\n").nodes;
+    const withNote = setNote(nodes, [0], "  For the old rack \n");
+    expect(withNote[0]?.note).toBe("For the old rack");
+    expect(serializePlan({ head: [], nodes: withNote, tail: [] })).toBe(
+      "- Server\n  > For the old rack\n  - Disks",
+    );
+    expect(setNote(withNote, [0], " ")[0]?.note).toBeUndefined();
+    expect(addChild(withNote, [0], "Backup").nodes[0]?.note).toBe("For the old rack");
   });
 
   it("makes a list of the ideas even when the page was written with other marks and tabs", () => {

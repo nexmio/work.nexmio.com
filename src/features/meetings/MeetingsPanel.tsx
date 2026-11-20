@@ -62,6 +62,7 @@ export function MeetingsPanel() {
   const meetings = useMeetingStore((s) => s.meetings);
   const loaded = useMeetingStore((s) => s.loaded);
   const day = useMeetingStore((s) => s.day);
+  const decisions = useMeetingStore((s) => s.decisions);
   const centerView = useUiStore((s) => s.centerView);
   const shownMeeting = useShownMeeting();
   const [allPast, setAllPast] = useState(false);
@@ -107,6 +108,38 @@ export function MeetingsPanel() {
         </Button>
       </PanelHeader>
       <div className="min-h-0 flex-1 overflow-auto pb-3 pt-2">
+        <div
+          role="group"
+          aria-label="Show"
+          className="mx-2 mb-2 flex overflow-hidden rounded-md border text-sm"
+        >
+          {[
+            {
+              on: !decisions,
+              label: "Meetings",
+              run: () => useMeetingStore.getState().showDecisions(false),
+            },
+            {
+              on: decisions,
+              label: "Decisions",
+              run: () => useMeetingStore.getState().showDecisions(true),
+            },
+          ].map((b, i) => (
+            <PlainButton
+              key={b.label}
+              type="button"
+              aria-pressed={b.on}
+              className={cn(
+                "flex-1 py-1",
+                i > 0 && "border-l",
+                b.on ? "bg-accent font-semibold text-accent-foreground" : "hover:bg-muted",
+              )}
+              onClick={b.run}
+            >
+              {b.label}
+            </PlainButton>
+          ))}
+        </div>
         <div className="px-2 pb-1">
           <PlainButton
             type="button"

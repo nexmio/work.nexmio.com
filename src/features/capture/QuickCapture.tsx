@@ -13,7 +13,6 @@ import { CAPTURE_KINDS, CaptureBox, type CaptureKind } from "./CaptureBox";
 const CHOICES: { kind: CaptureKind; key: string; label: string }[] = [
   { kind: "task", key: "t", label: "Task" },
   { kind: "idea", key: "i", label: "Idea" },
-  { kind: "note", key: "n", label: "Quick page" },
 ];
 
 /** Ctrl/Cmd+Shift+N without a kind: a small choice first, by button or by its letter. */
@@ -52,7 +51,7 @@ function Choose() {
 }
 
 /**
- * The window for writing one thing down: Quick note, New task or New idea, each its own box. Opened
+ * The window for writing one thing down: New task or New idea, each its own box (a page is New → Page). Opened
  * without a kind (Ctrl/Cmd+Shift+N) it first asks which. The note you are writing is not touched.
  */
 export function QuickCapture() {
@@ -71,7 +70,7 @@ export function QuickCapture() {
           </DialogTitle>
           <DialogDescription>
             {kind === null || kind === "choose"
-              ? "Press T, I or N, or choose below."
+              ? "Press T or I, or choose below."
               : CAPTURE_KINDS[kind].help}
           </DialogDescription>
         </DialogHeader>

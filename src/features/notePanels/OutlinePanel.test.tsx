@@ -30,5 +30,7 @@ describe("OutlinePanel", () => {
     });
     expect(await screen.findByRole("button", { name: "B.md" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Old page" })).toBeNull();
+    // The tags are in the line above the text, not here.
+    expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
   });
 });

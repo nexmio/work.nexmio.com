@@ -1,5 +1,6 @@
 import {
   CalendarClock,
+  ChevronDown,
   ChevronsLeft,
   ChevronsRight,
   Files,
@@ -11,7 +12,14 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { newNoteInCurrentFolder } from "@/lib/actions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { newNoteInCurrentFolder, openNavArea } from "@/lib/actions";
+import { NEW_THINGS } from "@/lib/newThings";
 import { type NavCounts, useNavCounts } from "@/lib/navCounts";
 import { PLANS_LABEL } from "@/lib/planTree";
 import { cn } from "@/lib/utils";
@@ -37,9 +45,10 @@ export function newAction(view: CenterView): { label: string; run: () => void } 
     case "epic":
     case "task":
     case "time":
+    case "lookback":
       return { label: "New task", run: () => ui.openCapture("task") };
     case "plans":
-      return { label: "New plan", run: () => ui.requestNewPlan() };
+      return { label: "New project", run: () => ui.requestNewPlan() };
     case "meetings":
       return { label: "New meeting", run: () => ui.setMeetingFormOpen(true) };
     case "ideas":
@@ -104,12 +113,8 @@ export function ActivityRail() {
       ui.toggleLeft();
       return;
     }
-    if (id === "ideas" || id === "tasks" || id === "meetings" || id === "plans") ui.openArea(id);
-    else {
-      // Pages are about notes, so the note comes back in the middle.
-      ui.setLeftTab(id);
-      ui.setCenterView("notes");
-    }
+    // Pages are about pages, so the page comes back in the middle (the same as Go → Pages).
+    openNavArea(id === "files" ? "pages" : id);
   };
 
   const text = (label: string): React.ReactNode =>
@@ -139,15 +144,36 @@ export function ActivityRail() {
           <Name label={make.label} />
         </div>
       ) : (
-        <Button
-          size="sm"
-          className="mb-1 w-full"
-          onClick={() => {
-            make.run();
-          }}
-        >
-          <Plus aria-hidden /> {make.label}
-        </Button>
+        <div className="mb-1 flex w-full gap-px">
+          <Button
+            size="sm"
+            className="min-w-0 flex-1 rounded-r-none"
+            onClick={() => {
+              make.run();
+            }}
+          >
+            <Plus aria-hidden /> <span className="truncate">{make.label}</span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                className="rounded-l-none px-1.5"
+                aria-label="Everything you can make"
+                title="Page, task, project, meeting or idea"
+              >
+                <ChevronDown aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              {NEW_THINGS.map((n) => (
+                <DropdownMenuItem key={n.id} onSelect={n.run}>
+                  {n.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       )}
       <div className="group/icon relative">
         <button

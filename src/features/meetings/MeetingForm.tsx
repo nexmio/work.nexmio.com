@@ -23,6 +23,8 @@ import {
   type MeetingParts,
 } from "@/lib/meeting";
 import { fileNameFrom } from "@/lib/noteTitle";
+import { projectTag } from "@/lib/noteTags";
+import { Select } from "@/components/ui/select";
 import { useMeetingStore } from "@/stores/meetingStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -41,6 +43,9 @@ export function MeetingForm() {
   const [who, setWho] = useState("");
   const [agenda, setAgenda] = useState("");
   const [parts, setParts] = useState<MeetingParts>(NO_PARTS);
+  const projects = useVaultStore((s) => s.projects);
+  /** The tag of the project the meeting belongs to, or "" for none. */
+  const [project, setProject] = useState("");
   const [busy, setBusy] = useState(false);
   /** The time box holds text that is not a time: nothing is saved until it is fixed. */
   const [timeOk, setTimeOk] = useState(true);
@@ -57,6 +62,9 @@ export function MeetingForm() {
     setAgenda(seed?.agenda ?? "");
     // The parts of the meeting before this one, else the ones the last new meeting was made with.
     setParts(seed?.parts ?? loadDefaultParts());
+    // The next meeting of a project's meeting belongs to the project too.
+    const known = new Set(useVaultStore.getState().projects.map(projectTag));
+    setProject(seed?.tags?.find((t) => known.has(t)) ?? "");
     setBusy(false);
     setTimeOk(true);
   }, [open]);
@@ -79,6 +87,7 @@ export function MeetingForm() {
         people: who.split(","),
         agenda: agenda.split("\n"),
         parts,
+        tags: project === "" ? [] : [project],
       });
       saveDefaultParts(parts);
       const name = fileNameFrom(`${day !== "" ? day : today} ${title.trim() || "Meeting"}`);
@@ -173,6 +182,29 @@ export function MeetingForm() {
                   setAgenda(e.target.value);
                 }}
               />
+            </div>
+          )}
+          {projects.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="meeting-project">Project</Label>
+              <Select
+                id="meeting-project"
+                value={project}
+                onChange={(e) => {
+                  setProject(e.target.value);
+                }}
+              >
+                <option value="">None</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={projectTag(p)}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The meeting gets the project&apos;s tag, so it shows in the project&apos;s Overview.
+                It is still kept with the other meetings.
+              </p>
             </div>
           )}
           <div className="flex flex-col gap-1">

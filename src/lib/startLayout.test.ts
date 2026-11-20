@@ -34,8 +34,16 @@ describe("editing a layout", () => {
   const start = [...DEFAULT_LAYOUT];
   it("adds a widget once, at the end", () => {
     const a = withWidget(start, "capture");
-    expect(a.map((p) => p.id)).toEqual(["today", "pinned", "recent", "epics", "plans", "capture"]);
-    expect(withWidget(a, "capture")).toHaveLength(6);
+    expect(a.map((p) => p.id)).toEqual([
+      "today",
+      "pinned",
+      "recent",
+      "epics",
+      "plans",
+      "week",
+      "capture",
+    ]);
+    expect(withWidget(a, "capture")).toHaveLength(7);
   });
   it("removes, moves and widens", () => {
     expect(withoutWidget(start, "recent").map((p) => p.id)).toEqual([
@@ -43,6 +51,7 @@ describe("editing a layout", () => {
       "pinned",
       "epics",
       "plans",
+      "week",
     ]);
     expect(withMoved(start, "recent", true).map((p) => p.id)).toEqual([
       "today",
@@ -50,9 +59,10 @@ describe("editing a layout", () => {
       "pinned",
       "epics",
       "plans",
+      "week",
     ]);
     expect(withMoved(start, "today", true)).toEqual(start);
-    expect(withMoved(start, "plans", false)).toEqual(start);
+    expect(withMoved(start, "week", false)).toEqual(start);
     expect(withWide(start, "recent", true)[2]).toEqual({ id: "recent", wide: true });
   });
 });

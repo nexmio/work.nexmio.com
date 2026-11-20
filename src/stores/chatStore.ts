@@ -71,6 +71,8 @@ export interface ChatMessage {
   progress?: ChatProgress;
   /** Set when a long skill run did only its first notes. */
   trial?: SkillTrial;
+  /** Places the assistant offered to open ("Show me"), in the order it offered them. */
+  places?: { place: string; label: string }[];
 }
 
 interface ChatState {
@@ -217,6 +219,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
           break;
         case "proposalsReady":
           updated.proposalSetId = e.setId;
+          break;
+        case "place":
+          if (!(updated.places ?? []).some((p) => p.place === e.place)) {
+            updated.places = [...(updated.places ?? []), { place: e.place, label: e.label }];
+          }
           break;
         case "skillTrial":
           updated.trial = {

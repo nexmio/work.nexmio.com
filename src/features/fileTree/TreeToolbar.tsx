@@ -1,16 +1,11 @@
 import {
   ArrowDownUp,
-  CalendarDays,
   Check,
   ChevronsDownUp,
   Crosshair,
-  FilePlus,
   FolderOpen,
   FolderPlus,
   MoreHorizontal,
-  Plus,
-  Users,
-  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { PromptDialog } from "@/components/PromptDialog";
@@ -22,8 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { newNoteInCurrentFolder, openDailyNote, revealInTree } from "@/lib/actions";
-import { formatShortcut } from "@/lib/shortcuts";
+import { revealInTree } from "@/lib/actions";
 import { useNarrow } from "@/lib/useNarrow";
 import { nameError } from "@/lib/nameConflict";
 import { useTreeStore } from "@/stores/treeStore";
@@ -45,8 +39,9 @@ const SORTS: { id: "name" | "modified" | "manual"; label: string }[] = [
 type Asking = "folder" | null;
 
 /**
- * The row above the file tree: one New menu (note, meeting note, quick note, folder, project),
- * collapse all, show the open note, sort, quick open and search.
+ * The row above the file tree: its ··· menu (new folder, new project; and the tools when the panel
+ * is narrow), collapse all, show the open page and sort. Pages, meetings and the daily page are
+ * made with New at the top of the navigation and in File.
  */
 export function TreeToolbar() {
   const activePath = useVaultStore((s) => s.activePath);
@@ -78,113 +73,67 @@ export function TreeToolbar() {
         <DropdownMenuTrigger asChild>
           <PlainButton
             type="button"
-            className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90"
-            aria-label="New"
-            title="Create a page, folder or project"
+            className={iconButton}
+            aria-label="More for pages"
+            title="New folder, new project and more"
           >
-            <Plus className="size-3.5" /> New
+            <MoreHorizontal className="size-4" />
           </PlainButton>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-60">
-          <DropdownMenuItem
-            onSelect={() => {
-              newNoteInCurrentFolder();
-            }}
-          >
-            <span className="flex items-center gap-2">
-              <FilePlus className="size-4" /> Page
-            </span>
-            <span className="text-xs text-muted-foreground">{formatShortcut("Mod+N")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="justify-start gap-2"
-            onSelect={() => {
-              useUiStore.getState().setMeetingFormOpen(true);
-            }}
-          >
-            <Users className="size-4" /> Meeting note…
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="justify-start gap-2"
-            onSelect={() => {
-              useUiStore.getState().openCapture("note");
-            }}
-          >
-            <Zap className="size-4" /> Quick page
-            <span className="ml-auto text-xs text-muted-foreground">
-              {formatShortcut("Mod+Shift+N")}
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="justify-start gap-2"
-            onSelect={() => {
-              void openDailyNote();
-            }}
-          >
-            <CalendarDays className="size-4" /> Today's daily page
-            <span className="ml-auto text-xs text-muted-foreground">
-              {formatShortcut("Mod+Shift+D")}
-            </span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuItem
             className="justify-start gap-2"
             onSelect={() => {
               setAsking("folder");
             }}
           >
-            <FolderPlus className="size-4" /> Folder…
+            <FolderPlus className="size-4" /> New folder…
           </DropdownMenuItem>
           <DropdownMenuItem
             className="justify-start gap-2"
             onSelect={() => {
-              // A project is always a new folder in the vault root: its window asks for the name.
-              useUiStore.getState().openProjectDialog({ folder: "", project: null });
+              // The same window as everywhere else: it makes the project and, if wanted, its plan.
+              useUiStore.getState().requestNewPlan();
             }}
           >
-            <FolderOpen className="size-4" /> Project…
+            <FolderOpen className="size-4" /> New project…
           </DropdownMenuItem>
+          {narrow && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  useTreeStore.getState().collapseAll();
+                }}
+              >
+                <ChevronsDownUp className="size-4" /> Collapse all folders
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={activePath === null}
+                onSelect={() => {
+                  if (activePath !== null) revealInTree(activePath);
+                }}
+              >
+                <Crosshair className="size-4" /> Show the open page in the tree
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Sort</DropdownMenuLabel>
+              {SORTS.map((o) => (
+                <DropdownMenuItem
+                  key={o.id}
+                  onSelect={() => {
+                    setSort(o.id);
+                  }}
+                >
+                  {o.label} {sort === o.id && <Check className="size-4" aria-label="Selected" />}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {narrow ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <PlainButton type="button" className={iconButton} aria-label="More" title="More">
-              <MoreHorizontal className="size-4" />
-            </PlainButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onSelect={() => {
-                useTreeStore.getState().collapseAll();
-              }}
-            >
-              <ChevronsDownUp className="size-4" /> Collapse all folders
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={activePath === null}
-              onSelect={() => {
-                if (activePath !== null) revealInTree(activePath);
-              }}
-            >
-              <Crosshair className="size-4" /> Show the open page in the tree
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Sort</DropdownMenuLabel>
-            {SORTS.map((o) => (
-              <DropdownMenuItem
-                key={o.id}
-                onSelect={() => {
-                  setSort(o.id);
-                }}
-              >
-                {o.label} {sort === o.id && <Check className="size-4" aria-label="Selected" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
+      {!narrow && (
         <>
           <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
           <PlainButton

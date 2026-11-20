@@ -1,73 +1,73 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const apiMock = vi.hoisted(() => ({ readNote: vi.fn() }));
-vi.mock("@/lib/api", () => ({ api: apiMock }));
-const ask = vi.hoisted(() => ({ askAi: vi.fn() }));
-vi.mock("@/lib/askAi", () => ask);
-const clip = vi.hoisted(() => ({ copyText: vi.fn() }));
-vi.mock("@/lib/clipboard", () => clip);
+const apiMock = vi.hoisted(() => ({
+  readNote: vi.fn(),
+  taskAddToNote: vi.fn(),
+  epicForNote: vi.fn(),
+  listTasks: vi.fn(),
+  listEpics: vi.fn(),
+  aiInline: vi.fn(),
+  aiCancel: vi.fn(),
+}));
+vi.mock("@/lib/api", () => ({
+  api: apiMock,
+  toApiError: (e: unknown) => ({ code: "Unknown", message: String(e) }),
+}));
+vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
+// The AI never answers here: the job waits in the queue, and its spec is tested directly.
+vi.mock("@/lib/wake", () => ({ wakeIfNeeded: () => new Promise(() => undefined) }));
 
-import { InShortDialog } from "./InShortDialog";
-import { useTaskStore } from "@/stores/taskStore";
+import { useAiJobStore } from "@/stores/aiJobStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
+import { makeTask } from "@/test/taskFixtures";
+import { InShortDialog } from "./InShortDialog";
 
-const answer = (text: string): void => {
-  ask.askAi.mockReturnValue({ promise: Promise.resolve(text), cancel: vi.fn() });
-};
+function job() {
+  const j = useAiJobStore.getState().jobs[0];
+  if (j?.kind !== "pick") throw new Error("no pick job");
+  return j;
+}
 
-describe("InShortDialog", () => {
-  const addToNote = vi.fn().mockResolvedValue(undefined);
-  const epicFor = vi.fn().mockResolvedValue("Tasks/Licence terms.md");
-
+describe("In short", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    addToNote.mockResolvedValue(undefined);
-    epicFor.mockResolvedValue("Tasks/Licence terms.md");
-    apiMock.readNote.mockResolvedValue({ content: "A long page." });
-    useVaultStore.setState({ activePath: "IT/Licence terms.md" });
-    useTaskStore.setState({ addToNote, epicFor });
+    useAiJobStore.setState({ jobs: [] });
+    apiMock.readNote.mockReset().mockResolvedValue({
+      path: "Meetings/Acme.md",
+      content: "We agreed on the price. Peter sends the quote.",
+    });
+    apiMock.taskAddToNote.mockReset().mockResolvedValue([makeTask()]);
+    apiMock.epicForNote
+      .mockReset()
+      .mockResolvedValue({ path: "Tasks/Acme.md", title: "Acme", source: "Meetings/Acme" });
+    apiMock.listTasks.mockReset().mockResolvedValue([]);
+    apiMock.listEpics.mockReset().mockResolvedValue([]);
+    useVaultStore.setState({ activePath: "Meetings/Acme.md" });
     useUiStore.setState({ inShortOpen: true });
   });
 
-  it("shows nothing until it is asked for", () => {
-    useUiStore.setState({ inShortOpen: false });
+  it("goes into the AI queue at once, and reads the points and the things to do", async () => {
     render(<InShortDialog />);
+    await vi.waitFor(() => {
+      expect(useAiJobStore.getState().jobs).toHaveLength(1);
+    });
     expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("shows the points and the things to do, and adds only the ones that stay ticked", async () => {
-    answer("POINTS\n- One licence per person.\nTODO\n- Order the renewal\n- Check the seats");
-    render(<InShortDialog />);
-    const user = userEvent.setup();
-    expect(await screen.findByText("One licence per person.")).toBeInTheDocument();
-    await user.click(screen.getByRole("checkbox", { name: "Check the seats" }));
-    await user.click(screen.getByRole("button", { name: "Add 1 task to the epic" }));
-    await waitFor(() => {
-      expect(addToNote).toHaveBeenCalledWith("Tasks/Licence terms.md", ["Order the renewal"]);
-    });
     expect(useUiStore.getState().inShortOpen).toBe(false);
+    const j = job();
+    expect(await j.spec.read()).toContain("We agreed on the price.");
+    const picks = j.spec.parse("POINTS\n- The price is agreed\nTODO\n- Send the quote");
+    expect(picks).toEqual({ points: ["The price is agreed"], items: ["Send the quote"] });
+    expect(j.spec.copy?.(picks)).toContain("- [ ] Send the quote");
   });
 
-  it("copies the result as Markdown and writes nothing to the page", async () => {
-    answer("POINTS\n- A point\nTODO\n- Do it");
+  it("adds only the ticked things to do to the epic of the page", async () => {
     render(<InShortDialog />);
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Copy" }));
-    expect(clip.copyText).toHaveBeenCalledWith("- A point\n\n- [ ] Do it\n");
-    expect(addToNote).not.toHaveBeenCalled();
-  });
-
-  it("says what went wrong, and asks again with Try again", async () => {
-    ask.askAi.mockReturnValueOnce({
-      promise: Promise.reject(new Error("No AI is running.")),
-      cancel: vi.fn(),
+    await vi.waitFor(() => {
+      expect(useAiJobStore.getState().jobs).toHaveLength(1);
     });
-    render(<InShortDialog />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("No AI is running.");
-    answer("POINTS\n- Now it works");
-    await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("Now it works")).toBeInTheDocument();
+    await job().spec.add(["Send the quote"], { points: [], items: [] });
+    expect(apiMock.taskAddToNote.mock.calls[0]?.[0]).toBe("Tasks/Acme.md");
+    expect(apiMock.taskAddToNote.mock.calls[0]?.[1]).toEqual(["Send the quote"]);
   });
 });

@@ -6,6 +6,7 @@ import type { ApplyResult } from "@/bindings/ApplyResult";
 import type { Backlink } from "@/bindings/Backlink";
 import type { ChatEvent } from "@/bindings/ChatEvent";
 import type { ChatRequest } from "@/bindings/ChatRequest";
+import type { ChangedPage } from "@/bindings/ChangedPage";
 import type { CommitEntry } from "@/bindings/CommitEntry";
 import type { CommitReason } from "@/bindings/CommitReason";
 import type { DeletedFile } from "@/bindings/DeletedFile";
@@ -152,6 +153,8 @@ export const api = {
   commitNow: (reason: CommitReason, paths?: string[]) =>
     call<string | null>("commit_now", { reason, paths: paths ?? null }),
   fileHistory: (path: string) => call<CommitEntry[]>("file_history", { path }),
+  /** The pages changed from `from` up to before `to` (seconds since the epoch). */
+  changedPages: (from: number, to: number) => call<ChangedPage[]>("changed_pages", { from, to }),
   fileAtCommit: (path: string, sha: string) => call<string>("file_at_commit", { path, sha }),
   restoreFile: (path: string, sha: string) => call<undefined>("restore_file", { path, sha }),
   undoCommit: (sha: string) => call<string[]>("undo_commit", { sha }),
@@ -245,6 +248,9 @@ export const api = {
   /** A line in a task's history ("Status: doing"), kept in `.vault/meta.json`, not in the note. */
   taskHistoryAdd: (path: string, title: string, date: string, text: string) =>
     call<Task[]>("task_history_add", { path, title, date, text }),
+  /** Pins a task to the start page or unpins it, kept in `.vault/meta.json`. */
+  taskSetPinned: (path: string, title: string, on: boolean) =>
+    call<Task[]>("task_set_pinned", { path, title, on }),
   /** TEMPORARY (0.23): how much is still written in the notes the old way. */
   metaMigrationStatus: () => call<MigrationCount>("meta_migration_status"),
   /** TEMPORARY (0.23): moves pins and "waiting for" out of the notes, after the person said yes. */

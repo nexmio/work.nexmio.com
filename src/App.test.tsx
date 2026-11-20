@@ -155,14 +155,15 @@ describe("App smoke test", () => {
     await user.click(await screen.findByText("/home/me/Notes"));
     expect(await screen.findByRole("tree", { name: "Files" })).toBeInTheDocument();
     expect(screen.getByTestId("save-status")).toHaveTextContent("Saved");
-    // The chat is the AI tab of the right panel, not a column of its own and not a window.
-    expect(screen.queryByRole("tab", { name: "Assistant" })).toBeNull();
+    // The chat is a box over the right side, opened with AI in the top bar; not a tab.
+    expect(screen.queryByRole("tab", { name: "AI" })).toBeNull();
     expect(screen.getAllByText("LM Studio · qwen")).toHaveLength(1); // the AI chip in the header
-    await user.click(screen.getByRole("tab", { name: "AI" }));
-    expect(await screen.findByText("Ask about my pages")).toBeInTheDocument();
-    expect(screen.queryByRole("complementary", { name: "Ask about my pages" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "AI" }));
+    const box = await screen.findByRole("complementary", { name: "AI" });
+    expect(box).toHaveTextContent("New chat");
     expect(screen.getAllByText("LM Studio · qwen")).toHaveLength(1);
-    await user.click(screen.getByRole("button", { name: "Close the panel" }));
+    await user.click(screen.getByRole("button", { name: "Close the chat" }));
+    expect(screen.queryByRole("complementary", { name: "AI" })).toBeNull();
 
     await user.click(screen.getByTestId("tree-Home.md"));
     await waitFor(() => {

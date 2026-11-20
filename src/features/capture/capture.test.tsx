@@ -66,7 +66,7 @@ describe("CaptureBox", () => {
     });
   });
 
-  it("writes one kind per box: an idea, a task and a quick page", async () => {
+  it("writes one kind per box: an idea and a task", async () => {
     const onSaved = vi.fn();
     const user = userEvent.setup();
     const { unmount } = render(<CaptureBox kind="idea" onSaved={onSaved} />);
@@ -87,16 +87,6 @@ describe("CaptureBox", () => {
     await user.click(screen.getByRole("button", { name: "Save task" }));
     expect(apiMock.taskAdd.mock.calls[1]?.[0]).toBe("Pay the bill fri");
     task.unmount();
-
-    render(<CaptureBox kind="note" onSaved={onSaved} />);
-    await user.type(screen.getByLabelText("Title of the page"), "Cheat sheet");
-    typeInField("Write the note", "VLAN 10 is the office");
-    await user.click(screen.getByRole("button", { name: "Save page" }));
-    await waitFor(() => {
-      expect(apiMock.writeNote).toHaveBeenCalled();
-    });
-    expect(apiMock.createNote.mock.calls[0]?.[0]).toBe("Quick");
-    expect(apiMock.writeNote.mock.calls[0]?.[1]).toBe("# Cheat sheet\n\nVLAN 10 is the office\n");
   });
 
   it("puts a task in the epic you choose, or in a new one, and remembers the choice", async () => {
@@ -209,14 +199,13 @@ describe("QuickCapture", () => {
     expect(screen.queryByLabelText("Title of the page")).toBeNull();
   });
 
-  it("shows only a quick page when it is opened from Quick page", async () => {
-    useUiStore.getState().openCapture("note");
+  it("asks only Task or Idea: there is no quick page any more", async () => {
+    useUiStore.getState().openCapture();
     render(<QuickCapture />);
-    expect(await screen.findByLabelText("Title of the page")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Quick page" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Task" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Idea" })).toBeNull();
-    expect(screen.queryByLabelText("What is it?")).toBeNull();
+    expect(await screen.findByText("Press T or I, or choose below.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Task/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Idea/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Quick page/ })).toBeNull();
   });
 });
 

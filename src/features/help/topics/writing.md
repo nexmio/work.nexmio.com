@@ -22,6 +22,8 @@ Nexmio Work shows your page nicely while you write: `**bold**` appears bold, and
 | `> quote`    | a quote                       |
 | `#tag`       | a tag you can click to search |
 
+Nexmio Work's own tags (`meeting`, `epic`, `pinned`, `plan`) do nothing written as `#tag` in the text; they are kept in the page's properties. Use the page's **Tags** or its menu, or write one in the text and press the button that appears next to it in the tags line (for example **Make this page a meeting**). The `#` suggestions do not offer them.
+
 ## Tables
 
 Click **Insert table** (or press **Ctrl/Cmd+Alt+T**). Click in a cell and type. A toolbar above the table adds or removes rows and columns and sets alignment. Press **Tab** to go to the next cell.
@@ -56,4 +58,4 @@ flowchart LR
 
 ## Markdown in other boxes
 
-The boxes where you write more than one line (the page of a task, an epic or an idea, the log of a task, the pages in a meeting, a quick page) work like a small page: `**bold**` shows as bold when the cursor leaves the line, lists continue with Enter, **Tab** and **Shift+Tab** indent, and **Ctrl+B** and **Ctrl+I** make the selection bold or italic. A log line stays one line. Boxes for one line (a title, a task, a step) are plain text.
+The boxes where you write more than one line (the page of a task, an epic or an idea, the log of a task, the notes of a meeting) work like a small page: `**bold**` shows as bold when the cursor leaves the line, lists continue with Enter, **Tab** and **Shift+Tab** indent, and **Ctrl+B** and **Ctrl+I** make the selection bold or italic. A log line stays one line. Boxes for one line (a title, a task, a step) are plain text.

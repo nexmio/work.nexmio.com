@@ -57,9 +57,6 @@ pub struct Task {
     pub title: String,
     pub done: bool,
     pub tags: Vec<String>,
-    pub due: Option<String>,
-    /// A date, or `later`: when the user wants to do it.
-    pub plan: Option<String>,
     /// `doing`, `waiting`, `dropped` or another word the user wrote.
     pub status: Option<String>,
     /// Who or what the task waits for (`for:"the customer: reply on the quote"`), in the person's
@@ -70,7 +67,9 @@ pub struct Task {
     /// What Nexmio Work wrote about the task's changes (status and what it waits for), kept in
     /// `.vault/meta.json`, not in the note. Put on the task after it is read from the note.
     pub history: Vec<crate::meta::TaskHistory>,
-    pub est_minutes: Option<u32>,
+    /// The task is pinned to the start page (kept in `.vault/meta.json`, put on the task after it
+    /// is read).
+    pub pinned: bool,
     pub steps: Vec<TaskStep>,
     pub log: Vec<TaskLog>,
     /// The task's own note: the indented plain text lines (or, in older files, quote lines
@@ -90,16 +89,7 @@ pub struct Task {
 pub struct MetaPatch {
     #[serde(default, with = "double_option")]
     #[ts(type = "string | null", optional)]
-    pub due: Option<Option<String>>,
-    #[serde(default, with = "double_option")]
-    #[ts(type = "string | null", optional)]
-    pub plan: Option<Option<String>>,
-    #[serde(default, with = "double_option")]
-    #[ts(type = "string | null", optional)]
     pub status: Option<Option<String>>,
-    #[serde(default, with = "double_option")]
-    #[ts(type = "number | null", optional)]
-    pub est_minutes: Option<Option<u32>>,
     #[serde(default, with = "double_option")]
     #[ts(type = "string | null", optional)]
     pub waiting_for: Option<Option<String>>,
@@ -173,48 +163,13 @@ fn is_date(s: &str) -> bool {
         })
 }
 
-/// `15m`, `1h`, `90m` or `1h30m` as minutes.
-fn parse_minutes(s: &str) -> Option<u32> {
-    let mut total = 0u32;
-    let mut num = String::new();
-    let mut any = false;
-    for c in s.chars() {
-        if c.is_ascii_digit() {
-            num.push(c);
-        } else {
-            let n: u32 = num.parse().ok()?;
-            num.clear();
-            total += match c.to_ascii_lowercase() {
-                'h' => n.checked_mul(60)?,
-                'm' => n,
-                _ => return None,
-            };
-            any = true;
-        }
-    }
-    (any && num.is_empty() && total > 0).then_some(total)
-}
-
-fn format_minutes(m: u32) -> String {
-    if m >= 60 && m.is_multiple_of(60) {
-        format!("{}h", m / 60)
-    } else if m > 60 {
-        format!("{}h{}m", m / 60, m % 60)
-    } else {
-        format!("{m}m")
-    }
-}
-
 /// The parts of a task line's text.
 struct Words {
     title: String,
     tags: Vec<String>,
-    due: Option<String>,
-    plan: Option<String>,
     status: Option<String>,
     waiting_for: Option<String>,
     after: Option<String>,
-    est: Option<u32>,
     made: Option<String>,
     link: Option<String>,
 }
@@ -245,24 +200,20 @@ fn split_words(text: &str) -> Words {
     let mut w = Words {
         title: String::new(),
         tags: Vec::new(),
-        due: None,
-        plan: None,
         status: None,
         waiting_for: None,
         after: None,
-        est: None,
         made: None,
         link: None,
     };
     for c in WORD_RE.captures_iter(text) {
         let (key, value) = (&c[1], unquote(&c[2]));
         match key {
-            "due" if is_date(&value) => w.due = Some(value),
-            "plan" if is_date(&value) || value == "later" => w.plan = Some(value),
+            // `due:`, `plan:` and `est:` (written by earlier versions) stay in the file and out of the
+            // title, but nothing reads them.
             "status" => w.status = Some(value.to_lowercase()),
             "for" if !value.is_empty() => w.waiting_for = Some(value),
             "after" if !value.is_empty() => w.after = Some(value),
-            "est" => w.est = parse_minutes(&value),
             "made" if is_date(&value) => w.made = Some(value),
             _ => {}
         }
@@ -364,13 +315,11 @@ pub fn parse(path: &str, content: &str) -> Vec<Task> {
                 title: w.title,
                 done,
                 tags: w.tags,
-                due: w.due,
-                plan: w.plan,
                 status: w.status,
                 waiting_for: w.waiting_for,
                 after: w.after,
                 history: Vec::new(),
-                est_minutes: w.est,
+                pinned: false,
                 steps: Vec::new(),
                 log: Vec::new(),
                 note: String::new(),
@@ -602,13 +551,8 @@ pub fn set_done(content: &str, line: u32, key: &str, done: bool) -> AppResult<St
     })
 }
 
-/// Changes the `due:` / `plan:` / `status:` / `est:` / `for:` / `after:` words of a task line.
+/// Changes the `status:` / `for:` / `after:` words of a task line.
 pub fn set_meta(content: &str, line: u32, key: &str, patch: &MetaPatch) -> AppResult<String> {
-    for v in [&patch.due, &patch.plan].into_iter().flatten().flatten() {
-        if !is_date(v) && v != "later" {
-            return Err(AppError::InvalidPath(format!("{v} is not a date")));
-        }
-    }
     edit_line(content, line, key, |l| {
         let mut text = l.to_string();
         let mut change = |word: &str, value: Option<Option<String>>| {
@@ -623,10 +567,7 @@ pub fn set_meta(content: &str, line: u32, key: &str, patch: &MetaPatch) -> AppRe
                 }
             }
         };
-        change("due", patch.due.clone());
-        change("plan", patch.plan.clone());
         change("status", patch.status.clone());
-        change("est", patch.est_minutes.map(|m| m.map(format_minutes)));
         change("for", patch.waiting_for.clone());
         change("after", patch.after.clone());
         text
@@ -1040,7 +981,6 @@ mod tests {
         assert_eq!(t.title, "Send the offer");
         assert_eq!(t.link.as_deref(), Some("Offer to Acme"));
         assert_eq!(t.tags, ["sales"]);
-        assert_eq!(t.due.as_deref(), Some("2026-11-01"));
         // The title can be changed without losing the link.
         let renamed = set_title(n, t.line, &t.key, "Send the new offer").unwrap();
         assert!(
@@ -1085,9 +1025,7 @@ mod tests {
         let t = &tasks[0];
         assert_eq!(t.title, "Renew the Acme licence");
         assert_eq!(t.tags, vec!["acme", "licence"]);
-        assert_eq!(t.due.as_deref(), Some("2026-11-01"));
         assert_eq!(t.status.as_deref(), Some("waiting"));
-        assert_eq!(t.est_minutes, Some(90));
         assert!(!t.done);
         assert_eq!(t.line, 5);
         assert_eq!(t.steps.len(), 2);
@@ -1130,34 +1068,21 @@ mod tests {
     fn words_are_set_replaced_and_removed_in_place() {
         let t = &parse("a.md", NOTE)[0];
         let patch = MetaPatch {
-            plan: Some(Some("2026-10-19".into())),
             status: Some(Some("doing".into())),
-            due: Some(None),
-            est_minutes: Some(Some(15)),
             ..MetaPatch::default()
         };
         let out = set_meta(NOTE, t.line, &t.key, &patch).unwrap();
         let line = out.lines().nth(5).unwrap();
         assert_eq!(
             line,
-            "- [ ] Renew the Acme licence #acme #licence plan:2026-10-19 status:doing est:15m",
+            // The old words nobody reads stay in the file, untouched.
+            "- [ ] Renew the Acme licence #acme #licence due:2026-11-01 est:1h30m status:doing",
             "{line}"
         );
         let again = &parse("a.md", &out)[0];
-        assert_eq!(again.plan.as_deref(), Some("2026-10-19"));
-        assert_eq!(again.due, None);
-        assert_eq!(again.est_minutes, Some(15));
+        assert_eq!(again.title, "Renew the Acme licence");
+        assert_eq!(again.status.as_deref(), Some("doing"));
         assert_eq!(again.steps.len(), 2, "the block is intact");
-        assert!(set_meta(
-            NOTE,
-            t.line,
-            &t.key,
-            &MetaPatch {
-                due: Some(Some("tomorrow".into())),
-                ..MetaPatch::default()
-            }
-        )
-        .is_err());
     }
 
     #[test]
@@ -1278,7 +1203,6 @@ mod tests {
             Some("the customer: reply on the quote")
         );
         assert_eq!(t.after.as_deref(), Some("IT/Upgrade#Test setup"));
-        assert_eq!(t.est_minutes, Some(60));
         // A word without spaces needs no quotes.
         let n2 = "- [ ] Call for:Peter\n";
         assert_eq!(parse("n.md", n2)[0].waiting_for.as_deref(), Some("Peter"));
@@ -1405,7 +1329,10 @@ mod tests {
         let n = &parse("x.md", &after)[0];
         assert_eq!(n.title, "Renew the licence");
         assert_eq!(n.tags, vec!["acme", "licence"]);
-        assert_eq!(n.due.as_deref(), Some("2026-11-01"));
+        assert!(
+            after.contains("due:2026-11-01"),
+            "the old word stays in the file"
+        );
         assert_eq!(n.status.as_deref(), Some("waiting"));
         assert_eq!(n.steps.len(), 2);
         assert!(set_title(NOTE, t.line, &t.key, "  ").is_err());
@@ -1431,17 +1358,5 @@ mod tests {
             "{after}"
         );
         assert!(delete(NOTE, t.line, "000000000000").is_err());
-    }
-
-    #[test]
-    fn minutes_are_read_and_written_in_the_short_form() {
-        assert_eq!(parse_minutes("15m"), Some(15));
-        assert_eq!(parse_minutes("1h"), Some(60));
-        assert_eq!(parse_minutes("1h30m"), Some(90));
-        assert_eq!(parse_minutes("x"), None);
-        assert_eq!(parse_minutes("0m"), None);
-        assert_eq!(format_minutes(90), "1h30m");
-        assert_eq!(format_minutes(60), "1h");
-        assert_eq!(format_minutes(15), "15m");
     }
 }

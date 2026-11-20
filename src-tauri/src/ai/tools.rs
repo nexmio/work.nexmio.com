@@ -112,11 +112,11 @@ pub fn semantic_search_definition() -> ToolDef {
     }
 }
 
-fn arg<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
+pub(super) fn arg<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
     v.get(key).and_then(Value::as_str)
 }
 
-fn err(summary: String, msg: impl std::fmt::Display) -> ToolOutcome {
+pub(super) fn err(summary: String, msg: impl std::fmt::Display) -> ToolOutcome {
     ToolOutcome {
         result: format!("Error: {msg}"),
         // The user sees this line: it must not look like the change was proposed.
@@ -739,7 +739,7 @@ fn merge(v: &OpenVault, scope: Option<&str>, set: &mut ProposalSet, args: &Value
 }
 
 #[allow(clippy::too_many_arguments)]
-fn queue(
+pub(super) fn queue(
     set: &mut ProposalSet,
     action: ProposalAction,
     path: &str,

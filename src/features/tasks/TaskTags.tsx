@@ -40,13 +40,17 @@ export function TaskTags({ task }: { task: Task }) {
   );
 }
 
-/** The tags of an epic: they are written in the properties of its page, and cover all its tasks. */
-export function EpicTags({ path }: { path: string }) {
+/**
+ * The tags of an epic: they are written in the properties of its page, and cover all its tasks.
+ * They stand next to the epic's name in the header (`inline`), so the task to do Now comes first
+ * on the page.
+ */
+export function EpicTags({ path, inline = false }: { path: string; inline?: boolean }) {
   const epics = useTaskStore((s) => s.epics);
   const suggestions = useSuggestions();
   return (
-    <div className="flex flex-col gap-1">
-      <span className="section-label">Tags of this epic</span>
+    <div className={inline ? "flex items-center" : "flex flex-col gap-1"}>
+      {!inline && <span className="section-label">Tags of this epic</span>}
       <TagPicker
         tags={epicTagsOf(epics, path)}
         suggestions={suggestions}

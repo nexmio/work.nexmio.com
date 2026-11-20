@@ -315,7 +315,7 @@ describe("FilesPanel", () => {
     });
   });
 
-  it("Meetings, Quick pages and Tasks have a Landing section of their own, not All files", () => {
+  it("Meetings, the pages made from ideas and Tasks have an Inbox section of their own, not All files", () => {
     useVaultStore.setState({
       tree: [
         dir("Archive", [file("Archive/a.md")]),
@@ -341,7 +341,7 @@ describe("FilesPanel", () => {
       },
     });
     render(<FilesPanel />);
-    const landing = screen.getByRole("region", { name: "Landing" });
+    const landing = screen.getByRole("region", { name: "Inbox" });
     for (const f of ["Meetings", "Quick pages", "Tasks"]) {
       expect(within(landing).getByTestId(`tree-${f}`)).toBeInTheDocument();
     }

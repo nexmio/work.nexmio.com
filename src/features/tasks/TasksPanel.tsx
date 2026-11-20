@@ -1,6 +1,13 @@
-import { ChevronDown, ChevronRight, Timer } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, FolderKanban, History, Timer } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PanelHeader } from "@/components/PanelHeader";
+import { PinMenuItem } from "@/components/PinMenuItem";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { PlainButton } from "@/components/ui/plain-button";
 import {
   epicGroups,
@@ -14,8 +21,9 @@ import { cn } from "@/lib/utils";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
+import { byProject } from "./byProject";
 
-/** A thin bar: how far an area has come. */
+/** A thin bar: how far an epic has come. */
 function Bar({ done, total }: { done: number; total: number }) {
   return (
     <span aria-hidden className="block h-1.5 overflow-hidden rounded-full bg-muted">
@@ -28,9 +36,10 @@ function Bar({ done, total }: { done: number; total: number }) {
 }
 
 /**
- * The left panel of the Tasks area: choose one area (an epic) and the middle shows only that.
- * The loose tasks, from notes that are not epics, have a row of their own, and the finished
- * areas are folded away.
+ * The left panel of the Tasks area: choose one epic and the middle shows only that. The epics of a
+ * project stand under the project's name (`byProject`), the rest under "Other epics". The loose
+ * tasks, from pages that are not epics, have a row of their own, and the finished epics are
+ * folded away.
  */
 export function TasksPanel() {
   const tasks = useTaskStore((s) => s.tasks);
@@ -41,6 +50,7 @@ export function TasksPanel() {
   const loaded = useTaskStore((s) => s.loaded);
   const centerView = useUiStore((s) => s.centerView);
   const vaultPath = useVaultStore((s) => s.vault?.path ?? null);
+  const projects = useVaultStore((s) => s.projects);
   const [showDone, setShowDone] = useState(false);
 
   useEffect(() => {
@@ -68,26 +78,40 @@ export function TasksPanel() {
 
   const row = (g: EpicGroup) => (
     <li key={g.path}>
-      <PlainButton
-        type="button"
-        aria-current={on(g.path)}
-        className={cn(
-          "flex w-full flex-col gap-1.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
-          on(g.path) && "bg-accent text-accent-foreground",
-          g.allDone && "text-muted-foreground",
-        )}
-        onClick={() => {
-          choose(g.path);
-        }}
-      >
-        <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate font-medium">{g.title}</span>
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {g.done} of {g.total}
-          </span>
-        </span>
-        <Bar done={g.done} total={g.total} />
-      </PlainButton>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <PlainButton
+            type="button"
+            aria-current={on(g.path)}
+            className={cn(
+              "flex w-full flex-col gap-1.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+              on(g.path) && "bg-accent text-accent-foreground",
+              g.allDone && "text-muted-foreground",
+            )}
+            onClick={() => {
+              choose(g.path);
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="min-w-0 flex-1 truncate font-medium">{g.title}</span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {g.done} of {g.total}
+              </span>
+            </span>
+            <Bar done={g.done} total={g.total} />
+          </PlainButton>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            onSelect={() => {
+              useTaskStore.getState().openEpic(g.path);
+            }}
+          >
+            <FileText className="size-4" aria-hidden /> Open the epic page
+          </ContextMenuItem>
+          <PinMenuItem path={g.path} kind="context" />
+        </ContextMenuContent>
+      </ContextMenu>
     </li>
   );
 
@@ -121,13 +145,31 @@ export function TasksPanel() {
             </ul>
           </div>
         )}
-        <h3 className="section-label px-2 pb-1">Choose one area</h3>
+        <h3 className="section-label px-2 pb-1">Choose an epic</h3>
         {loaded && open.length === 0 && loose.length === 0 && (
           <p className="px-2 text-xs text-muted-foreground">
-            None yet. Make an area with <b>New epic</b> in the middle.
+            None yet. Make one with <b>New epic</b> in the middle.
           </p>
         )}
-        <ul className="flex flex-col gap-0.5">{open.map(row)}</ul>
+        {byProject(open, projects).map((section) => (
+          <div key={section.folder ?? ""} className="flex flex-col">
+            {section.name !== null && (
+              <span className="mt-2 flex items-center gap-1.5 px-2 pb-0.5 text-xs text-muted-foreground">
+                <FolderKanban className="size-3.5" aria-hidden />
+                Project · {section.name}
+              </span>
+            )}
+            {section.name === null && section.others && (
+              <span className="mt-2 px-2 pb-0.5 text-xs text-muted-foreground">Other epics</span>
+            )}
+            <ul
+              aria-label={section.name === null ? "Other epics" : `Epics of ${section.name}`}
+              className="flex flex-col gap-0.5"
+            >
+              {section.groups.map(row)}
+            </ul>
+          </div>
+        ))}
         {loose.length > 0 && (
           <PlainButton
             type="button"
@@ -155,7 +197,7 @@ export function TasksPanel() {
               }}
             >
               {showDone ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-              Finished areas · {done.length}
+              Finished epics · {done.length}
             </PlainButton>
             {showDone && <ul className="flex flex-col gap-0.5">{done.map(row)}</ul>}
           </>
@@ -173,8 +215,21 @@ export function TasksPanel() {
         >
           <Timer className="size-4" aria-hidden /> Time
         </PlainButton>
+        <PlainButton
+          type="button"
+          aria-current={centerView === "lookback"}
+          className={cn(
+            "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+            centerView === "lookback" && "bg-accent text-accent-foreground",
+          )}
+          onClick={() => {
+            useUiStore.getState().setCenterView("lookback");
+          }}
+        >
+          <History className="size-4" aria-hidden /> Look back
+        </PlainButton>
         <p className="mt-auto px-2 pt-4 text-xs leading-relaxed text-muted-foreground">
-          You see one area at a time. The rest is put away, not gone.
+          You see one epic at a time. The rest is put away, not gone.
         </p>
       </div>
     </div>

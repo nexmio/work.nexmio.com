@@ -15,6 +15,7 @@ import { useAiBlocked } from "@/lib/useAiBlocked";
 import { cn } from "@/lib/utils";
 import { splitText, walk, type NodePath, type PlanNode } from "@/lib/planTree";
 import { usePlanStore, type PlanPlace } from "@/stores/planStore";
+import { suggestParts } from "./suggestParts";
 import { useVaultStore } from "@/stores/vaultStore";
 import { addIdea, makeTask, removeIdea } from "./planActions";
 
@@ -293,7 +294,7 @@ export function GuidedDialog({ hidden }: { hidden: boolean }) {
                     disabled={aiOff !== null}
                     title={aiOff ?? "The AI suggests parts of the plan"}
                     onClick={() => {
-                      usePlanStore.getState().setDialog({ kind: "parts", path: [] });
+                      suggestParts([]);
                     }}
                   >
                     Suggest parts

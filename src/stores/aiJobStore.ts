@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { InlineCommand } from "@/bindings/InlineCommand";
+import type { InlineRequest } from "@/bindings/InlineRequest";
 import { api, toApiError } from "@/lib/api";
 import { looksLikeDiagram, withDiagram } from "@/lib/diagram";
 import { stripCodeFence } from "@/lib/fence";
@@ -27,13 +28,79 @@ export interface AiJobSpec {
 
 export type AiJobStatus = "queued" | "running" | "ready" | "failed";
 
-export interface AiJob extends AiJobSpec {
+/** What a "pick" job found: points to read (may be none) and things to tick. */
+export interface AiPicks {
+  points: string[];
+  items: string[];
+  /** Headings over parts of the list: `items[from]` up to `items[to - 1]` (Decisions, Actions). */
+  groups?: { title: string; from: number; to: number }[];
+}
+
+/**
+ * An AI job whose answer is a list to tick (parts of a plan, steps of a task, tasks in a page):
+ * it is asked in the background, the list is shown in the Queue, and only the ticked items are
+ * given to `add`. Nothing is written before.
+ */
+export interface AiPickSpec {
+  /** The name of the job, for example "Suggest parts". */
+  label: string;
+  /** Where it was asked, shown under the name ("Move the office › Server"). */
+  where: string;
+  instruction: string;
+  /** What the AI reads. It is read when the job starts, so it is the newest text. */
+  read: () => Promise<string>;
+  /** The page it is about (for the rules of its project), if any. */
+  notePath: string | null;
+  /** Makes the list from the answer. */
+  parse: (answer: string) => AiPicks;
+  /** What one and several items are called ("part", "parts"). */
+  noun: [string, string];
+  /** The end of the add button: "Add 3 parts" + " to the plan". */
+  addTo: string;
+  /** Adds the ticked items (the whole answer comes along, for a list in groups). */
+  add: (chosen: string[], picks: AiPicks) => Promise<void>;
+  /** Another way to ask ("Make the steps smaller"). */
+  other?: { label: string; instruction: string };
+  /** The first item is the one to start with. */
+  firstIsStart?: boolean;
+  /** The text "Copy" puts on the clipboard, when the answer can be copied. */
+  copy?: (picks: AiPicks) => string;
+  /** Goes back to where the job was asked. */
+  goTo?: () => void;
+  /**
+   * The answer is a text to read, not a list (a status report): its paragraphs are the `points`,
+   * shown under `title`, and `save` keeps it (for example as a new page).
+   */
+  text?: { title: string; save?: { label: string; run: (picks: AiPicks) => Promise<void> } };
+}
+
+interface JobBase {
   id: string;
   status: AiJobStatus;
-  result: string;
   error: string | null;
   createdAt: number;
 }
+
+/** A command on selected text in a page: its result is written in the page when accepted. */
+export interface EditJob extends JobBase, AiJobSpec {
+  kind: "edit";
+  result: string;
+}
+
+/** A job whose answer is a list to tick. */
+export interface PickJob extends JobBase {
+  kind: "pick";
+  label: string;
+  spec: AiPickSpec;
+  /** The instruction this run uses (`spec.other` can change it). */
+  instruction: string;
+  picks: AiPicks | null;
+}
+
+export type AiJob = EditJob | PickJob;
+
+/** A change to a job: the fields every job has, or those of its own kind. */
+type JobPatch = Partial<Omit<EditJob, "kind">> | Partial<Omit<PickJob, "kind">>;
 
 type Tab = "chat" | "tasks";
 
@@ -41,14 +108,22 @@ interface JobState {
   jobs: AiJob[];
   tab: Tab;
   setTab: (tab: Tab) => void;
-  /** Puts a job last in the queue; the jobs run one at a time. */
+  /** Puts a job on selected text last in the queue; the jobs run one at a time. */
   add: (spec: AiJobSpec) => string;
+  /** Puts a job with a list to tick last in the queue. */
+  addPick: (spec: AiPickSpec) => string;
+  /** Asks a pick job again (with another instruction, if given). */
+  again: (id: string, instruction?: string) => void;
   /** Takes a job out of the queue (stops it when it runs), or clears a finished one. */
   remove: (id: string) => void;
   /** Opens the AI window on the tasks. */
   showTasks: () => void;
+  /** Goes back to where the job was asked (the page, the plan, the task). */
+  goTo: (id: string) => void;
   /** Writes the result of a job into its note (the note is opened) and takes the job out. */
   accept: (id: string) => Promise<void>;
+  /** Gives the ticked items of a pick job to its `add`, and takes the job out. */
+  acceptPicks: (id: string, chosen: string[]) => Promise<void>;
 }
 
 let counter = 1;
@@ -69,8 +144,9 @@ export function findSpot(
 export const useAiJobStore = create<JobState>((set, get) => {
   /** The ids of the runs that were stopped, so a late answer is let go. */
   const taskIds = new Map<string, string>();
-  const patch = (id: string, p: Partial<AiJob>): void => {
-    set((s) => ({ jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...p } : j)) }));
+  /** Changes some fields of a job (only fields of its own kind are given). */
+  const patch = (id: string, p: JobPatch): void => {
+    set((s) => ({ jobs: s.jobs.map((j) => (j.id === id ? ({ ...j, ...p } as AiJob) : j)) }));
   };
   const find = (id: string): AiJob | undefined => get().jobs.find((j) => j.id === id);
 
@@ -81,7 +157,7 @@ export const useAiJobStore = create<JobState>((set, get) => {
     if (next) void run(next);
   };
 
-  const finish = (id: string, p: Partial<AiJob>): void => {
+  const finish = (id: string, p: JobPatch): void => {
     if (find(id)?.status !== "running") return;
     taskIds.delete(id);
     patch(id, p);
@@ -105,6 +181,36 @@ export const useAiJobStore = create<JobState>((set, get) => {
     pump();
   };
 
+  /** What is sent for a job: the selected text, or what a pick job reads when it starts. */
+  const request = async (job: AiJob): Promise<InlineRequest> =>
+    job.kind === "edit"
+      ? {
+          command: job.command,
+          instruction: job.instruction,
+          text: job.text,
+          notePath: job.notePath,
+          providerId: null,
+        }
+      : {
+          command: "custom",
+          instruction: job.instruction,
+          text: await job.spec.read(),
+          notePath: job.spec.notePath,
+          providerId: null,
+        };
+
+  /** What a finished answer makes of the job. */
+  const outcome = (job: AiJob, raw: string): JobPatch => {
+    const text = stripCodeFence(raw).trim();
+    if (job.kind === "pick") {
+      return { status: "ready", picks: job.spec.parse(text) };
+    }
+    if (job.diagram && !looksLikeDiagram(text)) {
+      return { status: "failed", error: "The AI did not answer with a diagram. Try again." };
+    }
+    return { status: "ready", result: text };
+  };
+
   const run = async (job: AiJob): Promise<void> => {
     patch(job.id, { status: "running", error: null });
     let raw = "";
@@ -116,31 +222,18 @@ export const useAiJobStore = create<JobState>((set, get) => {
         finish(job.id, { status: "failed", error: waking });
         return;
       }
-      const taskId = await api.aiInline(
-        {
-          command: job.command,
-          instruction: job.instruction,
-          text: job.text,
-          notePath: job.notePath,
-          providerId: null,
-        },
-        (e) => {
-          if (find(job.id)?.status !== "running") return;
-          if (e.type === "textDelta") {
-            raw += e.text;
-          } else if (e.type === "error") {
-            finish(job.id, { status: "failed", error: e.error.message });
-          } else if (e.type === "done") {
-            const text = stripCodeFence(raw).trim();
-            if (job.diagram && !looksLikeDiagram(text)) {
-              finish(job.id, {
-                status: "failed",
-                error: "The AI did not answer with a diagram. Try again.",
-              });
-            } else finish(job.id, { status: "ready", result: text });
-          }
-        },
-      );
+      const req = await request(job);
+      if (find(job.id)?.status !== "running") return;
+      const taskId = await api.aiInline(req, (e) => {
+        if (find(job.id)?.status !== "running") return;
+        if (e.type === "textDelta") {
+          raw += e.text;
+        } else if (e.type === "error") {
+          finish(job.id, { status: "failed", error: e.error.message });
+        } else if (e.type === "done") {
+          finish(job.id, outcome(job, raw));
+        }
+      });
       if (find(job.id)?.status === "running") taskIds.set(job.id, taskId);
       else void api.aiCancel(taskId).catch(() => undefined);
     } catch (e) {
@@ -148,37 +241,46 @@ export const useAiJobStore = create<JobState>((set, get) => {
     }
   };
 
+  /** Puts a job in the queue and shows the queue, so it is seen without looking for it. */
+  const enqueue = (job: AiJob): string => {
+    set((s) => ({ jobs: [...s.jobs, job] }));
+    get().showTasks();
+    pump();
+    return job.id;
+  };
+  const base = (): JobBase => ({
+    id: `job${String(counter++)}`,
+    status: "queued",
+    error: null,
+    createdAt: Date.now(),
+  });
+
   return {
     jobs: [],
     tab: "chat",
     setTab: (tab) => {
       set({ tab });
     },
-    add: (spec) => {
-      const id = `job${String(counter++)}`;
-      set((s) => ({
-        jobs: [
-          ...s.jobs,
-          { ...spec, id, status: "queued", result: "", error: null, createdAt: Date.now() },
-        ],
-      }));
-      const ahead = get().jobs.filter((j) => j.status === "queued" || j.status === "running");
-      useUiStore
-        .getState()
-        .toast(
-          ahead.length > 1
-            ? `Added to the AI queue (${String(ahead.length - 1)} before it): ${spec.label}`
-            : `The AI is on it: ${spec.label}`,
-          "info",
-          {
-            label: "Open",
-            run: () => {
-              get().showTasks();
-            },
-          },
-        );
+    add: (spec) => enqueue({ ...base(), ...spec, kind: "edit", result: "" }),
+    addPick: (spec) =>
+      enqueue({
+        ...base(),
+        kind: "pick",
+        label: spec.label,
+        spec,
+        instruction: spec.instruction,
+        picks: null,
+      }),
+    again: (id, instruction) => {
+      const job = find(id);
+      if (job?.kind !== "pick" || job.status === "running" || job.status === "queued") return;
+      patch(id, {
+        status: "queued",
+        error: null,
+        picks: null,
+        instruction: instruction ?? job.instruction,
+      });
       pump();
-      return id;
     },
     remove: (id) => {
       const job = find(id);
@@ -193,9 +295,28 @@ export const useAiJobStore = create<JobState>((set, get) => {
       set({ tab: "tasks" });
       useUiStore.getState().setAskOpen(true);
     },
+    goTo: (id) => {
+      const job = find(id);
+      if (!job) return;
+      if (job.kind === "pick") {
+        job.spec.goTo?.();
+        return;
+      }
+      void useVaultStore.getState().openNote(job.notePath);
+    },
+    acceptPicks: async (id, chosen) => {
+      const job = find(id);
+      if (job?.kind !== "pick" || job.status !== "ready") return;
+      try {
+        if (chosen.length > 0 && job.picks !== null) await job.spec.add(chosen, job.picks);
+        get().remove(id);
+      } catch (e) {
+        reportError(e);
+      }
+    },
     accept: async (id) => {
       const job = find(id);
-      if (job?.status !== "ready") return;
+      if (job?.kind !== "edit" || job.status !== "ready") return;
       const replacement = job.diagram ? withDiagram(job.text, job.result) : job.result;
       const path = job.notePath;
       try {

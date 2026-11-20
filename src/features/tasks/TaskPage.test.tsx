@@ -28,7 +28,8 @@ vi.mock("@/lib/askAi", () => askMock);
 const blocked = vi.hoisted(() => ({ reason: null as string | null }));
 vi.mock("@/lib/useAiBlocked", () => ({ useAiBlocked: () => blocked.reason }));
 
-import { momentsOf, statusFacts, statusLogLines, TaskPage } from "./TaskPage";
+import { momentsOf, statusFacts, statusLogLines } from "./taskMoments";
+import { TaskPage } from "./TaskPage";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -36,7 +37,6 @@ import { pressEnter, setField, typeInField } from "@/test/markdownField";
 
 const task = makeTask({
   title: "Renew the Acme licence",
-  due: "2026-11-01",
   status: "waiting",
   tags: ["acme"],
   steps: [
@@ -365,7 +365,6 @@ describe("the status line", () => {
   it("is built from the written log lines, not from Nexmio Work's own status lines", () => {
     const t = makeTask({
       title: "Renew",
-      due: "2026-11-01",
       log: [
         { line: 1, date: "2026-10-14", text: "Status: waiting", key: "a" },
         { line: 2, date: "2026-10-15", text: "Mette wants 40 users.", key: "b" },

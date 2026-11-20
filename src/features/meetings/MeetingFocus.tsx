@@ -265,8 +265,8 @@ export function MeetingFocus() {
                 )}
                 <PlainButton
                   type="button"
-                  aria-label={`Write in the pages: ${a.text}`}
-                  title="Write it in the pages"
+                  aria-label={`Write in the notes: ${a.text}`}
+                  title="Write it in the notes"
                   className="shrink-0 rounded-full border p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => {
                     toNotes(a.text);
@@ -289,7 +289,7 @@ export function MeetingFocus() {
 
         <div className="flex min-w-0 flex-col gap-4">
           <div className="flex min-w-0 flex-col gap-2">
-            <h3 className="section-label">Pages</h3>
+            <h3 className="section-label">Notes</h3>
             <MarkdownField
               label="Notes for the meeting"
               value={draft}
@@ -379,7 +379,7 @@ export function MeetingFocus() {
             <p className="text-xs text-muted-foreground" aria-live="polite">
               {parked > 0
                 ? `${String(parked)} written down. The meeting goes on.`
-                : "It does not end up in the meeting's pages."}
+                : "It does not end up in the meeting's notes."}
             </p>
           </div>
         </div>

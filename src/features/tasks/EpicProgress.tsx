@@ -12,14 +12,14 @@ export function EpicProgress({ group }: { group: EpicGroup }) {
         aria-valuemin={0}
         aria-valuemax={group.total}
         aria-valuenow={group.done}
-        className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-muted sm:block"
+        className="hidden h-1.5 w-24 overflow-hidden rounded-full bg-muted @3xl/header:block"
       >
         <span
           className={cn("block h-full", group.allDone ? "bg-success" : "bg-primary")}
           style={{ width: `${String(pct)}%` }}
         />
       </span>
-      <span className="text-xs font-semibold tabular-nums">
+      <span className="whitespace-nowrap text-xs font-semibold tabular-nums">
         {group.done} of {group.total}
       </span>
     </>

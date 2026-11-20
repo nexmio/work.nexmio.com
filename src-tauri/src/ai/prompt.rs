@@ -29,9 +29,15 @@ const RULES: &str = "Rules:
 /// with the fixed AI commands in the app, which run as skills with their own rules.
 const CHAT_RULES: &str = "Rules:
 - Notes are Markdown. Never invent facts about the user's notes. Use the search_notes, read_note and list_folder tools to look things up, and say which note an answer comes from.
-- In this chat you only answer. You cannot change, create, move or delete notes, and you have no tools for it. Never say that you changed something.
+- In this chat you answer, and you may propose new tasks (propose_tasks) and new parts of a plan (propose_parts); the user reviews them before anything is written. You cannot change, create, move or delete notes. Never say that you changed or added something; say what you proposed.
 - When the user wants a note changed, say in one sentence that they can do it with the AI button above the note, the AI bar over selected text, or by right-clicking a folder and choosing AI.
 - Keep answers concise. Answer in the language the user writes in.";
+
+/// What Nexmio Work is, for the assistant: so it can answer about the work, not only the pages.
+const APP_GUIDE: &str = "\n\n## Nexmio Work
+- A project is a folder with its own tag; its plan is a page (tag plan) whose list is the parts of the work. The tasks of a plan are in the plan's epic (a page with the tag epic). A task has steps, a log and a status (doing, waiting for someone, done); time is logged on tasks. Meetings are pages with the tag meeting, with decisions and actions. Ideas are thoughts not yet turned into anything.
+- For questions about the work (what is next, what waits, how far a project is, what was decided) use list_projects, list_tasks and list_meetings, and answer from what they return.
+- For how-to questions about Nexmio Work itself, call search_help and answer only from it. Then call show_place once with the place that fits, so the user gets a button to open it.";
 
 /// What the AI says about writing new facts: it has no internet access, so it does not write
 /// documentation from memory.
@@ -85,6 +91,8 @@ pub fn build_system_prompt(i: &PromptInput, note_override: Option<&str>) -> Stri
     ));
     if !i.tools_enabled {
         out.push_str("\n- Tools are not available in this conversation. Do not try to call any.");
+    } else {
+        out.push_str(APP_GUIDE);
     }
     if !i.answer_language.trim().is_empty() {
         out.push_str(&format!(
@@ -225,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn the_plain_chat_is_told_it_only_answers() {
+    fn the_plain_chat_answers_and_only_proposes_tasks_and_parts() {
         let s = build_system_prompt(
             &PromptInput {
                 read_only: true,
@@ -233,8 +241,17 @@ mod tests {
             },
             None,
         );
-        assert!(s.contains("In this chat you only answer"));
-        assert!(!s.contains("propose_"));
+        assert!(s.contains("In this chat you answer, and you may propose new tasks"));
+        // No page-changing tools are named in the plain chat.
+        for tool in [
+            "propose_edit",
+            "propose_create",
+            "propose_move",
+            "propose_delete",
+        ] {
+            assert!(!s.contains(tool), "{tool}");
+        }
+        assert!(s.contains("## Nexmio Work"));
     }
 
     #[test]
@@ -247,6 +264,7 @@ mod tests {
             instructions: "Be strict".into(),
             provider_id: None,
             local_only: false,
+            tag: None,
             created_at: String::new(),
             updated_at: String::new(),
         };

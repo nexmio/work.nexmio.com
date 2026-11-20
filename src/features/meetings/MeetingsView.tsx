@@ -11,6 +11,9 @@ import { useEffect, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { MarkdownText } from "@/components/MarkdownText";
 import { ViewHeader } from "@/components/ViewHeader";
+import { AreaAiMenu } from "@/components/AreaAiMenu";
+import { askChat } from "@/lib/askChat";
+import { decisionsAndActions, suggestAgenda } from "./meetingAi";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,7 +34,9 @@ import { useMeetingStore } from "@/stores/meetingStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
+import { DecisionsView } from "./DecisionsView";
 import { MeetingWhenDialog } from "./MeetingWhenDialog";
+import { moveActionsToProject, projectOfMeeting } from "./moveActions";
 import { useMeetingsLoaded, useShownMeeting } from "./useMeetings";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -66,12 +71,19 @@ async function tickAgenda(path: string, item: string, done: boolean): Promise<vo
  * read from the meeting's note, so nothing new is stored.
  */
 export function MeetingsView() {
+  const decisions = useMeetingStore((s) => s.decisions);
+  return decisions ? <DecisionsView /> : <MeetingPage />;
+}
+
+/** One meeting in the middle (or how to make the first). */
+function MeetingPage() {
   const today = todayIso();
   const m = useShownMeeting();
   useMeetingsLoaded();
   const loaded = useMeetingStore((s) => s.loaded);
   const tasks = useTaskStore((s) => s.tasks);
   const [busy, setBusy] = useState(false);
+  const projects = useVaultStore((s) => s.projects);
   const [changing, setChanging] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const timeFormat = useUiStore((s) => s.timeFormat);
@@ -107,6 +119,7 @@ export function MeetingsView() {
   }
 
   const fromMeeting = tasks.filter((t) => t.path === m.path);
+  const project = projectOfMeeting(m.meeting.tags, projects);
   const notes = meetingNotes(m);
   const decisions = decisionsOf(m.content);
   const { parts } = m.meeting;
@@ -127,16 +140,63 @@ export function MeetingsView() {
 
   return (
     <section aria-label="Meetings" className="flex h-full min-h-0 flex-col bg-background">
-      <ViewHeader title={m.meeting.title}>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            void openFile(m.path);
-          }}
-        >
-          <FileText /> Open the page
-        </Button>
+      <ViewHeader
+        title={m.meeting.title}
+        afterTitle={
+          project === null ? undefined : (
+            <span className="rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground">
+              Project · {project.name}
+            </span>
+          )
+        }
+      >
+        <AreaAiMenu
+          label="AI for this meeting"
+          groups={[
+            {
+              label: "Do",
+              entries: [
+                {
+                  label: "Decisions and actions from the notes",
+                  hint: "You tick which to add",
+                  run: () => {
+                    decisionsAndActions(m);
+                  },
+                },
+                {
+                  label: "Suggest an agenda",
+                  hint: "From the meeting before and its open actions",
+                  run: () => {
+                    suggestAgenda(m);
+                  },
+                },
+                {
+                  label: "In short",
+                  hint: "Main points and things to do; nothing is written",
+                  run: () => {
+                    void openFile(m.path).then(() => {
+                      useUiStore.getState().setInShortOpen(true);
+                    });
+                  },
+                },
+              ],
+            },
+            {
+              label: "Ask",
+              entries: [
+                {
+                  label: "Ask about this meeting",
+                  hint: "What was decided, what is open",
+                  run: () => {
+                    void askChat(
+                      `About the meeting “${m.meeting.title}” (${m.path}): what was decided, and which actions are still open?`,
+                    );
+                  },
+                },
+              ],
+            },
+          ]}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline" aria-label="More for this meeting">
@@ -144,6 +204,13 @@ export function MeetingsView() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem
+              onSelect={() => {
+                void openFile(m.path);
+              }}
+            >
+              <FileText /> Open the page
+            </DropdownMenuItem>
             <DropdownMenuItem
               disabled={busy}
               onSelect={() => {
@@ -213,7 +280,7 @@ export function MeetingsView() {
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
           <div className="flex min-w-0 flex-col gap-4">
             <section aria-label="Notes" className="rounded-xl border bg-card p-4">
-              <h3 className="section-label pb-1">Pages</h3>
+              <h3 className="section-label pb-1">Notes</h3>
               {notes === "" ? (
                 <p className="text-sm text-muted-foreground">Nothing written yet.</p>
               ) : (
@@ -245,7 +312,7 @@ export function MeetingsView() {
                 </h3>
                 {m.meeting.agenda.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No agenda. Start the meeting and write your pages, or add an item there.
+                    No agenda. Start the meeting and write your notes, or add an item there.
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-1.5">
@@ -276,9 +343,37 @@ export function MeetingsView() {
                 ) : (
                   <ul>
                     {fromMeeting.map((t) => (
-                      <TaskRow key={`${t.path}:${String(t.line)}`} task={t} showNote={false} />
+                      <TaskRow
+                        key={`${t.path}:${String(t.line)}`}
+                        task={t}
+                        showNote={false}
+                        narrow
+                      />
                     ))}
                   </ul>
+                )}
+                {project !== null && fromMeeting.length > 0 && (
+                  <div className="mt-3 flex flex-col gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="self-start"
+                      disabled={busy}
+                      onClick={() => {
+                        setBusy(true);
+                        void moveActionsToProject(m.path, project).finally(() => {
+                          setBusy(false);
+                          void useMeetingStore.getState().load();
+                        });
+                      }}
+                    >
+                      Move the actions to the project
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      They go into the epic of {project.name}&apos;s plan, with their steps and log.
+                      The meeting keeps a link to it.
+                    </p>
+                  </div>
                 )}
               </section>
             )}

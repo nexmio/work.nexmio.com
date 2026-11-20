@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useRef } from "react";
 import {
   Panel,
   PanelGroup,
@@ -11,7 +11,6 @@ import { IdeasView } from "@/features/capture/IdeasView";
 import { MeetingsPanel } from "@/features/meetings/MeetingsPanel";
 import { MeetingsView } from "@/features/meetings/MeetingsView";
 import { PlansPanel } from "@/features/plans/PlansPanel";
-import { PlansView } from "@/features/plans/PlansView";
 import { NotesPage } from "@/features/start/NotesPage";
 import { StartPage } from "@/features/start/StartPage";
 import { EpicPage } from "@/features/tasks/EpicPage";
@@ -19,7 +18,6 @@ import { TaskPage } from "@/features/tasks/TaskPage";
 import { TasksPanel } from "@/features/tasks/TasksPanel";
 import { PartSlot } from "@/features/plans/PartSlot";
 import { TaskDetail } from "@/features/tasks/TaskDetail";
-import { TimePage as TimeView } from "@/features/tasks/TimePage";
 import { TimerPanel } from "@/features/tasks/TimerPanel";
 import { useTimerStore } from "@/stores/timerStore";
 import { TasksView } from "@/features/tasks/TasksView";
@@ -36,35 +34,42 @@ import { StatusBar } from "./StatusBar";
 import { usePanelCollapse } from "./usePanelCollapse";
 import { ActivityRail } from "./ActivityRail";
 import { FieldAi } from "@/features/fieldAi/FieldAi";
-import { ChatPanel } from "@/features/chat/ChatPanel";
+import { AiBox } from "@/features/chat/AiBox";
 import { RIGHT_LABELS, RightTabs } from "./RightTabs";
 import { LinksPanel } from "@/features/notePanels/LinksPanel";
 import { OutlinePanel } from "@/features/notePanels/OutlinePanel";
 import { activeTitle, useVaultStore } from "@/stores/vaultStore";
 
 /**
- * The tabs of the right panel, in order. The panel always has the note panels and the AI; the
- * Tasks area adds "Task" in front, and the Plans area "Part".
+ * The tabs of the right panel, in order: the page panels where a page is shown, "Task" in the
+ * Tasks area and "Part" in the Plans area, and the Timer while one runs. The AI is not a tab: it
+ * is a box over the right side (`AiBox`). An area with none of these has an empty panel.
  */
 export function rightTabsFor(view: CenterView, timerRunning = false): RightTab[] {
   // The Timer tab is there only while a timer runs (it is started under Tasks → Time).
-  const base: RightTab[] = [
-    "outline",
-    "links",
-    "history",
-    "images",
-    ...(timerRunning ? (["timer"] as const) : []),
-    "ai",
-  ];
+  const always: RightTab[] = timerRunning ? ["timer"] : [];
+  // Outline, Links, History and Images are about the page in the middle: only where one is open.
+  // Elsewhere they would show the last page, which is not on the screen (and its tags).
+  if (view === "notes" || view === "start") {
+    return ["outline", "links", "history", "images", ...always];
+  }
   // The Task tab is the quick view of a task in the list. A task opened as a full page is only
   // there, so the panel does not show it a second time.
-  if (view === "tasks" || view === "epic") return ["task", ...base];
-  if (view === "task") return base;
-  if (view === "plans") return ["part", ...base];
-  return base;
+  if (view === "tasks" || view === "epic") return ["task", ...always];
+  if (view === "plans") return ["part", ...always];
+  return always;
 }
 
 /** Title bar, three resizable/collapsible columns and the status bar. */
+const PlansView = lazy(() =>
+  import("@/features/plans/PlansView").then((m) => ({ default: m.PlansView })),
+);
+const TimeView = lazy(() =>
+  import("@/features/tasks/TimePage").then((m) => ({ default: m.TimePage })),
+);
+const LookBackPage = lazy(() =>
+  import("@/features/tasks/LookBackPage").then((m) => ({ default: m.LookBackPage })),
+);
 export function AppShell() {
   const ui = useUiStore();
   const timerRunning = useTimerStore((s) => s.running !== null);
@@ -87,31 +92,10 @@ export function AppShell() {
   usePanelCollapse(left, ui.leftCollapsed || startOnly);
   usePanelCollapse(right, ui.rightCollapsed || startOnly);
 
-  // The chat stays mounted once it has been shown, so a half-written question survives a change
-  // of tab. Before that nothing of it is loaded.
-  const [chatSeen, setChatSeen] = useState(false);
-  const aiShown = rightTab === "ai" && !ui.rightCollapsed && !startOnly;
-  useEffect(() => {
-    if (aiShown) setChatSeen(true);
-  }, [aiShown]);
-
-  // The chat needs room: the panel is made about 24rem wide when the AI tab is chosen.
-  useEffect(() => {
-    if (!aiShown) return;
-    try {
-      const panel = right.current;
-      if (!panel) return;
-      const wanted = Math.min(50, (384 / Math.max(window.innerWidth - 44, 1)) * 100);
-      if (panel.getSize() < wanted) panel.resize(wanted);
-    } catch {
-      /* layout not ready; the panel keeps its width */
-    }
-  }, [aiShown]);
-
   return (
     <div className="flex h-full flex-col">
       <Header />
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex min-h-0 flex-1">
         <ActivityRail />
         <PanelGroup
           direction="horizontal"
@@ -167,10 +151,23 @@ export function AppShell() {
               {ui.centerView === "tasks" && <TasksView />}
               {ui.centerView === "epic" && <EpicPage />}
               {ui.centerView === "task" && <TaskPage />}
-              {ui.centerView === "time" && <TimeView />}
+              {ui.centerView === "time" && (
+                <Suspense fallback={null}>
+                  <TimeView />
+                </Suspense>
+              )}
+              {ui.centerView === "lookback" && (
+                <Suspense fallback={null}>
+                  <LookBackPage />
+                </Suspense>
+              )}
               {ui.centerView === "ideas" && <IdeasView />}
               {ui.centerView === "meetings" && <MeetingsView />}
-              {ui.centerView === "plans" && <PlansView />}
+              {ui.centerView === "plans" && (
+                <Suspense fallback={null}>
+                  <PlansView />
+                </Suspense>
+              )}
               {showStart && <StartPage />}
               {showNoteList && <NotesPage />}
             </main>
@@ -190,25 +187,21 @@ export function AppShell() {
                 useUiStore.getState().centerView !== "start" &&
                 !useUiStore.getState().rightCollapsed
               )
-                useUiStore.setState({ rightCollapsed: true, askOpen: false });
+                useUiStore.setState({ rightCollapsed: true });
             }}
             onExpand={() => {
               if (
                 useUiStore.getState().centerView !== "start" &&
                 useUiStore.getState().rightCollapsed
               )
-                useUiStore.setState((st) => ({
-                  rightCollapsed: false,
-                  askOpen: st.rightTab === "ai",
-                }));
+                useUiStore.setState({ rightCollapsed: false });
             }}
             className="bg-sidebar"
           >
             <div className="flex h-full min-h-0 flex-col">
               <RightTabs tabs={tabs} current={rightTab} />
-              {rightTab !== "ai" &&
-                rightTab !== "images" &&
-                rightTab !== "timer" &&
+              {/* The name of the page, over the tabs that are about it (never over Task or Part). */}
+              {(rightTab === "outline" || rightTab === "links" || rightTab === "history") &&
                 activePath !== null && (
                   <p className="truncate border-b px-3 py-1 text-xs text-muted-foreground">
                     {RIGHT_LABELS[rightTab]} · {activeTitle(activePath)}
@@ -222,15 +215,16 @@ export function AppShell() {
                 {rightTab === "links" && <LinksPanel />}
                 {rightTab === "images" && <ImagesPanel />}
                 {rightTab === "history" && <HistoryPanel />}
-                {chatSeen && (
-                  <div className={cn("h-full min-h-0", rightTab !== "ai" && "hidden")}>
-                    <ChatPanel />
-                  </div>
+                {tabs.length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground">
+                    Nothing here for this area. The AI opens with AI in the top bar.
+                  </p>
                 )}
               </div>
             </div>
           </Panel>
         </PanelGroup>
+        <AiBox />
       </div>
       <FieldAi />
       <StatusBar />

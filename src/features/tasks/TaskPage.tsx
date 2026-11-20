@@ -1,6 +1,5 @@
-import { ArrowLeft, Check, FileText, Layers, Pencil, Play, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { ArrowLeft, Check, FileText, Layers, Play, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { latestLeftOff, noteName, shortDate, todayIso, waitersOf } from "@/lib/taskLogic";
@@ -9,14 +8,14 @@ import { findTask, useTaskStore } from "@/stores/taskStore";
 import { useTimerStore } from "@/stores/timerStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
-import { BreakDownDialog } from "./BreakDownDialog";
+import { breakDownTask } from "./breakDownTask";
 import { epicTrail } from "./epicTrail";
+import { openFrom } from "./openFrom";
 import { goBackFromTask, taskBackLabel } from "./taskBack";
 import { MoveToEpic } from "./MoveToEpic";
 import { TaskTags } from "./TaskTags";
 import { WaitingFor } from "./WaitingFor";
 import { WaitingForTask } from "./WaitingForTask";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DeleteButton } from "@/components/DeleteButton";
 import { MoveButtons, moveKey } from "@/components/MoveButtons";
 import { InlineEdit, RowActions } from "@/components/RowActions";
@@ -25,13 +24,13 @@ import { ViewHeader } from "@/components/ViewHeader";
 import { AiAsk } from "@/components/AiAsk";
 import { NoteBox } from "./NoteBox";
 import { MarkdownField } from "@/features/editor/MarkdownField";
-import { MarkdownText } from "@/components/MarkdownText";
 import { LinkedNote } from "@/features/tasks/TaskNote";
-import type { Task } from "@/bindings/Task";
-import type { TaskHistory } from "@/bindings/TaskHistory";
-import type { TaskLog } from "@/bindings/TaskLog";
 import { useAiBlocked } from "@/lib/useAiBlocked";
 import { PlainButton } from "@/components/ui/plain-button";
+import { momentsOf, statusFacts } from "./taskMoments";
+import { MarkdownOfTask } from "./MarkdownOfTask";
+import { HistoryItem } from "./HistoryItem";
+import { LogItem } from "./LogItem";
 
 const STATUSES: { id: string; label: string }[] = [
   { id: "", label: "To do" },
@@ -39,212 +38,8 @@ const STATUSES: { id: string; label: string }[] = [
   { id: "waiting", label: "Waiting" },
 ];
 
-/** The lines of the task as they are written in its note: read-only, so it cannot be broken. */
-function MarkdownOfTask({ path, from, to }: { path: string; from: number; to: number }) {
-  const [text, setText] = useState<string | null>(null);
-  const tasks = useTaskStore((s) => s.tasks);
-  useEffect(() => {
-    let alive = true;
-    api
-      .readNote(path)
-      .then((n) => {
-        if (alive)
-          setText(
-            n.content
-              .split("\n")
-              .slice(from, to + 1)
-              .join("\n")
-              .replace(/\r/g, ""),
-          );
-      })
-      .catch(() => {
-        if (alive) setText("");
-      });
-    return () => {
-      alive = false;
-    };
-  }, [path, from, to, tasks]);
-  return (
-    <section aria-label="Markdown of the task" className="flex flex-col gap-1">
-      <h3 className="section-label">Markdown</h3>
-      <pre className="overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs">
-        {text ?? "…"}
-      </pre>
-      <p className="text-[11px] text-muted-foreground">
-        This is how the task is written in {noteName(path)}. Use the fields below to change it.
-      </p>
-    </section>
-  );
-}
-
 const STATUS_INSTRUCTION =
   "You write a status update for a colleague about one task. Use ONLY the facts below: the title, the status, the page, the steps and the dated log lines. Write one or two short sentences, in the language of the log: what has been done and what it waits for. Do not invent anything and do not repeat the log line by line. Answer with the sentences only.";
-
-/** How many of the latest log lines the status line is built from. */
-const STATUS_LOG_LINES = 10;
-
-/** The log lines a status line is built from: the written ones, not Nexmio Work's own "Status:" lines. */
-export function statusLogLines(task: Task): TaskLog[] {
-  return task.log.filter((l) => !/^Status:\s/.test(l.text)).slice(-STATUS_LOG_LINES);
-}
-
-/** The facts the status line is written from. */
-export function statusFacts(task: Task, stepsDone: number): string {
-  return [
-    `Task: ${task.title}`,
-    task.status !== null ? `Status: ${task.status}` : "",
-    task.steps.length > 0 ? `Steps: ${String(stepsDone)} of ${String(task.steps.length)} done` : "",
-    task.note !== "" ? `Note: ${task.note}` : "",
-    "Log (oldest first):",
-    ...statusLogLines(task).map((l) => `${l.date} ${l.text}`),
-  ]
-    .filter((x) => x !== "")
-    .join("\n");
-}
-
-/** One line of the log: its date and text, with buttons to change or remove it. */
-/** A line Nexmio Work wrote about the task (a status, what it waits for): shown with the log, not edited. */
-function HistoryItem({ entry, today }: { entry: TaskHistory; today: string }) {
-  return (
-    <li className="relative pb-4">
-      <span
-        aria-hidden
-        className="absolute -left-[27px] top-1 size-2.5 rounded-full border-2 border-muted-foreground bg-card"
-      />
-      <span className="text-[11px] text-muted-foreground">
-        {entry.date === today ? "Today" : shortDate(entry.date)}
-      </span>
-      <p className="text-sm text-muted-foreground">{entry.text}</p>
-    </li>
-  );
-}
-
-/** The log of a task and its history in one list, newest first. */
-type Moment = { kind: "log"; entry: TaskLog } | { kind: "history"; entry: TaskHistory; at: number };
-
-export function momentsOf(task: Pick<Task, "log" | "history">): Moment[] {
-  const all: Moment[] = [
-    ...[...task.log].reverse().map((entry): Moment => ({ kind: "log", entry })),
-    ...[...task.history].reverse().map((entry, at): Moment => ({ kind: "history", entry, at })),
-  ];
-  // A stable sort: lines of the same day keep the order they were written in.
-  return all.sort((a, b) => b.entry.date.localeCompare(a.entry.date));
-}
-
-function LogItem({ task, entry, today }: { task: Task; entry: TaskLog; today: string }) {
-  const [editing, setEditing] = useState(false);
-  const [text, setText] = useState(entry.text);
-  const [date, setDate] = useState(entry.date);
-  const [deleting, setDeleting] = useState(false);
-  const store = useTaskStore.getState();
-  const save = (): void => {
-    const t = text.trim();
-    if (t === "" || date === "") return;
-    setEditing(false);
-    if (t !== entry.text || date !== entry.date) void store.editLog(task, entry, date, t);
-  };
-  return (
-    <li className="group relative pb-4">
-      <span
-        aria-hidden
-        className="absolute -left-[27px] top-1 size-2.5 rounded-full border-2 border-primary bg-card"
-      />
-      {editing ? (
-        <div className="flex flex-col gap-2">
-          <Input
-            type="date"
-            aria-label="Date of the log line"
-            className="h-8 w-40"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-            }}
-          />
-          <MarkdownField
-            label="Text of the log line"
-            value={text}
-            autoFocus
-            singleLine
-            rows={1}
-            onChange={setText}
-            submitKey="enter"
-            onSubmit={save}
-            onEscape={() => {
-              setText(entry.text);
-              setDate(entry.date);
-              setEditing(false);
-            }}
-          />
-          <div className="flex gap-2">
-            <Button size="sm" disabled={text.trim() === "" || date === ""} onClick={save}>
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setText(entry.text);
-                setDate(entry.date);
-                setEditing(false);
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <>
-          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            {entry.date === today ? "Today" : shortDate(entry.date)}
-            <span className="ml-auto flex gap-0.5 opacity-0 focus-within:opacity-100 group-hover:opacity-100">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                aria-label="Change this line"
-                title="Change this line"
-                onClick={() => {
-                  setEditing(true);
-                }}
-              >
-                <Pencil className="size-3.5" />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                aria-label="Delete this line"
-                title="Delete this line"
-                onClick={() => {
-                  setDeleting(true);
-                }}
-              >
-                <Trash2 className="size-3.5" />
-              </Button>
-            </span>
-          </span>
-          <MarkdownText text={entry.text} />
-        </>
-      )}
-      <ConfirmDialog
-        open={deleting}
-        title="Delete this line from the log?"
-        description="It stays in the version history of the page, so it can be brought back."
-        confirmLabel="Delete"
-        destructive
-        onCancel={() => {
-          setDeleting(false);
-        }}
-        onConfirm={() => {
-          setDeleting(false);
-          void store.deleteLog(task, entry);
-        }}
-      />
-    </li>
-  );
-}
 
 /** One task: its status and date, its steps, and what has happened so far. */
 export function TaskPage() {
@@ -255,7 +50,6 @@ export function TaskPage() {
   const [editTitle, setEditTitle] = useState(false);
   const [editStep, setEditStep] = useState<number | null>(null);
   const [log, setLog] = useState("");
-  const [breaking, setBreaking] = useState(false);
   const [showMd, setShowMd] = useState(false);
   const from = useUiStore((s) => s.taskFrom);
   const back = (): void => {
@@ -300,9 +94,7 @@ export function TaskPage() {
       useVaultStore.getState().select(folder);
       useUiStore.getState().setLeftTab("files");
     },
-    goPage: (path) => {
-      void useVaultStore.getState().openNote(path);
-    },
+    goPage: openFrom,
     goEpic: toEpic,
   });
 
@@ -583,7 +375,7 @@ export function TaskPage() {
                   disabled={aiOff !== null}
                   title={aiOff ?? "The local AI suggests small steps; you choose which to add"}
                   onClick={() => {
-                    setBreaking(true);
+                    breakDownTask(task);
                   }}
                 >
                   <Sparkles /> Break it down
@@ -741,14 +533,6 @@ export function TaskPage() {
           </aside>
         </div>
       </div>
-      {breaking && (
-        <BreakDownDialog
-          task={task}
-          onClose={() => {
-            setBreaking(false);
-          }}
-        />
-      )}
     </section>
   );
 }

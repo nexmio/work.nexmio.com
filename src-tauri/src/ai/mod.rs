@@ -1,6 +1,7 @@
 //! AI assistant: providers, routing, prompts, tools, agent loop and proposals.
 
 pub mod agent;
+pub mod assistant;
 pub mod checks;
 pub mod clean;
 pub mod inline;
@@ -47,6 +48,11 @@ pub enum ChatEvent {
     },
     ProposalsReady {
         set_id: Uuid,
+    },
+    /// The assistant offers a place to open ("Show me"): one of `assistant::PLACES`.
+    Place {
+        place: String,
+        label: String,
     },
     /// A long skill run did its first notes only; the rest waits for the user to say go on.
     SkillTrial {

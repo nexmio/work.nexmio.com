@@ -7,11 +7,10 @@ import { CAPTURE_KINDS, CaptureBox, type CaptureKind } from "./CaptureBox";
 const ORDER: { kind: CaptureKind; label: string }[] = [
   { kind: "task", label: "Task" },
   { kind: "idea", label: "Idea" },
-  { kind: "note", label: "Quick page" },
 ];
 
 /**
- * Three buttons, + Task, + Idea and + Quick note, where there is room to write something down
+ * Two buttons, + Task and + Idea, where there is room to write something down
  * without leaving the screen (a meeting, Focus, the start page). A press opens the box for that
  * one kind; it stays open after saving, so the next thing can be written at once.
  */

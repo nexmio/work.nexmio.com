@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { LazyWhen } from "@/components/LazyWhen";
+import { lazy, useEffect, useMemo, useRef, useState } from "react";
 import { LinkUpdateDialog } from "@/components/LinkUpdateDialog";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toasts } from "@/components/layout/Toasts";
@@ -8,29 +9,25 @@ import { QuickCapture } from "@/features/capture/QuickCapture";
 import { TagManager } from "@/features/search/TagManager";
 import { FindTasksDialog } from "@/features/tasks/FindTasksDialog";
 import { InShortDialog } from "@/features/inlineAi/InShortDialog";
+import { IdeaToPlanDialog } from "@/features/plans/IdeaToPlanDialog";
 import { MetaMigrationDialog } from "@/features/vaults/MetaMigrationDialog";
 import { FirstRunDialog } from "@/features/welcome/FirstRunDialog";
 import { CommandPalette } from "@/features/quickOpen/CommandPalette";
 import { QuickOpen } from "@/features/quickOpen/QuickOpen";
-import { RecoverDeletedDialog } from "@/features/history/RecoverDeletedDialog";
-import { SettingsDialog } from "@/features/settings/SettingsDialog";
 import { Welcome } from "@/features/welcome/Welcome";
-import { ExportDialog } from "@/features/export/ExportDialog";
-import { AboutDialog } from "@/features/about/AboutDialog";
 import { WhatsNewDialog } from "@/features/help/WhatsNewDialog";
 import { BetaNoticeDialog } from "@/features/welcome/BetaNoticeDialog";
-import { MeetingFocus } from "@/features/meetings/MeetingFocus";
 import { MeetingForm } from "@/features/meetings/MeetingForm";
-import { HelpDialog } from "@/features/help/HelpDialog";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { AppContextMenu } from "@/components/AppContextMenu";
-import { ImportDialog } from "@/features/import/ImportDialog";
 import { PrintView } from "@/features/export/PrintView";
 import {
   closeActiveTab,
   cycleTab,
+  NAV_AREAS,
   newNoteInCurrentFolder,
   openDailyNote,
+  openNavArea,
   saveActiveNote,
   toggleSplit,
 } from "@/lib/actions";
@@ -58,6 +55,31 @@ import { isTasksView, useUiStore } from "@/stores/uiStore";
 import "@/stores/workspaceSync";
 import "@/stores/chatSync";
 import { useVaultStore } from "@/stores/vaultStore";
+
+/** Rarely used windows, loaded the first time they open (`LazyWhen`). */
+const SettingsDialog = lazy(() =>
+  import("@/features/settings/SettingsDialog").then((m) => ({ default: m.SettingsDialog })),
+);
+const HelpDialog = lazy(() =>
+  import("@/features/help/HelpDialog").then((m) => ({ default: m.HelpDialog })),
+);
+const ExportDialog = lazy(() =>
+  import("@/features/export/ExportDialog").then((m) => ({ default: m.ExportDialog })),
+);
+const ImportDialog = lazy(() =>
+  import("@/features/import/ImportDialog").then((m) => ({ default: m.ImportDialog })),
+);
+const AboutDialog = lazy(() =>
+  import("@/features/about/AboutDialog").then((m) => ({ default: m.AboutDialog })),
+);
+const RecoverDeletedDialog = lazy(() =>
+  import("@/features/history/RecoverDeletedDialog").then((m) => ({
+    default: m.RecoverDeletedDialog,
+  })),
+);
+const MeetingFocus = lazy(() =>
+  import("@/features/meetings/MeetingFocus").then((m) => ({ default: m.MeetingFocus })),
+);
 
 function useBackendEvents(active: boolean): void {
   useEffect(() => {
@@ -125,6 +147,13 @@ function useBackendEvents(active: boolean): void {
 /** Root component: boots settings, restores the last vault, wires global events and shortcuts. */
 export function App() {
   const vault = useVaultStore((s) => s.vault);
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const helpOpen = useUiStore((s) => s.helpOpen);
+  const exportOpen = useUiStore((s) => s.exportDialog !== null);
+  const importOpen = useUiStore((s) => s.importOpen);
+  const aboutOpen = useUiStore((s) => s.aboutOpen);
+  const recoverOpen = useUiStore((s) => s.recoverOpen);
+  const meetingFocusOpen = useUiStore((s) => s.meetingFocus !== null);
   const settings = useSettingsStore((s) => s.settings);
   const settingsError = useSettingsStore((s) => s.error);
   const [booted, setBooted] = useState(false);
@@ -192,6 +221,15 @@ export function App() {
       "Mod+Shift+n": () => {
         useUiStore.getState().openCapture();
       },
+      // Ctrl/Cmd+1 … 6: the areas in the order of the navigation.
+      ...Object.fromEntries(
+        NAV_AREAS.map((area, i) => [
+          `Mod+${String(i + 1)}`,
+          () => {
+            openNavArea(area);
+          },
+        ]),
+      ),
       "Mod+Shift+t": () => {
         const ui = useUiStore.getState();
         if (isTasksView(ui.centerView)) ui.setCenterView("notes");
@@ -272,24 +310,39 @@ export function App() {
       <CommandPalette />
       <BetaNoticeDialog />
       <MeetingForm />
-      <MeetingFocus />
+      <LazyWhen when={meetingFocusOpen}>
+        <MeetingFocus />
+      </LazyWhen>
       <FirstRunDialog />
       <FindTasksDialog />
       <TagManager />
       <InShortDialog />
+      <IdeaToPlanDialog />
       <MetaMigrationDialog />
       <QuickCapture />
-      <SettingsDialog />
-      <RecoverDeletedDialog />
-      <ExportDialog />
-      <ImportDialog />
+      <LazyWhen when={settingsOpen}>
+        <SettingsDialog />
+      </LazyWhen>
+      <LazyWhen when={recoverOpen}>
+        <RecoverDeletedDialog />
+      </LazyWhen>
+      <LazyWhen when={exportOpen}>
+        <ExportDialog />
+      </LazyWhen>
+      <LazyWhen when={importOpen}>
+        <ImportDialog />
+      </LazyWhen>
       <AppContextMenu />
       <ImageLightbox />
       <NoticeDialog />
       <NewNoteDialog />
-      <AboutDialog />
+      <LazyWhen when={aboutOpen}>
+        <AboutDialog />
+      </LazyWhen>
       <WhatsNewDialog />
-      <HelpDialog />
+      <LazyWhen when={helpOpen}>
+        <HelpDialog />
+      </LazyWhen>
       <PrintView />
       <ProjectDialog />
       <ProposalReview />

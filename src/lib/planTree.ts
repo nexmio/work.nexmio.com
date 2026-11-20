@@ -6,12 +6,17 @@
  */
 
 /** What the area is called in the left bar, the menus and the help. One word, changed here only. */
-export const PLANS_LABEL = "Plans";
+export const PLANS_LABEL = "Projects";
 
 export interface PlanNode {
   /** The line of the idea without its marker: the words, and the `[[links]]` that tie it to a note. */
   text: string;
   children: PlanNode[];
+  /**
+   * A short note about the part, written in the page as indented `> ` lines right under its line
+   * (plain Markdown: a quote inside the list item). Empty or missing when there is none.
+   */
+  note?: string;
 }
 
 export interface ParsedPlan {
@@ -27,6 +32,8 @@ export type NodePath = readonly number[];
 
 const ITEM = /^(\s*)[-*+]\s+(.*)$/;
 const CHECK = /^\[[ xX]\](\s|$)/;
+/** A line of a part's note: indented, starting with `>`. */
+const NOTE_LINE = /^\s+>/;
 
 function indentOf(ws: string): number {
   return ws.replace(/\t/g, "    ").length;
@@ -52,6 +59,16 @@ export function parsePlan(content: string): ParsedPlan {
   for (let i = first; i < lines.length; i++) {
     const line = lines[i] ?? "";
     const item = itemOf(line);
+    const top = stack[stack.length - 1];
+    if (item === null && top !== undefined && NOTE_LINE.test(line)) {
+      // An indented `> ` line under a part is the part's note (other lines end the list, as before).
+      if (indentOf(/^\s*/.exec(line)?.[0] ?? "") > top.indent) {
+        const words = line.trim().replace(/^>\s?/, "");
+        top.node.note = top.node.note === undefined ? words : `${top.node.note}\n${words}`;
+        end = i + 1;
+        continue;
+      }
+    }
     if (item === null) {
       // A blank line inside the list is fine when another idea follows it.
       const next = lines.slice(i + 1).find((l) => l.trim() !== "");
@@ -73,8 +90,15 @@ export function parsePlan(content: string): ParsedPlan {
 function linesOf(nodes: readonly PlanNode[], depth: number): string[] {
   return nodes.flatMap((n) => [
     `${"  ".repeat(depth)}- ${n.text}`,
+    ...noteLines(n.note).map((l) => `${"  ".repeat(depth + 1)}> ${l}`.trimEnd()),
     ...linesOf(n.children, depth + 1),
   ]);
+}
+
+/** The lines of a part's note (none when it is empty). */
+function noteLines(note: string | undefined): string[] {
+  const t = note?.trim() ?? "";
+  return t === "" ? [] : t.split(/\r?\n/).map((l) => l.trim());
 }
 
 /**
@@ -136,7 +160,11 @@ export function joinText(plain: string, links: readonly string[]): string {
 // --- changing the ideas (nothing is changed in place) -----------------------------------------
 
 function copy(nodes: readonly PlanNode[]): PlanNode[] {
-  return nodes.map((n) => ({ text: n.text, children: copy(n.children) }));
+  return nodes.map((n) => ({
+    text: n.text,
+    children: copy(n.children),
+    ...(n.note === undefined ? {} : { note: n.note }),
+  }));
 }
 
 /** The idea at `path`, or undefined. */
@@ -216,6 +244,36 @@ export function setText(nodes: readonly PlanNode[], path: NodePath, text: string
   const next = copy(nodes);
   const n = nodeAt(next, path);
   if (n) n.text = text;
+  return next;
+}
+
+/** Puts new parts under the part at `path` in place of the ones it had (the top level for `[]`). */
+export function setChildren(
+  nodes: readonly PlanNode[],
+  path: NodePath,
+  children: readonly PlanNode[],
+): PlanNode[] {
+  if (path.length === 0) return copy(children);
+  const next = copy(nodes);
+  const n = nodeAt(next, path);
+  if (n) n.children = copy(children);
+  return next;
+}
+
+/** The part or one under it is tied to something (has a `[[link]]`). */
+export function hasLinks(node: PlanNode): boolean {
+  return splitText(node.text).links.length > 0 || node.children.some(hasLinks);
+}
+
+/** Changes the note of a part; an empty note takes it away. */
+export function setNote(nodes: readonly PlanNode[], path: NodePath, note: string): PlanNode[] {
+  const next = copy(nodes);
+  const n = nodeAt(next, path);
+  if (n) {
+    const t = noteLines(note).join("\n");
+    if (t === "") delete n.note;
+    else n.note = t;
+  }
   return next;
 }
 

@@ -3,7 +3,9 @@
 use super::proposals::ProposalSet;
 use super::providers;
 use super::providers::types::{ChatMessage, LlmRequest};
-use super::{mentions, prompt, router, tools, ChatEvent, ChatMessageIn, ChatRequest, ChatRole};
+use super::{
+    assistant, mentions, prompt, router, tools, ChatEvent, ChatMessageIn, ChatRequest, ChatRole,
+};
 use crate::error::AppResult;
 use crate::projects;
 use crate::settings::keychain;
@@ -125,14 +127,18 @@ pub async fn run_chat(
         note
     };
     let tools_enabled = cfg.supports_tools;
+    // The assistant's own tools (tasks, projects, meetings, help, and proposing tasks and parts)
+    // are offered in every chat with tools; the page-changing ones only outside the plain chat.
     let tool_defs = if tools_enabled {
         tools::definitions()
             .into_iter()
             .filter(|d| !read_only || !d.name.starts_with("propose_"))
+            .chain(assistant::definitions())
             .collect()
     } else {
         Vec::new()
     };
+    let cloud = !router::is_local(&cfg);
     let mut msgs: Vec<ChatMessage> = req.messages.iter().map(convert).collect();
     // Semantic search is offered only when the rules allow it (see embeddings::semantic_allowed).
     let indexed = crate::embeddings::counts(&vault, &settings.ai.embeddings.model).1;
@@ -202,7 +208,21 @@ pub async fn run_chat(
                 name: call.name.clone(),
                 detail: tools::describe_call(call),
             });
-            let out = if read_only && call.name.starts_with("propose_") {
+            let out = if assistant::handles(&call.name) {
+                let reach = assistant::Reach {
+                    scope: scope.as_deref(),
+                    cloud,
+                    projects: &all_projects,
+                };
+                let out = assistant::execute(&vault, &reach, &mut set, call);
+                if let Some((place, label)) = assistant::place_of(call) {
+                    let _ = channel.send(ChatEvent::Place {
+                        place: place.into(),
+                        label: label.into(),
+                    });
+                }
+                out
+            } else if read_only && call.name.starts_with("propose_") {
                 // The plain chat has no change tools; a model that calls one anyway is told so.
                 tools::ToolOutcome {
                     result: "This chat cannot change notes. Answer the user instead.".into(),

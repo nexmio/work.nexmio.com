@@ -15,8 +15,22 @@ vi.mock("@/lib/api", () => ({
 vi.mock("@/lib/wake", () => ({ wakeIfNeeded: () => Promise.resolve(null) }));
 vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
 
-import { findSpot, useAiJobStore, type AiJobSpec } from "./aiJobStore";
+import { findSpot, useAiJobStore, type AiJobSpec, type AiPickSpec } from "./aiJobStore";
+import { useUiStore } from "./uiStore";
 import { useVaultStore } from "./vaultStore";
+
+const pickSpec = (over: Partial<AiPickSpec> = {}): AiPickSpec => ({
+  label: "Suggest parts",
+  where: "Move the office",
+  instruction: "Suggest parts",
+  read: () => Promise.resolve("parts-text"),
+  notePath: "Plans/Move.md",
+  parse: (a) => ({ points: [], items: a.split("\n").map((l) => l.replace(/^- /, "")) }),
+  noun: ["part", "parts"],
+  addTo: " to the plan",
+  add: vi.fn().mockResolvedValue(undefined),
+  ...over,
+});
 
 const spec = (label: string, text = "Hello wrold"): AiJobSpec => ({
   label,
@@ -61,7 +75,7 @@ describe("the AI queue", () => {
     pending.get("one")?.({ type: "done" });
     await settle();
     expect(status()).toEqual(["ready", "running"]);
-    expect(useAiJobStore.getState().jobs[0]?.result).toBe("One.");
+    expect(useAiJobStore.getState().jobs[0]).toMatchObject({ result: "One." });
     expect(apiMock.aiInline).toHaveBeenCalledTimes(2);
   });
 
@@ -113,6 +127,86 @@ describe("the AI queue", () => {
     await useAiJobStore.getState().accept(id);
     expect(apiMock.writeNote).not.toHaveBeenCalled();
     expect(useAiJobStore.getState().jobs).toHaveLength(1);
+  });
+});
+
+describe("jobs with a list to tick", () => {
+  beforeEach(() => {
+    pending.clear();
+    useAiJobStore.setState({ jobs: [], tab: "chat" });
+    useUiStore.setState({ askOpen: false, rightTab: "outline", rightCollapsed: true });
+    apiMock.aiInline.mockReset();
+    apiMock.aiCancel.mockResolvedValue(undefined);
+    apiMock.aiInline.mockImplementation((req: { text: string }, on: (e: ChatEvent) => void) => {
+      pending.set(req.text, on);
+      return Promise.resolve(`task-${req.text}`);
+    });
+  });
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+
+  it("shows the queue when a job is added, so it is seen without looking for it", () => {
+    useAiJobStore.getState().addPick(pickSpec());
+    expect(useAiJobStore.getState().tab).toBe("tasks");
+    expect(useUiStore.getState().askOpen).toBe(true);
+  });
+
+  it("reads its text when it starts, and makes the list from the answer", async () => {
+    const id = useAiJobStore.getState().addPick(pickSpec());
+    await settle();
+    expect(apiMock.aiInline.mock.calls[0]?.[0]).toMatchObject({
+      command: "custom",
+      instruction: "Suggest parts",
+      text: "parts-text",
+      notePath: "Plans/Move.md",
+    });
+    pending.get("parts-text")?.({ type: "textDelta", text: "- Disks\n- Backup" });
+    pending.get("parts-text")?.({ type: "done" });
+    await settle();
+    expect(useAiJobStore.getState().jobs[0]).toMatchObject({
+      id,
+      status: "ready",
+      picks: { points: [], items: ["Disks", "Backup"] },
+    });
+  });
+
+  it("asks again, with another instruction when given", async () => {
+    const id = useAiJobStore.getState().addPick(pickSpec());
+    await settle();
+    pending.get("parts-text")?.({ type: "done" });
+    await settle();
+    useAiJobStore.getState().again(id, "Smaller");
+    await settle();
+    expect(apiMock.aiInline).toHaveBeenCalledTimes(2);
+    expect(apiMock.aiInline.mock.calls[1]?.[0]).toMatchObject({ instruction: "Smaller" });
+  });
+
+  it("gives only the ticked items to the job and takes it out; nothing before", async () => {
+    const add = vi.fn().mockResolvedValue(undefined);
+    const id = useAiJobStore.getState().addPick(pickSpec({ add }));
+    await useAiJobStore.getState().acceptPicks(id, ["Disks"]);
+    expect(add).not.toHaveBeenCalled();
+    await settle();
+    pending.get("parts-text")?.({ type: "textDelta", text: "- Disks\n- Backup" });
+    pending.get("parts-text")?.({ type: "done" });
+    await settle();
+    await useAiJobStore.getState().acceptPicks(id, ["Disks"]);
+    expect(add).toHaveBeenCalledWith(
+      ["Disks"],
+      expect.objectContaining({ items: ["Disks", "Backup"] }),
+    );
+    expect(useAiJobStore.getState().jobs).toHaveLength(0);
+  });
+
+  it("goes back to where it was asked", () => {
+    const goTo = vi.fn();
+    const id = useAiJobStore.getState().addPick(pickSpec({ goTo }));
+    useAiJobStore.getState().goTo(id);
+    expect(goTo).toHaveBeenCalled();
+    const openNote = vi.fn().mockResolvedValue(undefined);
+    useVaultStore.setState({ openNote });
+    const edit = useAiJobStore.getState().add(spec("Fix"));
+    useAiJobStore.getState().goTo(edit);
+    expect(openNote).toHaveBeenCalledWith("a.md");
   });
 });
 

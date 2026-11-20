@@ -194,16 +194,11 @@ pub struct Catalog {
     pub unavailable_reason: Option<String>,
 }
 
-/// Why the llama.cpp engine cannot be downloaded here, or `None` when it can. A Microsoft Store
-/// (MSIX) package never runs a downloaded program: some organisations block it from starting
-/// (seen on a managed laptop) and the Store's policy 10.2.2 is against it.
+/// Why the llama.cpp engine cannot be downloaded here, or `None` when it can. Every version of
+/// Nexmio Work can, the Microsoft Store package too (since 0.28: the Store and the GitHub
+/// versions are the same; the Store package keeps the engine in its data folder, `paths::dirs`).
+/// Kept as the one place to say no, should a version ever need to.
 pub fn unavailable_reason() -> Option<String> {
-    if super::paths::is_packaged() {
-        return Some(
-            "The Microsoft Store version of Nexmio Work cannot run the downloaded engine. Use LM Studio, or install Nexmio Work from GitHub to use the built-in AI."
-                .into(),
-        );
-    }
     None
 }
 

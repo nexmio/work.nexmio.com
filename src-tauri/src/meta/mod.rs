@@ -48,11 +48,16 @@ pub struct TaskMeta {
     /// The task it waits for, as `note path without .md#title`.
     pub after: Option<String>,
     pub history: Vec<TaskHistory>,
+    /// The task is pinned to the start page.
+    pub pinned: bool,
 }
 
 impl TaskMeta {
     fn is_empty(&self) -> bool {
-        self.waiting_for.is_none() && self.after.is_none() && self.history.is_empty()
+        self.waiting_for.is_none()
+            && self.after.is_none()
+            && self.history.is_empty()
+            && !self.pinned
     }
 }
 
@@ -148,6 +153,7 @@ pub fn overlay(meta: &Meta, tasks: &mut [Task]) {
                 t.after.clone_from(&m.after);
             }
             t.history.clone_from(&m.history);
+            t.pinned = m.pinned;
         }
     }
 }
@@ -203,6 +209,19 @@ pub fn add_history(root: &Path, path: &str, title: &str, date: &str, text: &str)
             date: date.to_string(),
             text,
         });
+        true
+    })
+    .map(|_| ())
+}
+
+/// Pins a task to the start page, or unpins it.
+pub fn set_task_pinned(root: &Path, path: &str, title: &str, on: bool) -> AppResult<()> {
+    let key = task_ref(path, title);
+    change(root, |m| {
+        if m.tasks.get(&key).is_some_and(|t| t.pinned) == on {
+            return false;
+        }
+        m.tasks.entry(key).or_default().pinned = on;
         true
     })
     .map(|_| ())
@@ -392,6 +411,24 @@ mod tests {
         assert!(is_pinned(d.path(), "A.md"));
         set_pinned(d.path(), "A.md", false).unwrap();
         assert!(!is_pinned(d.path(), "A.md"));
+    }
+
+    #[test]
+    fn a_pinned_task_is_kept_follows_a_rename_and_is_forgotten_when_unpinned() {
+        let d = vault();
+        set_task_pinned(d.path(), "T/Epic.md", "Book the van", false).unwrap();
+        assert!(!d.path().join(FILE).exists(), "nothing to keep, no file");
+        set_task_pinned(d.path(), "T/Epic.md", "Book the van", true).unwrap();
+        let mut tasks = crate::tasks::parse("T/Epic.md", "- [ ] Book the van\n- [ ] Other\n");
+        overlay(&load(d.path()), &mut tasks);
+        assert_eq!(
+            tasks.iter().map(|t| t.pinned).collect::<Vec<_>>(),
+            [true, false]
+        );
+        rename_task(d.path(), "T/Epic.md", "Book the van", "Book the big van").unwrap();
+        assert!(load(d.path()).tasks["T/Epic#Book the big van"].pinned);
+        set_task_pinned(d.path(), "T/Epic.md", "Book the big van", false).unwrap();
+        assert!(load(d.path()).tasks.is_empty());
     }
 
     #[test]

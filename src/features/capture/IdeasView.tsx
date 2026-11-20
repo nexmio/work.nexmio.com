@@ -33,7 +33,7 @@ export async function ideaToTask(idea: Idea, epicPath: string): Promise<void> {
   useUiStore.getState().toast("Made a task.", "success");
 }
 
-/** Turns an idea into a note in Quick notes and opens it. The idea stays, marked as used. */
+/** Turns an idea into a page in the folder for pages made from ideas, and opens it. The idea stays, marked as used. */
 export async function ideaToNote(idea: Idea): Promise<void> {
   try {
     const vault = useVaultStore.getState();
@@ -305,6 +305,22 @@ function IdeaCard({
           <>
             <Button size="sm" variant="outline" onClick={onTask}>
               To task
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              title="Make the idea a part of a plan"
+              onClick={() => {
+                useUiStore.getState().setIdeaToPlan({
+                  text: idea.text,
+                  note: idea.note,
+                  done: () => {
+                    void useIdeaStore.getState().setStatus(idea, "used");
+                  },
+                });
+              }}
+            >
+              To plan…
             </Button>
             <Button
               size="sm"

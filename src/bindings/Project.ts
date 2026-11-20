@@ -10,4 +10,10 @@ providerId: string | null,
  * Never send this project's notes to a cloud AI, even when one is turned on. (Also read from
  * project files written before 0.7, which had the same field.)
  */
-localOnly: boolean, createdAt: string, updatedAt: string, };
+localOnly: boolean, 
+/**
+ * The tag of the project (without `#`), made from its name when the project is made and
+ * kept when it is renamed. Everything a plan in the project makes gets it. Projects made
+ * before 0.28 have none; the app then makes it from the name (`tag_for`), as here.
+ */
+tag?: string, createdAt: string, updatedAt: string, };

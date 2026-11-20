@@ -106,7 +106,7 @@ export function TagPicker({
           <li>
             <PlainButton
               type="button"
-              className="inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-dashed px-2.5 py-0.5 text-xs text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => {
                 setAdding(true);
               }}

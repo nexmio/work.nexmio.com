@@ -225,7 +225,7 @@ describe("The Meetings area", () => {
     expect(screen.getByRole("button", { name: /Weekly with Mette/ })).toBeInTheDocument();
   });
 
-  it("shows Pages and Decisions on the left and the Agenda and the Actions on the right", async () => {
+  it("shows Notes and Decisions on the left and the Agenda and the Actions on the right", async () => {
     render(<MeetingsView />);
     expect(await screen.findByRole("region", { name: "Notes" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Agenda" })).toBeInTheDocument();

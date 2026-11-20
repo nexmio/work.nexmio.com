@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PromptDialog } from "@/components/PromptDialog";
 import { ViewHeader } from "@/components/ViewHeader";
+import { AreaAiMenu } from "@/components/AreaAiMenu";
+import { PinMenuItem } from "@/components/PinMenuItem";
+import { breakDownTask } from "./breakDownTask";
+import { askChat } from "@/lib/askChat";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,11 +35,12 @@ import { EpicProgress } from "./EpicProgress";
 import { useTimerStore } from "@/stores/timerStore";
 import { EpicTags } from "./TaskTags";
 import { NowCard } from "./NowCard";
+import { PlanOfEpic } from "./PlanOfEpic";
 import { TaskRow } from "./TaskRow";
 
 export { EpicProgress } from "./EpicProgress";
 
-/** "+ Add a task" at the bottom of an area: Enter adds it to that area's note. */
+/** "+ Add a task" at the bottom of an epic: Enter adds it to that epic's page. */
 function AddTask({ group }: { group: EpicGroup }) {
   const [text, setText] = useState("");
   return (
@@ -98,6 +103,7 @@ export function TasksView() {
   const activePath = useVaultStore((s) => s.activePath);
   const vaultPath = useVaultStore((s) => s.vault?.path ?? null);
   const aiOff = useAiBlocked();
+  const resolver = useVaultStore((s) => s.resolver);
   const [naming, setNaming] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState<EpicGroup | null>(null);
@@ -139,7 +145,7 @@ export function TasksView() {
   const menu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline" aria-label="More for this area">
+        <Button size="sm" variant="outline" aria-label="More for this epic">
           <MoreHorizontal /> More
         </Button>
       </DropdownMenuTrigger>
@@ -178,7 +184,8 @@ export function TasksView() {
             Open the epic page
           </DropdownMenuItem>
         )}
-        {findTasks}
+        {group !== null && group.adopted && <PinMenuItem path={group.path} kind="dropdown" />}
+        {group === null && findTasks}
         {group !== null && at !== -1 && (
           <>
             <DropdownMenuItem
@@ -187,7 +194,7 @@ export function TasksView() {
                 void useTaskStore.getState().moveEpic(group.path, true, movable);
               }}
             >
-              Move this area up
+              Move this epic up
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={at === movable.length - 1}
@@ -195,7 +202,7 @@ export function TasksView() {
                 void useTaskStore.getState().moveEpic(group.path, false, movable);
               }}
             >
-              Move this area down
+              Move this epic down
             </DropdownMenuItem>
           </>
         )}
@@ -216,11 +223,11 @@ export function TasksView() {
     const lists = areaLists(tasksWithTag(g, epics, tagFilter));
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-        {g.adopted && <EpicTags path={g.path} />}
+        <PlanOfEpic from={g.source === null ? null : resolver.resolve(g.source)} />
         {lists.now !== null && <NowCard task={lists.now} others={lists.after} />}
         {lists.now === null && g.tasks.length > 0 && lists.waiting.length === 0 && (
           <p className="rounded-xl border bg-card p-4 text-base">
-            Everything in this area is done.
+            Everything in this epic is done.
           </p>
         )}
         {lists.after.length > 0 && (
@@ -268,7 +275,10 @@ export function TasksView() {
 
   return (
     <section aria-label="Tasks" className="flex h-full min-h-0 flex-col bg-background">
-      <ViewHeader title={group?.title ?? (isLoose ? "Loose tasks" : "Tasks")}>
+      <ViewHeader
+        title={group?.title ?? (isLoose ? "Loose tasks" : "Tasks")}
+        afterTitle={group?.adopted ? <EpicTags path={group.path} inline /> : undefined}
+      >
         {group !== null && <EpicProgress group={group} />}
         {nowTask !== null && (
           <Button
@@ -280,6 +290,48 @@ export function TasksView() {
           >
             <Play /> Start timer
           </Button>
+        )}
+        {group !== null && (
+          <AreaAiMenu
+            label="AI for this epic"
+            groups={[
+              {
+                label: "Do",
+                entries: [
+                  {
+                    label: "Break down the Now task",
+                    hint: nowTask === null ? "" : `Steps for “${nowTask.title}”`,
+                    off: nowTask === null ? "There is no task to do now" : undefined,
+                    run: () => {
+                      if (nowTask !== null) breakDownTask(nowTask);
+                    },
+                  },
+                  {
+                    label: "Find tasks in the open page",
+                    hint: activePath === null ? "" : `The AI looks in “${noteName(activePath)}”`,
+                    off: activePath === null ? "Open a page first" : undefined,
+                    run: () => {
+                      useUiStore.getState().setFindTasksOpen(true);
+                    },
+                  },
+                ],
+              },
+              {
+                label: "Ask",
+                entries: [
+                  {
+                    label: "Ask about this epic",
+                    hint: "What is next, what waits",
+                    run: () => {
+                      void askChat(
+                        `In the epic “${group.title}” (${group.path}): what should I do next, and what is waiting?`,
+                      );
+                    },
+                  },
+                ],
+              },
+            ]}
+          />
         )}
         {menu}
       </ViewHeader>

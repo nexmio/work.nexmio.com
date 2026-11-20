@@ -4,13 +4,14 @@ On Mac, use **Cmd** instead of **Ctrl**.
 
 | Shortcut                   | What it does                                       |
 | -------------------------- | -------------------------------------------------- |
+| **Ctrl+1 … 6**             | Start, Pages, Tasks, Plans, Meetings, Ideas        |
 | **Ctrl+N**                 | new page                                           |
 | **Ctrl+S**                 | save and commit the open page                      |
 | **Ctrl+P**                 | quick open                                         |
 | **Ctrl+Shift+F**           | search                                             |
 | **Ctrl+Shift+K**           | link to a page                                     |
 | **Ctrl+K**                 | AI commands for the selected text                  |
-| **Ctrl+L**                 | ask about my pages (the AI tab)                    |
+| **Ctrl+L**                 | open the AI (the box over the right side)          |
 | **Ctrl+Shift+O**           | switch vault                                       |
 | **Ctrl+Shift+P**           | command palette: pages, AI, actions                |
 | **Ctrl+Shift+D**           | today's daily page                                 |

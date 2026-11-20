@@ -39,22 +39,40 @@ pub fn close_current(state: &AppState) {
     }
 }
 
-/// Closes the current vault, then opens (and initialises if needed) the folder at `path` with
-/// the author from settings. `on_commit` is called for every commit made by the new vault.
-/// The vault is not installed yet; call [`install`] once the window-bound setup has succeeded.
+/// Opens (and initialises if needed) the folder at `path` with the author from settings, then
+/// closes the current vault. `on_commit` is called for every commit made by the new vault.
+/// When the folder cannot be opened, the current vault stays open, so the window never shows a
+/// vault the backend has closed. The same folder opened again is closed first (its files are
+/// then not held twice). The vault is not installed yet; call [`install`] once the window-bound
+/// setup has succeeded.
 pub fn open_folder(
     state: &AppState,
     path: &str,
     on_commit: CommitCallback,
 ) -> AppResult<Arc<OpenVault>> {
-    close_current(state);
+    let same = is_current(state, Path::new(path));
+    if same {
+        close_current(state);
+    }
     let s = state.settings_snapshot();
     let author = (s.git.author_name, s.git.author_email);
-    Ok(Arc::new(OpenVault::open(
-        Path::new(path),
-        author,
-        on_commit,
-    )?))
+    let vault = Arc::new(OpenVault::open(Path::new(path), author, on_commit)?);
+    if !same {
+        close_current(state);
+    }
+    Ok(vault)
+}
+
+/// Whether `path` is the folder of the vault that is open now.
+fn is_current(state: &AppState, path: &Path) -> bool {
+    // Windows paths from `canonicalize` start with `\\?\`; the open vault's root may not.
+    let plain = |p: &Path| p.to_string_lossy().trim_start_matches(r"\\?\").to_string();
+    let Ok(wanted) = std::fs::canonicalize(path) else {
+        return false;
+    };
+    state
+        .current_vault()
+        .is_ok_and(|v| plain(&v.root) == plain(&wanted))
 }
 
 /// Makes `vault` the current vault.
@@ -127,6 +145,45 @@ mod tests {
 
     fn state_with(settings_path: PathBuf, settings_error: Option<String>) -> AppState {
         AppState::new(Settings::default(), settings_path, settings_error)
+    }
+
+    fn no_commits() -> CommitCallback {
+        Box::new(|_, _| {})
+    }
+
+    #[test]
+    fn a_folder_that_cannot_be_opened_leaves_the_open_vault_open() {
+        let tmp = tempfile::tempdir().unwrap();
+        let state = state_with(tmp.path().join("settings.json"), None);
+        let one = tmp.path().join("One");
+        std::fs::create_dir(&one).unwrap();
+        let v = open_folder(&state, &one.to_string_lossy(), no_commits()).unwrap();
+        install(&state, v).unwrap();
+        let missing = tmp.path().join("Missing");
+        assert!(open_folder(&state, &missing.to_string_lossy(), no_commits()).is_err());
+        let open = state.current_vault().unwrap();
+        assert!(open.root.ends_with("One"), "{}", open.root.display());
+    }
+
+    #[test]
+    fn another_folder_replaces_the_open_vault_and_the_same_one_can_be_opened_again() {
+        let tmp = tempfile::tempdir().unwrap();
+        let state = state_with(tmp.path().join("settings.json"), None);
+        let (one, two) = (tmp.path().join("One"), tmp.path().join("Two"));
+        std::fs::create_dir(&one).unwrap();
+        std::fs::create_dir(&two).unwrap();
+        install(
+            &state,
+            open_folder(&state, &one.to_string_lossy(), no_commits()).unwrap(),
+        )
+        .unwrap();
+        assert!(is_current(&state, &one));
+        let again = open_folder(&state, &one.to_string_lossy(), no_commits()).unwrap();
+        install(&state, again).unwrap();
+        let next = open_folder(&state, &two.to_string_lossy(), no_commits()).unwrap();
+        install(&state, next).unwrap();
+        assert!(is_current(&state, &two));
+        assert!(!is_current(&state, &one));
     }
 
     #[test]

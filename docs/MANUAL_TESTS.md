@@ -24,7 +24,7 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] Help → **What's new** shows the changes of this version; **Help → Check for new version…** opens the releases page in the browser.
 - [ ] **File → Export** a page to HTML and open the file; **Import** a small folder of Markdown.
 - [ ] Resize the window narrow: the panels fold and nothing runs off the screen.
-- [ ] The Microsoft Store package (when there is one, `nexmio-work-msix-test` from the workflow): install it with `Install-TestMsix.ps1`, start it, open a vault; the built-in AI says it is not in the Store version yet, and LM Studio works if it is running.
+- [ ] The Microsoft Store package (when there is one, `nexmio-work-msix-test` from the workflow): install it with `Install-TestMsix.ps1`, start it, open a vault; Settings → AI offers the built-in AI, and it downloads, loads and answers (on a managed laptop too, if you have one); LM Studio works if it is running.
 - [ ] Close Nexmio Work with a page just changed; start it again: the change is there, and History has it.
 - [ ] The website (https://work.nexmio.com/) shows the new version in its top line, and the README's pictures load.
 - [ ] `PRIVACY.md` and `docs/STORE-LISTING.md` still say what the app does (a cloud AI only after consent, no automatic update check).
@@ -249,7 +249,7 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] Windows 11: the `…-setup.exe` installs **without** an administrator prompt; Nexmio Work starts from the Start menu with the purple "M" icon; pictures show; **Reveal in file manager** opens Explorer; uninstalling (which also removes `nexmio-work-ai` next to the program) leaves the vaults untouched.
 - [ ] Linux: the `.AppImage` starts and Help → Report a bug… opens the browser (or a dialog shows the address). The `.rpm` installs.
-- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the built-in AI says it is not available in the Store version yet; uninstalling leaves the pages.
+- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the built-in AI downloads its engine and a model into the package's data folder, loads and answers; uninstalling leaves the pages.
 - [ ] The release run has the artifacts `nexmio-work-msix` (unsigned) and `nexmio-work-msix-test`.
 
 ### 20. Help, About and reporting
@@ -374,19 +374,19 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] The rail has **Plans** right under the house and **Ideas** last; resting the mouse on any icon shows its name. Plans shows a **Beta** mark. With no plan it offers **New plan**.
 - [ ] **New plan** → type a name → **Just make the plan** makes the plan and opens it without the steps; **Next: the parts** goes through the three steps.
-- [ ] **Map** starts with one box, the plan itself, and the ideas branch out below it, from the top down. Right-click a box: Add a sub-idea (a small window, Enter adds one and stays), Link or make an epic / task / page, Delete and the rest, and **Change the words**; double-click a box changes its words in place.
+- [ ] **Map** starts with one box, the plan itself, and the ideas branch out below it, from the top down. Right-click a box: **Rename** at the top, Add a part (a small window, Enter or Add adds one and stays), Link or make a task / page, Write a note, Delete and the rest; there is no epic choice. Double-click a box renames it in place.
 - [ ] **New plan** asks **Where does it live?**: **In a new project** (on): a folder with the plan's name appears under Projects in Files, with the plan page in it, and the project has the usual project settings. **In a project I have** (a list of projects; off when there is none): the plan page is made in that project's folder. There is no way to make a plan outside a project. A name that is taken by a project gives a message and nothing is made.
 - [ ] A plan in the folder Plans (made before plans always lived in a project) has a line above it, "This plan is not in a project yet", and **Move it to a project…** moves the page into the chosen project (links updated). A plan in a project has no such line.
 - [ ] In Plans, press **Open the task** (or open a task or an epic from a part): the middle shows the task and the left panel changes from Plans to Tasks, with that task chosen. The same from the start page and from a search result. Press Pages: the left panel shows the files again. A left panel you folded stays folded.
 - [ ] Each project in Files has a line under its name: **No plan yet · Make a plan** (opens the plan-from-a-project window for it) or **Open the plan** (opens it in Plans). The line follows when a plan is made or moved.
 - [ ] Above an epic and above a task a trail shows the project, the page the epic was made from (for example the plan) and the epic; each step before the last takes you there. An epic in no project, made from nothing, has no trail.
 - [ ] The Plans panel lists plans under their project, plans in none under **Not in a project**, and **Projects without a plan** with **Make a plan**, which opens the plan-from-a-project window for that project.
-- [ ] In a plan in a project: **Link or make an epic / task** puts epics in `<project>/Epics`, **Link or make a page** puts pages in `<project>/Notes` (folders appear when the first is made). The epic shows in Tasks as usual.
+- [ ] In a plan in a project: **Link or make a task** puts the task in the plan's epic in `<project>/Epics`, **Link or make a page** puts pages in `<project>/Notes` (folders appear when the first is made). The epic shows in Tasks as usual.
 - [ ] **Plan from a project…** (Plans panel, or Plans header with no plan open) and right-click a project in Files → **Make a plan of this project**: choose a project, tick/untick "Start the plan with the pages and epics…", **Make the plan**: `<project>/<project>.md` with the tag `plan`, the pages as ideas linked, folders as branches; nothing else in the project is changed. A project that has a plan says "has a plan" and **Open its plan** opens it. A new project is not a plan until you do this.
 - [ ] **+** → Break it down: step 1 a name, next makes `Plans/<name>.md` with `tags: [plan]` and `# <name>`. Step 2: add parts with Enter, **Break it down** on a part adds smaller ones. Step 3 lists the smallest parts; **Make it a task now** adds a task in the epic made for the plan; **Later** closes. Saving and coming back later keeps the plan.
 - [ ] Outline, field **+ Add an idea**: type `A`, Enter, Tab, `B`, Enter, Shift+Tab, `C`, Enter: A with B under it, then C beside A (the field is indented while you are a level down). Paste a list with indented lines: it becomes a tree. Nothing gets a chip until you tie it from ···.
-- [ ] Outline: fold a branch, click an idea, double-click to change its words, **···** has Break it down, Add a sub-idea, Link or make an epic, Link or make a task, Link or make a page, Repeat, Move up and down, One level in and out, Delete. Open the page in the editor: the list is an ordinary list, and the properties, the heading and any text after the list are as they were.
-- [ ] **Link or make an epic…**: pick an epic that is there, or make a new one with the sub-ideas you tick as tasks; the idea shows **Epic · 0 of N** and the chip opens it. **Link or make a task…**: pick an open task, or **Make a new task**: it goes in an epic with the plan's name (made if missing). The idea shows **Task**. **Link or make a page…** (pick, or **Make a new page**) shows **Page · name**.
+- [ ] Outline: fold a branch, click an idea, double-click to rename it, **···** has Break it down, Add a part, Link or make a task, Link or make a page, Write a note, Repeat, Move up and down, Under the one before, One level up, Delete, Rename. Open the page in the editor: the list is an ordinary list, and the properties, the heading and any text after the list are as they were.
+- [ ] A part linked to an epic in an older plan still shows **Epic · 0 of N**, and the chip opens it. **Link or make a task…**: pick an open task, or **Make a new task**: it goes in an epic with the plan's name (made if missing). The idea shows **Task**. **Link or make a page…** (pick, or **Make a new page**) shows **Page · name**.
 - [ ] **Suggest parts** (AI) shows a list to tick, nothing is written before; with no AI the button is greyed out with the reason.
 - [ ] **Repeat these steps for…** on a branch with sub-ideas: write two names; two new branches with the same steps, and in the plan's epic two tasks (one per name), each with the steps as its steps. No epic per name.
 - [ ] **A small place to start** shows the first open task; **Open the task** opens it.
@@ -417,3 +417,90 @@ Check with `git log --oneline` in the vault folder.
 - [ ] Ideas are cards: write one in the line and press Enter; **To task** and **To page** work and the card moves to Used; **···** has Edit, Archive and Delete; **Open again** brings one back.
 - [ ] Plans: choose a box on the map: the **Part** tab of the right panel has Parts, Link to, Arrange the parts, Move, Repeat and Delete, and they work. Drag, zoom, centre and **Tidy up** still work. With no plan open the page offers an empty plan and a plan from a project.
 - [ ] Settings has seven sections and no Save; a slider changes the preview while it is dragged and is saved; **Undo the last change** puts it back; closing the window keeps everything.
+
+## Plans and the AI queue (0.28)
+
+- [ ] A plan opens on the **Map**. Choose **Outline**, open another plan: it opens on the outline; choose **Map** again and it stays the map.
+- [ ] Choose a box on the map: every button in the **Part** tab works. **Add a part** opens the window; **Rename** changes the words in the panel, not on the map.
+- [ ] **Add parts** window: type a part and press **Add**, then another and press Enter; both are added and the field stays. **Close** shuts it.
+- [ ] Stack the parts of a box, then tie the box to a page (Link or make a page) and rename it: the parts stay stacked.
+- [ ] **Write a note** on a part in the right panel: the box shows **Note**, the outline shows the note under the part, and the plan's page has `  > …` under the part's line. Open the page in another editor: it is an ordinary quote under the list item.
+- [ ] A plan with the parts "Server" and "Network": **Break it down** on Server. The AI queue opens by itself, the screen is not locked (open another page meanwhile), and the suggestions are about servers, not about the network. Tick some and press **Add**: they go under Server, also if a part was added above it meanwhile.
+- [ ] **Go to** on that job, from another area: the plan opens on the map with Server chosen.
+- [ ] **Break it down** on a task, **Find tasks** in a page and **In short**: each goes into the queue at once (no window that waits), and **Add** adds only what is ticked. **Make the steps smaller** asks again.
+- [ ] Make a new project "Server move": its settings show `#server-move`. Make a plan in it, make a task and a page from a part: the plan page, the plan's epic, the task and the page have the tag. Rename the project: the tag stays.
+- [ ] Archive a plan, then **Delete plan…**: nothing is ticked; delete it: only the plan page goes. **Recover deleted** in History brings it back. Do it again with the epic ticked: the epic goes too.
+- [ ] Right-click a box on the map → **Write a note…**: the Part tab opens with the cursor in the note. **Rename** is in the menu (not "Change the words"); Rename in the panel is one line, with no empty space under it.
+- [ ] Choose a part on the map: **Move** has **Earlier**, **Later**, **Under the one before** and **One level up**, with a line that explains them; the first part has Earlier and Under the one before greyed out, a top-level part has One level up greyed out.
+- [ ] **Repeat these steps for…** on a part with two steps: the window draws Now and After, and the names you write show in the drawing. Make 2: the part stays as the heading, the two names are under it with the steps, and the steps are not left under the part itself. With a step tied to a page, the steps stay and the names come after them.
+
+## Red thread, phase 1
+
+- [ ] Start a meeting: the middle says **Notes**, and the note under the capture buttons says "It does not end up in the meeting's notes." The Meetings area says **Notes** over the meeting's text.
+- [ ] Open a page, then go to Tasks, Ideas, Meetings and Time: the right panel has no Outline, Links, History or Images tab, and never shows the page's tags. Back on the page they are there. **Go → History of the page** from Tasks opens the page with its history.
+- [ ] Tasks: the epics of a project stand under **Project · name**, the rest under **Other epics**; the heading says **Choose an epic**. The epic of a plan shows **Part of the plan “…”**; **Open the plan** opens it on its map. The trail above that epic, and above one of its tasks, opens the plan too.
+- [ ] **Go** lists Start, Pages, Tasks, Plans, Meetings, Ideas with Ctrl/Cmd+1 … 6, and each key works from anywhere, also in the editor. **File → New → Plan…** opens the new plan window.
+
+## Red thread, phase 2
+
+- [ ] A new, empty vault: the start page has **Get started** with five steps and "0 of 5"; the first step has the main button. Make a plan with two parts, make a task of a part, start and stop a timer, make a meeting: each step ticks itself (go back to Start). **Close** hides it; it stays hidden after a restart.
+- [ ] A page with only `tags:` in its properties shows no Properties box; the tags are chips above the text, and a `#tag` written in the text shows as "#tag · in the text" (pressing it searches). A page with other properties still shows the box, without "tags". The Outline tab has no tags row.
+- [ ] Tasks: the epic's tags are next to its name at the top; Now is the first block. The same on the full epic page.
+- [ ] Meetings, with the right panel open: the tasks under **Actions** show their whole title, with the made date under it.
+- [ ] Plans show no Beta chip anywhere; the AI still does.
+- [ ] Ctrl/Cmd+Shift+N asks T or I (no N); File → New, the start page's New, the command palette and a meeting have no Quick page. The Pages panel has no New button; its ··· menu has New folder and New project. The section that was Landing is called **Inbox**. Settings → Vault calls the folder "Folder for pages made from ideas", and an idea's **To page** goes there.
+
+## Red thread, phase 3
+
+- [ ] The navigation says **Projects** (Ctrl/Cmd+4). The list shows each project by its name with "n of m" (its plan's tasks); a project without a plan has **Make the plan**; a plan in no project is under **Plans in no project**; New is **New project**.
+- [ ] A project opens on its Map. **Overview**: How far (tasks done of all, Now with Open the task, time this month), Meetings (next and last), Decisions, Waiting for others, Newest pages. Each line opens its thing.
+- [ ] New meeting: **Project** lists the projects; choose one: the page has `tags: [meeting, <project tag>]`, the meeting shows **Project · name**, and it is in the project's Overview. **Prepare next** keeps the project.
+- [ ] In that meeting, add two actions, then **Move the actions to the project**: they are in Tasks under the project's epic with their steps and log, and the meeting's Actions has a line "Moved 2 actions to the project: [[…]]".
+- [ ] An idea: **To plan…** → choose the project and "Under “a part”" → **Add to the plan**: the part is there (with the idea's note as its note), the idea is under Used, and the toast opens the plan.
+- [ ] Meetings → **Decisions**: every decision, grouped by project, newest first; the project choice and the search narrow it; a line opens its meeting.
+
+## Red thread, phase 4
+
+- [ ] An empty chat offers three questions. **What should I do next?** answers from your tasks (Doing first, then the first open one per epic) and names the epic; the activity line says "Read the tasks of all epics".
+- [ ] Ask "What am I waiting for?": the waiting tasks with whom they wait for. Ask "How far is <project>?": the plan's tasks done of all.
+- [ ] Ask "How do I make a meeting part of a project?": the answer comes from the help ("Looked in the help: …") and a **Show me: New meeting** button opens the meeting window.
+- [ ] Ask "Make three tasks for packing in <epic>": a **Review changes** card with the epic page; accept it and the tasks are at the end of the epic. Reject it and nothing changes.
+- [ ] Ask "Add the parts Racks and Cables under Servers in <plan>": the review shows them indented under Servers, after its own parts.
+- [ ] In a project marked Local AI only, with a cloud AI chosen: ask about its tasks; they are not in the answer.
+- [ ] Projects: **AI ▾** → **Find what is missing** puts a job in the Queue; **Break down the chosen part** is grey until a part is chosen on the map. **Ask about this project** opens the chat and asks.
+- [ ] Tasks: **AI ▾** → **Break down the Now task**, **Find tasks in the open page** (grey without an open page), **Ask about this epic**. Loose tasks keeps **Find tasks in a page** in its ··· menu.
+- [ ] A meeting with notes: **AI ▾** → **Decisions and actions from the notes**: the Queue shows **Decisions** and **Actions** as two groups; Add writes the ticked decisions under Decisions and the actions as tasks, and turns those parts on.
+- [ ] **Suggest an agenda** in a meeting with an earlier meeting of the same name: the items come from its notes and open actions; Add puts them on the agenda.
+- [ ] Start: **AI ▾** has the three questions; each opens the chat and asks. Without an AI every AI button says why and nothing can be chosen.
+
+## Red thread, phase 5
+
+- [ ] Tick a task, then untick and tick it again: Tasks → **Look back** lists it once under **Done** with today's weekday. Untick it: it is gone from Done.
+- [ ] Set a task to Waiting for someone: it is under **Moved on** as "waiting for …". Log time with the timer: **Time** shows the epic with the minutes; a week without time shows only "Time".
+- [ ] A meeting today with a decision is under **Meetings** with "Decided: …"; a page you changed is under **Pages written** ("changed", "changed 3 times" or "new"). Each line opens its task, meeting or page.
+- [ ] **Before** goes to last week (the title says "Week n · dates"); **After** is grey on this week. **Project** shows only that project's tasks, meetings and pages.
+- [ ] **Copy as a status report** and paste: "## Week n (d/m–d/m)", then Done, Moved on, Time, Decided, Meetings, Pages.
+- [ ] **Write it for me**: a **Status report** job in the Queue; the answer is a few sentences in the language of the pages. **Copy** copies it; **Save as a page** makes "Status week n" in the Inbox folder and opens it.
+- [ ] With a cloud AI turned on and a project marked Local AI only: Write it for me for all projects leaves that project's tasks out.
+- [ ] Start: **This week** (on a new layout, or Customize → Add widget) says "n done · time · n meetings" and opens Look back. **AI ▾ → Write my status for this week** puts the same job in the queue.
+
+## Red thread, several vaults
+
+- [ ] Vault menu → **Create new vault…**: the new vault opens (its name in the menu button), and the menu lists it and the vault you came from at once. Choose the old one: it opens; choose the new one again.
+- [ ] **Open another folder as vault…** with a folder you then delete before choosing it again from the list: an error is shown, and the vault you were in stays open and works (open a page, write in it).
+
+## Red thread, the AI box
+
+- [ ] Start: **AI** in the top bar opens the AI box over the right side; the start page stays. A question from Start's **AI ▾** opens the box and asks, and the start page stays.
+- [ ] A page with the right panel open on Outline: Ctrl/Cmd+L opens the box over the panel; closing it (× or Esc) shows the panel on Outline again. The right panel has no AI tab anywhere.
+- [ ] A task page and Tasks: the box opens over them; **Queue** shows a job, and **Go to** works. Write half a question, close and open the box: it is still there.
+- [ ] While an answer is being written, close the box: **AI** in the top bar has a dot.
+
+## Red thread, projects, pins and tags
+
+- [ ] The button at the top left has an arrow ▾: it lists Page, Task, Project, Meeting, Idea, in every area. **Project** opens the window that makes a project and its plan.
+- [ ] Projects: **+ New project** at the bottom of the list (also with projects in it), and a right-click on an empty place in the list gives **New project…**. The Pages panel: right-click an empty place at the top level gives **New project…**, and its **···** menu **New project…** opens the same window as Projects does (not a window with only a name).
+- [ ] Right-click a page in the file list and on its tab: **Pin**; on the start page it is under Pinned. Right-click it again: **Unpin**.
+- [ ] Right-click an epic in the Tasks panel and use its **···** menu: Pin works, and the epic is under Pinned.
+- [ ] Right-click a task: **Pin**, **Rename**, **Delete**. A pinned task is under Pinned on the start page (with its status), opens the task, and has a cross that unpins it. Rename the task: it stays pinned.
+- [ ] Write `#me` in a page: the suggestions do not offer meeting. Write `#meeting` and save: the tags line shows "#meeting · in the text, does nothing" and **Make this page a meeting**; press it: the page is a meeting (Start meeting shows), the text is as it was.

@@ -56,11 +56,8 @@ describe("Settings → AI → Which AI to use", () => {
     apiMock.appPlatform.mockResolvedValue({ os: "windows", store: false });
   });
 
-  it("orders the choices for where Nexmio Work runs, with cloud AI always last", () => {
-    const base = { os: "windows", store: false };
-    expect(aiOrder(base)).toEqual(["llama", "local", "cloud"]);
-    expect(aiOrder({ ...base, os: "linux" })).toEqual(["llama", "local", "cloud"]);
-    expect(aiOrder({ ...base, store: true })).toEqual(["local", "cloud"]);
+  it("orders the choices the same everywhere (the Store version too), with cloud AI last", () => {
+    expect(aiOrder()).toEqual(["llama", "local", "cloud"]);
   });
 
   it("turns on a cloud AI only after the box is ticked, and records the agreement", async () => {

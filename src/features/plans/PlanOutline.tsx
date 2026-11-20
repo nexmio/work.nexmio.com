@@ -195,10 +195,15 @@ function Row({
                 onDoubleClick={() => {
                   setEditing(k);
                 }}
-                title="Click to choose, double-click to change the words"
+                title="Click to choose, double-click to rename"
               >
                 {info.plain || "(empty)"}
               </PlainButton>
+              {node.note !== undefined && (
+                <p className="max-w-full whitespace-pre-wrap text-xs text-muted-foreground">
+                  {node.note}
+                </p>
+              )}
               {(info.epic !== null || info.notes.length > 0 || info.task !== null) && (
                 <div className="flex flex-wrap gap-1">
                   <NodeChips info={info} compact />
@@ -237,7 +242,7 @@ function Row({
                 setEditing(k);
               }}
             >
-              Change the words
+              Rename
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { newNoteInCurrentFolder } from "@/lib/actions";
+import { NEW_THINGS } from "@/lib/newThings";
 import { WIDGETS, type WidgetId } from "@/lib/startLayout";
 import { useNarrow } from "@/lib/useNarrow";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,14 @@ import {
   WorkingOnWidget,
 } from "./widgets";
 import { PlainButton } from "@/components/ui/plain-button";
+import { GetStarted } from "./GetStarted";
+import { WeekWidget } from "./WeekWidget";
+import { AreaAiMenu } from "@/components/AreaAiMenu";
+import { askChat } from "@/lib/askChat";
+import { writeReport } from "@/lib/lookBackReport";
+
+/** The questions the AI button on the start page asks about the person's work. */
+const START_QUESTIONS = ["What should I do next?", "What am I waiting for?"];
 
 /** Below this width the page is one column. */
 const NARROW = 640;
@@ -76,6 +85,8 @@ function renderWidget(id: WidgetId, narrow: boolean): ReactNode {
       return <EpicsWidget />;
     case "plans":
       return <PlansWidget />;
+    case "week":
+      return <WeekWidget />;
   }
 }
 
@@ -94,19 +105,7 @@ function NewMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        {item("Page", newNoteInCurrentFolder)}
-        {item("Meeting", () => {
-          useUiStore.getState().setMeetingFormOpen(true);
-        })}
-        {item("Quick page", () => {
-          useUiStore.getState().openCapture("note");
-        })}
-        {item("Task", () => {
-          useUiStore.getState().openCapture("task");
-        })}
-        {item("Idea", () => {
-          useUiStore.getState().openCapture("idea");
-        })}
+        {NEW_THINGS.map((n) => item(n.label, n.run))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -256,6 +255,32 @@ export function StartPage() {
               <Search /> Search…
             </Button>
             <NewMenu />
+            <AreaAiMenu
+              label="Ask the AI about your work"
+              className="bg-background"
+              inHeader={false}
+              groups={[
+                {
+                  label: "Ask",
+                  entries: [
+                    ...START_QUESTIONS.map((q) => ({
+                      label: q,
+                      hint: "The answer comes in the chat",
+                      run: () => {
+                        void askChat(q);
+                      },
+                    })),
+                    {
+                      label: "Write my status for this week",
+                      hint: "A short report in the AI queue, from Look back",
+                      run: () => {
+                        writeReport(0, null);
+                      },
+                    },
+                  ],
+                },
+              ]}
+            />
             <Button
               size="sm"
               variant="outline"
@@ -271,6 +296,7 @@ export function StartPage() {
       </div>
       <div ref={ref} className="min-h-0 flex-1 overflow-auto px-5 py-5">
         <div className="mx-auto flex max-w-6xl flex-col gap-6">
+          {!editing && <GetStarted />}
           {empty && (
             <div className="flex flex-col items-start gap-3">
               <p className="text-sm text-muted-foreground">
@@ -279,14 +305,6 @@ export function StartPage() {
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={newNoteInCurrentFolder}>New page</Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    useUiStore.getState().setMeetingFormOpen(true);
-                  }}
-                >
-                  New meeting
-                </Button>
                 <Button
                   variant="outline"
                   onClick={() => {

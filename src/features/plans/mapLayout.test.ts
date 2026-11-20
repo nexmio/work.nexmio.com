@@ -9,6 +9,7 @@ import {
   lines,
   moveBoxes,
   readChoices,
+  renameKey,
   writeChoices,
 } from "./mapLayout";
 
@@ -27,6 +28,15 @@ describe("the map layout", () => {
     expect(at("A2").x).toBeGreaterThan(at("A1").x + BOX_W - 1);
     expect(at("A").x).toBe((at("A1").x + at("A2").x) / 2);
     expect(at("A").y).toBeLessThan(at("A1").y);
+  });
+
+  it("keeps a stack when the part is tied to a page (its links are left out of the key)", () => {
+    const stacked = { [keyOf(["Server"])]: { by: "cols" as const, n: 1 } };
+    const tree = [n("Server [[Notes/Server]]", n("Disks"), n("Backup"))];
+    const { placed } = layout("Plan", tree, stacked);
+    const at = (t: string) => must(placed.find((p) => p.node.text === t));
+    expect(at("Backup").x).toBe(at("Disks").x);
+    expect(at("Backup").y).toBeGreaterThan(at("Disks").y);
   });
 
   it("stacks the parts of a box under each other, moved in", () => {
@@ -115,6 +125,33 @@ describe("the map layout", () => {
       JSON.stringify({ "Plans/z.md": { stacked: ["B"], moved: {} } }),
     );
     expect(readChoices("Plans/z.md").arranged).toEqual({ B: { by: "cols", n: 1 } });
+    // A choice remembered with the links in its key is found by the words alone.
+    localStorage.setItem(
+      "nexmio.planMap",
+      JSON.stringify({
+        "Plans/w.md": {
+          arranged: { "Server [[Notes/Server]]": { by: "cols", n: 1 } },
+          moved: { "Server [[Notes/Server]]\u001fDisks": [5, 6] },
+        },
+      }),
+    );
+    expect(readChoices("Plans/w.md")).toEqual({
+      arranged: { Server: { by: "cols", n: 1 } },
+      moved: { "Server\u001fDisks": [5, 6] },
+    });
+  });
+});
+
+describe("renaming a box", () => {
+  it("keeps what was remembered for it and the boxes under it", () => {
+    const before = {
+      arranged: { [keyOf(["A"])]: { by: "cols" as const, n: 1 }, B: { by: "rows" as const, n: 2 } },
+      moved: { [keyOf(["A", "A1"])]: [1, 2] as [number, number] },
+    };
+    expect(renameKey(before, "A", "Alpha")).toEqual({
+      arranged: { Alpha: { by: "cols", n: 1 }, B: { by: "rows", n: 2 } },
+      moved: { [keyOf(["Alpha", "A1"])]: [1, 2] },
+    });
   });
 });
 

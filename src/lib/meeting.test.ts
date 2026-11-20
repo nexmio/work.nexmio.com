@@ -90,6 +90,7 @@ describe("parseMeeting", () => {
         { text: "Hiring", done: false },
       ],
       parts: ALL_PARTS,
+      tags: [],
     });
   });
 
@@ -276,6 +277,7 @@ describe("the next meeting", () => {
       who: "Mette, Peter",
       agenda: "Hiring",
       parts: ALL_PARTS,
+      tags: [],
     });
     const plain = nextMeetingSeed("# Lunch\n");
     expect(plain.date).toBe("");

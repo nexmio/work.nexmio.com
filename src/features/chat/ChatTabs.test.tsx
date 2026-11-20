@@ -5,6 +5,7 @@ import { useAiJobStore, type AiJob } from "@/stores/aiJobStore";
 import { ChatTabs } from "./ChatTabs";
 
 const job = (id: string, status: AiJob["status"]): AiJob => ({
+  kind: "edit",
   id,
   status,
   label: "Fix",
