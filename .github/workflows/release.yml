@@ -2,7 +2,8 @@ name: Release
 
 # Pushing a tag such as v0.26.0 (it must equal the version in package.json) builds Nexmio Work Preview
 # at once, with no questions: installers for Windows and Linux, and the Microsoft Store package
-# "Nexmio Work Preview", sent to the Store. The GitHub release is published as a pre-release, and the
+# "Nexmio Work Preview", kept as a download of the run (it is not sent to the Store; it is uploaded in
+# Partner Center by hand for now). The GitHub release is published as a pre-release, and the
 # website's Preview download follows it by itself.
 #
 # Make as many Preview releases as you like. When one of them is good enough to be Nexmio Work, run

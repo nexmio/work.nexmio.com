@@ -15,11 +15,11 @@ Make as many Preview releases as you like. They are how you test on a Windows co
 2. **Change the version:** `pnpm release:bump X.Y.Z` (it changes `package.json`, `Cargo.toml`, `Cargo.lock`, `CLAUDE.md` and `docs/MSIX.md`, and stops if the changelog has no section). Commit it on a branch and merge it to `main`.
 3. **Tag and push:** `pnpm release:tag`. It stops on uncommitted changes, when you are not on `main`, or when the tag exists.
 
-GitHub builds Preview at once: Windows installer, Linux packages and the Store package "Nexmio Work Preview", which is sent to the Store. The release is published as a pre-release. The run ends; nothing waits.
+GitHub builds Preview at once: Windows installer, Linux packages and the Store package "Nexmio Work Preview". The Store package is **not** sent to the Store for now: it is kept as a download of the run (**Actions → the run → Artifacts → `nexmio-work-preview-msix`**) and you upload it in Partner Center by hand. The Store texts (description, search terms and "What's new") are in the artifact `release-texts` of the same run. The release is published as a pre-release. The run ends; nothing waits.
 
 ## Making a Preview Stable
 
-When a version has been in use and is good enough: `pnpm release:stable v0.26.0` (or **GitHub → Actions → Release Stable → Run workflow**, and type the tag). It builds the same tag as "Nexmio Work", sends it to the Store product "Nexmio Work" and makes the release the latest one, which the website's main download follows. Starting it is the decision, so nothing asks again. If you want a second question, add yourself as required reviewer to the environment `stable`.
+When a version has been in use and is good enough: `pnpm release:stable v0.26.0` (or **GitHub → Actions → Release Stable → Run workflow**, and type the tag). It builds the same tag as "Nexmio Work", keeps the Store package as a download of the run (`nexmio-work-stable-msix`; not sent to the Store for now) and makes the release the latest one, which the website's main download follows. Starting it is the decision, so nothing asks again. If you want a second question, add yourself as required reviewer to the environment `stable`.
 
 The workflow stops before building anything if the tag is not `vX.Y.Z` or is not the version in `package.json`.
 
@@ -30,7 +30,7 @@ Stable and Preview are two lines. `main` is Preview: new features and changes, w
 1. **Start the fix:** `pnpm release:hotfix 0.25.1`. It makes the branch `hotfix/0.25.1` from the newest Stable tag. (If the fix is already a commit on `main`, add its id: `pnpm release:hotfix 0.25.1 <commit>` brings it along.)
 2. **Fix the bug** on that branch. Add `## [0.25.1] - <date>` to `CHANGELOG.md` with one bullet, run `pnpm release:bump 0.25.1`, commit.
 3. **Tag and push:** `pnpm release:tag`. Because the tag is not on `main`, Preview is **not** built (Preview is further ahead, and the Store does not take an older version).
-4. **Make it Stable:** `pnpm release:stable v0.25.1`. It builds "Nexmio Work 0.25.1", sends it to the Store and makes it the latest release.
+4. **Make it Stable:** `pnpm release:stable v0.25.1`. It builds "Nexmio Work 0.25.1", keeps the Store package as a download of the run and makes it the latest release.
 5. **Bring the fix to Preview:** make the same fix on `main` (cherry-pick the fix commit: `git cherry-pick -x <commit>`), so the next Preview has it too. Do not merge the hotfix branch into `main`: its version and changelog would clash.
 
 A bug found in **Preview** while you work on a feature is fixed on `main` like any change, and goes out with the next Preview. Only a bug that Stable users have needs the steps above.
@@ -39,7 +39,7 @@ A bug found in **Preview** while you work on a feature is fixed on `main` like a
 
 - `release.yml` (a tag): `prepare` checks the tag and whether it is on `main` (a tag on a hotfix branch builds nothing: it waits for Release Stable), makes the texts (`scripts/release/notes.mjs`: the GitHub text, the Store's "What's new" and the Store listing from `docs/STORE-LISTING.md`) and a draft release; `preview` builds (`.github/workflows/build.yml`, edition `preview`) and adds the files; `publish-preview` publishes the pre-release.
 - `release-stable.yml` (by hand): the same for edition `stable`, on a tag that already has a Preview release, then `publish-stable`. It makes the GitHub release itself when a fix for Stable has none.
-- `build.yml`: builds the installers for Windows and Linux (Preview is its own app, "Nexmio Work Preview", so both can be installed), the Store package, and sends it with the texts (`scripts/store/Submit-Store.ps1`). A failure in the Store steps never stops the installers; it shows as a failed step.
+- `build.yml`: builds the installers for Windows and Linux (Preview is its own app, "Nexmio Work Preview", so both can be installed), the Store package, and keeps it as a download of the run. Nothing is sent to the Store: the step that did it is removed for now (`scripts/store/Submit-Store.ps1` is kept, and `docs/MSIX.md` says how it was connected). A failure in the Store steps never stops the installers; it shows as a failed step.
 
 ## What follows by itself
 
