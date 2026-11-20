@@ -90,13 +90,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --draft --prerelease \
-              --title "Nexmio Work ${TAG}" --notes-file release-texts/release-notes.md
-          fi
-          # A draft is not found by its tag, so the id is looked up in the list of releases.
+          # A draft is not found by its tag, so the id is looked up in the list of releases. A new
+          # draft is made through the API, which answers with its id at once: the list can be a
+          # moment behind and not show it yet.
           id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.tag_name==\"$TAG\") | .id" | head -1)"
-          if [ -z "$id" ]; then echo "The release $TAG was not found."; exit 1; fi
+          if [ -z "$id" ]; then
+            id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" \
+              -f name="Nexmio Work ${TAG}" -F body=@release-texts/release-notes.md \
+              -F draft=true -F prerelease=true --jq .id)"
+          fi
+          if [ -z "$id" ]; then echo "The release $TAG could not be made."; exit 1; fi
           echo "release_id=$id" >> "$GITHUB_OUTPUT"
 
   preview:

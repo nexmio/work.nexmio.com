@@ -48,27 +48,22 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
   useEffect(() => {
     if (preselected || !hardware || !catalog || !status) return;
     setPreselected(true);
-    if (status.engine !== null || b.gpu !== "none" || b.cpu !== "other") return;
-    const gpu = hardware.recommendedGpu;
-    const backend = catalog.backends.find((x) => x.defaultFor.includes(gpu))?.id ?? b.backend;
-    setB({ cpu: hardware.cpuVendor, gpu, backend });
+    if (b.gpu !== "none" || b.cpu !== "other") return;
+    setB({ cpu: hardware.cpuVendor, gpu: hardware.recommendedGpu });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hardware, catalog, status, preselected]);
 
-  const backend = catalog?.backends.find((x) => x.id === b.backend);
   const model = catalog?.models.find((m) => m.id === b.modelId);
   const custom = status?.models.find((m) => m.id === b.modelId && m.custom);
   const installed = status?.models.some((m) => m.id === b.modelId) ?? false;
-  const engineReady = status?.engine?.backend === b.backend;
   const busy = status?.state === "installing";
   const awake = status?.state === "awake" || status?.state === "waking";
 
   const toDownload = useMemo(() => {
     let total = 0;
-    if (!engineReady) total += backend?.downloadBytes ?? 0;
     if (!installed && model) total += model.sizeBytes;
     return total;
-  }, [engineReady, installed, backend, model]);
+  }, [installed, model]);
 
   const ramWarning =
     hardware?.ramGb != null && model && hardware.ramGb < model.ramGb
@@ -89,7 +84,7 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
       </p>
     );
   }
-  if (catalog.backends.length === 0) {
+  if (catalog.os !== "windows" && catalog.os !== "linux") {
     return (
       <p className="text-sm text-muted-foreground">
         The built-in AI works on Windows and Linux only.
@@ -129,9 +124,9 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-muted-foreground">
-        Run the app's AI on this computer without LM Studio. Download once; Nexmio Work loads the
-        model by itself when you use the AI, or press <strong>Load AI</strong> in the status bar.
-        Your pages never leave this computer.
+        Run the app's AI on this computer without LM Studio. The engine is part of Nexmio Work;
+        download a model once; Nexmio Work loads the model by itself when you use the AI, or press{" "}
+        <strong>Load AI</strong> in the status bar. Your pages never leave this computer.
       </p>
 
       <LoadAi />
@@ -149,34 +144,11 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
             .
           </p>
         )}
-        <div role="radiogroup" aria-label="Run the AI on" className="flex flex-col gap-1.5">
-          {catalog.backends.map((x) => (
-            <label
-              key={x.id}
-              className="flex cursor-pointer items-start gap-2 rounded-md border p-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-accent/40"
-            >
-              <Radio
-                name="bi-backend"
-                className="mt-1"
-                checked={b.backend === x.id}
-                disabled={busy || awake}
-                onChange={() => {
-                  setB({ backend: x.id });
-                }}
-              />
-              <span className="min-w-0 flex-1">
-                <span className="font-medium">{x.label}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {formatBytes(x.downloadBytes)}
-                </span>
-                <span className="block text-xs text-muted-foreground">{x.description}</span>
-              </span>
-            </label>
-          ))}
-          <p className="text-xs text-muted-foreground">
-            If the graphics card does not work, choose CPU only: it works everywhere, but is slower.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          The AI engine is part of Nexmio Work. It uses the graphics card when there is one that
+          works, and the processor otherwise. If the graphics card gives trouble, set{" "}
+          <strong>Use the graphics card</strong> to “Not at all” under Settings below.
+        </p>
       </section>
 
       <section className="flex flex-col gap-2" aria-label="Model">
@@ -262,23 +234,18 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
           data-testid="download-explained"
         >
           <p className="mb-1 font-medium text-foreground">
-            The built-in AI is not part of Nexmio Work. Download fetches two things:
+            The AI engine is part of Nexmio Work. Download fetches one thing:
           </p>
           <ul className="list-disc space-y-0.5 pl-4">
             <li>
-              <strong>The engine</strong>
-              {backend ? ` (${backend.label}, ${formatBytes(backend.downloadBytes)})` : ""}: the
-              open-source program <em>llama.cpp</em> (MIT licence), from github.com. It runs the
-              model.
-            </li>
-            <li>
               <strong>The model</strong>
               {model ? ` (${model.name}, ${formatBytes(model.sizeBytes)})` : ""}: the language model
-              itself, Google Gemma 4 (Apache-2.0 licence), from huggingface.co.
+              itself, Google Gemma 4 (Apache-2.0 licence), from huggingface.co. The engine that runs
+              it is <em>llama.cpp</em> (MIT licence), which comes with Nexmio Work.
             </li>
           </ul>
           <p className="mt-1">
-            Nothing is downloaded until you press Download. Every file is checked against a fixed
+            Nothing is downloaded until you press Download. The file is checked against a fixed
             checksum and kept in Nexmio Work's own folder (shown below), and it takes about as much
             disk space as the download. While The AI is loaded the model uses about{" "}
             {model ? `${String(model.ramGb)} GB` : "several GB"} of memory; Unload AI gives it back.
@@ -322,7 +289,7 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
         ) : (
           <div className="flex items-center gap-3">
             <Button
-              disabled={awake || (engineReady && (installed || custom !== undefined))}
+              disabled={awake || installed || custom !== undefined}
               onClick={() => {
                 if (useForApp) {
                   onChange({
@@ -333,13 +300,12 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
                 void install({
                   cpu: b.cpu,
                   gpu: b.gpu,
-                  backend: b.backend,
                   modelId: b.modelId,
                   useForApp,
                 });
               }}
             >
-              {engineReady && installed ? "Downloaded" : "Download"}
+              {installed || custom !== undefined ? "Downloaded" : "Download"}
             </Button>
             <span className="text-xs text-muted-foreground">
               {toDownload > 0
@@ -479,18 +445,6 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
               Remove {m.name}
             </Button>
           ))}
-          {status.engine && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => {
-                void remove({ kind: "engine" });
-              }}
-            >
-              Remove the engine
-            </Button>
-          )}
           <Button
             size="sm"
             variant="outline"
@@ -511,7 +465,7 @@ export function BuiltInAiSettings({ draft, onChange }: Props) {
       <ConfirmDialog
         open={confirmAll}
         title="Remove all built-in AI files?"
-        description="The engine, the models and the logs are deleted from this computer. Your pages are not touched. You can download them again later."
+        description="The downloaded models and the logs are deleted from this computer. Your pages are not touched. You can download them again later."
         confirmLabel="Remove all files"
         destructive
         onCancel={() => {

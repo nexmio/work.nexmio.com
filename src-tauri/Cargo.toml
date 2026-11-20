@@ -19,7 +19,6 @@ base64 = "0.23.1"
 chrono = "0.4.45"
 docx-rs = "0.4.22"
 eventsource-stream = "0.2.3"
-flate2 = "1.1.10"
 futures-util = "0.3.34"
 git2 = { version = "0.21.0", features = ["vendored-libgit2"], default-features = false }
 notify = "8.2.0"
@@ -31,7 +30,6 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.1"
-tar = "0.4"
 tauri = { version = "2.12.3", features = ["protocol-asset", "devtools", "tray-icon"] }
 tauri-plugin-dialog = "2.8.2"
 tauri-plugin-global-shortcut = "2.4.1"

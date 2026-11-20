@@ -3,4 +3,4 @@
 /**
  * What to remove.
  */
-export type RemoveWhat = { "kind": "model", "id": string } | { "kind": "engine" } | { "kind": "all" };
+export type RemoveWhat = { "kind": "model", "id": string } | { "kind": "all" };

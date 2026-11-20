@@ -2,7 +2,7 @@
 
 Microsoft signs an MSIX package itself when it is published in the Microsoft Store, so there is no certificate to buy and Windows does not show the "unknown publisher" warning. This page is how to build the package, try it, and send it in.
 
-The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and keeps each as a workflow artifact. **Nothing is sent to the Store for now:** the release workflows have no step that does it, so the package is uploaded in Partner Center by hand (`scripts/store/Submit-Store.ps1` and "Connect the Store" below are kept for when it is switched on again). The artifacts are (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`), and a test-signed copy of each (`...-msix-test`).
+The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and keeps each as a workflow artifact. **Nothing is sent to the Store for now:** the release workflows have no step that does it, so the package is uploaded in Partner Center by hand (`scripts/store/Submit-Store.ps1` and "Connect the Store" below are kept for when it is switched on again). The artifacts are (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`). The package is the same build as the installer, with the AI engine inside; there is no separate test copy.
 
 ## 1. Reserve the name and read the identity (once)
 
@@ -35,14 +35,13 @@ Until step 4 is done, the workflow builds the packages and says "The Microsoft S
 
 ## 2. Try the package on a test Windows
 
-**The easy way:** every release has artifacts called **`nexmio-work-preview-msix-test`** and **`nexmio-work-stable-msix-test`** (GitHub → Actions → the release run → Artifacts). It holds the test-signed package, the test certificate and `Install-TestMsix.ps1`. Unpack it into a folder, then follow "Windows Sandbox" or "A virtual machine" below with that folder as `msix-out`.
-
-**Building it yourself** (not needed if you use the artifact):
+The release run keeps only the unsigned package for the Store (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`). To try a package on a test Windows, build a test-signed copy yourself:
 
 On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 
 ```powershell
 pnpm install
+pnpm engine:fetch windows
 pnpm tauri build
 ./scripts/msix/Build-Msix.ps1 -Version 0.29.0 -TestSign -DisplayName "Nexmio Work"
 ```
@@ -58,7 +57,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 ## 3. What to check in the Store version
 
 - Nexmio Work starts, opens a folder as a vault and saves a page (`Ctrl+S`), and the version history works.
-- The built-in AI works as in the installer version: Settings → AI downloads the llama.cpp engine and a model into the package's data folder. LM Studio (or another AI on the computer) works too.
+- The built-in AI works as in the installer version: the engine is in the package, and Settings → AI downloads only a model into the package's data folder. LM Studio (or another AI on the computer) works too.
 - Settings are kept after closing and starting again. Uninstalling (Settings → Apps) removes the app's own data but not your pages.
 
 ## 4. Send it in
@@ -72,7 +71,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 
 ## The built-in AI in the Store package
 
-Since 0.29 the Store package **has the built-in AI**, the same as the installer version (`engine::catalog::unavailable_reason` is always `None`). The engine (`llama-server`) and the models are downloaded into the package's data folder, which goes with the app when it is uninstalled. This reverses the 0.8.x decision that kept it out: the owner wants the Store and GitHub versions to be the same. Known risks: the Store's policy 10.2.2 (an app must not extend itself with downloaded code) and organisations that block a downloaded program from starting (seen on a managed laptop). If the Store refuses an update, or it is blocked, `unavailable_reason` is the one place to turn it off for the Store package again (`paths::is_packaged`).
+Since 0.30 the AI engine (`llama-server` and its libraries, llama.cpp, MIT licence) is **part of the package**: `scripts/msix/Build-Msix.ps1` copies `src-tauri/engine-bundle/` (filled by `pnpm engine:fetch windows`) to `engine\` next to the program, the same place the installer puts it. Files in a package are signed when the Store takes it in, so the engine can run where a downloaded program was blocked (managed laptops). Only the model is downloaded, into the package's data folder, which goes with the app when it is uninstalled. The Store and GitHub versions are the same build. The package is about 30 MB larger. Known risk: the Store's policy 10.2.2 now concerns only the model file (data, not code).
 
 ## Known risks
 

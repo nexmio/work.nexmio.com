@@ -10,4 +10,7 @@ src-tauri/gen
 # Foundry Local's native libraries are fetched by scripts/fetch-foundry-native.* (not kept in git)
 src-tauri/foundry-native/*
 !src-tauri/foundry-native/README.txt
+# The AI engine that is part of the program is fetched by `pnpm engine:fetch` (not kept in git)
+src-tauri/engine-bundle/*
+!src-tauri/engine-bundle/README.txt
 /screenshots/

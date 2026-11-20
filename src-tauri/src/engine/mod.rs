@@ -1,4 +1,4 @@
-//! The built-in AI: Nexmio Work downloads llama.cpp's `llama-server` and a model the user chose, runs it
+//! The built-in AI: Nexmio Work carries llama.cpp's `llama-server`, downloads a model the user chose, runs it
 //! on the user's own computer on request ("Load AI"), and stops it again ("Unload AI").
 //!
 //! Everything here is local: the server listens on `127.0.0.1` only, with a random key. The
@@ -7,7 +7,6 @@
 pub mod catalog;
 pub mod diagnose;
 pub mod download;
-pub mod extract;
 pub mod hardware;
 pub mod paths;
 pub mod process;
@@ -15,7 +14,7 @@ pub mod service;
 #[cfg(windows)]
 mod winjob;
 
-use hardware::{Backend, CpuVendor, GpuVendor};
+use hardware::{CpuVendor, GpuVendor};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::time::Instant;
@@ -34,7 +33,7 @@ pub const STATUS_EVENT: &str = "engine://status";
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub enum EngineState {
-    /// The engine or the chosen model has not been downloaded.
+    /// The chosen model has not been downloaded.
     NotInstalled,
     /// Downloading or unpacking.
     Installing,
@@ -67,7 +66,7 @@ pub struct Problem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct InstallProgress {
-    /// `engine`, `unpacking`, `model` or `copying`.
+    /// `model` or `copying`.
     pub phase: String,
     pub file: String,
     #[ts(type = "number")]
@@ -76,13 +75,12 @@ pub struct InstallProgress {
     pub total: u64,
 }
 
-/// The engine build that is installed.
+/// The engine build that is part of the package.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct InstalledEngine {
     pub build: String,
-    pub backend: Backend,
 }
 
 /// A model file in Nexmio Work's folder.
@@ -109,7 +107,7 @@ pub struct EngineStatus {
     pub message: String,
     pub problem: Option<Problem>,
     pub install: Option<InstallProgress>,
-    /// The engine installed for the chosen graphics backend, if any.
+    /// The engine in the package, when it is there.
     pub engine: Option<InstalledEngine>,
     pub models: Vec<InstalledModel>,
     /// The id of the model chosen in the settings, when it is installed.
@@ -136,7 +134,6 @@ pub struct EngineStatus {
 pub struct InstallRequest {
     pub cpu: CpuVendor,
     pub gpu: GpuVendor,
-    pub backend: Backend,
     pub model_id: String,
     /// Make the built-in AI Nexmio Work's provider when the download is done.
     pub use_for_app: bool,
@@ -149,9 +146,7 @@ pub struct InstallRequest {
 pub enum RemoveWhat {
     /// One model file (the id from the model list).
     Model(String),
-    /// The engine program.
-    Engine,
-    /// Everything: engine, models and logs.
+    /// Everything the app has downloaded: models and logs.
     All,
 }
 

@@ -8,6 +8,15 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-11-20
+
+### Changed
+
+- **The AI engine is now part of Nexmio Work.** Before, the program that runs the AI was downloaded when you pressed Download, and the Microsoft Store version could not start it. Now it comes inside Nexmio Work (installer, Linux packages and the Store package alike), so the built-in AI works in the Store version too, and only the AI model is downloaded. Nexmio Work is about 30 MB bigger because of it.
+- **One engine for every computer.** There is no longer a choice between "Graphics card" and "CPU only" to download: the engine uses the graphics card when there is one that works. To use only the processor, set **Use the graphics card** to "Not at all" under Settings → AI.
+- **The same version everywhere.** The installer on GitHub and the package for the Microsoft Store are the same build. The extra test copy of the Store package is gone from the release.
+- Uninstalling on Windows removes the engine together with the program.
+
 ## [0.29.0] - 2026-11-20
 
 ### Added

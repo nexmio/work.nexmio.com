@@ -7,7 +7,7 @@
 use super::catalog::{self, ENGINE_BUILD};
 use super::diagnose::{self, Context};
 use super::download::{self, DownloadSpec};
-use super::hardware::{current_os, Backend, Os};
+use super::hardware::{current_os, Os};
 use super::paths::{self, Dirs};
 use super::process::{self, Launch};
 use super::{
@@ -108,9 +108,9 @@ pub fn installed_models(dirs: &Dirs) -> Vec<InstalledModel> {
     out
 }
 
-/// True when the engine for `backend` is completely installed.
-pub fn engine_ready(dirs: &Dirs, backend: Backend) -> bool {
-    paths::server_path(dirs, backend).is_file() && paths::ready_marker(dirs, backend).is_file()
+/// True when the package has the engine program.
+pub fn engine_ready(dirs: &Dirs) -> bool {
+    paths::server_path(dirs).is_file()
 }
 
 pub(crate) fn folder_size(dir: &Path) -> u64 {
@@ -141,11 +141,10 @@ pub fn status<R: Runtime>(app: &AppHandle<R>) -> EngineStatus {
     let dirs = dirs_of(app);
     let (engine, models, folder, folder_note, ready, disk) = match &dirs {
         Ok(d) => {
-            let ready = engine_ready(d, settings.backend);
+            let ready = engine_ready(d);
             (
                 ready.then(|| InstalledEngine {
                     build: ENGINE_BUILD.into(),
-                    backend: settings.backend,
                 }),
                 installed_models(d),
                 d.root.display().to_string(),
@@ -334,11 +333,6 @@ pub fn start_install<R: Runtime>(app: &AppHandle<R>, req: InstallRequest) -> App
             "The built-in AI works on Windows and Linux only".into(),
         ));
     }
-    if catalog::engine_files(os, req.backend).is_none() {
-        return Err(AppError::Settings(
-            "That engine is not available here".into(),
-        ));
-    }
     if catalog::model(&req.model_id).is_none() && !req.model_id.starts_with("custom:") {
         return Err(AppError::Settings("Unknown model".into()));
     }
@@ -361,7 +355,6 @@ pub fn start_install<R: Runtime>(app: &AppHandle<R>, req: InstallRequest) -> App
     change_settings(app, |s| {
         s.ai.builtin.cpu = req.cpu;
         s.ai.builtin.gpu = req.gpu;
-        s.ai.builtin.backend = req.backend;
         s.ai.builtin.model_id = req.model_id.clone();
     });
     emit(app);
@@ -405,9 +398,6 @@ async fn install_task<R: Runtime>(
 ) -> AppResult<()> {
     std::fs::create_dir_all(&dirs.root)?;
     let client = http_client()?;
-    if !engine_ready(dirs, req.backend) {
-        install_engine(app, &client, dirs, req.backend, cancel).await?;
-    }
     if model_path(dirs, &req.model_id).is_none() {
         let Some(m) = catalog::model(&req.model_id) else {
             return Err(AppError::NotFound(
@@ -435,64 +425,6 @@ async fn install_task<R: Runtime>(
 fn set_with_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
     with_inner(app, |i| i.message = message.to_string());
     emit(app);
-}
-
-async fn install_engine<R: Runtime>(
-    app: &AppHandle<R>,
-    client: &reqwest::Client,
-    dirs: &Dirs,
-    backend: Backend,
-    cancel: &CancellationToken,
-) -> AppResult<()> {
-    let files = catalog::engine_files(current_os(), backend)
-        .ok_or_else(|| AppError::Settings("That engine is not available here".into()))?;
-    let downloads = dirs.engine.join("_downloads");
-    for f in files {
-        let spec = DownloadSpec {
-            url: f.url(),
-            dest: downloads.join(f.name),
-            size: f.size,
-            sha256: Some(f.sha256.into()),
-        };
-        set_with_message(app, "Downloading the engine…");
-        let handle = app.clone();
-        let name = f.name.to_string();
-        download::download(client, &spec, cancel, &move |done, total| {
-            set_progress(&handle, "engine", &name, done, total);
-        })
-        .await?;
-    }
-    set_with_message(app, "Unpacking the engine…");
-    set_progress(app, "unpacking", "", 0, 0);
-    let target = paths::engine_dir(dirs, backend);
-    let temp = target.with_extension("installing");
-    let archives: Vec<PathBuf> = files.iter().map(|f| downloads.join(f.name)).collect();
-    let (temp_c, target_c) = (temp.clone(), target.clone());
-    let dirs_c = dirs.clone();
-    tokio::task::spawn_blocking(move || -> AppResult<()> {
-        let _ = std::fs::remove_dir_all(&temp_c);
-        for a in &archives {
-            super::extract::extract_archive(a, &temp_c)?;
-        }
-        let server = temp_c.join(paths::SERVER_NAME);
-        if !server.is_file() {
-            return Err(AppError::Io(format!(
-                "The engine program ({}) was not in the download. Use Remove files and download again.",
-                paths::SERVER_NAME
-            )));
-        }
-        std::fs::write(
-            temp_c.join("nexmio-engine.ok"),
-            format!("{ENGINE_BUILD} {}\n", backend.id()),
-        )?;
-        let _ = std::fs::remove_dir_all(&target_c);
-        std::fs::rename(&temp_c, &target_c)?;
-        let _ = std::fs::remove_dir_all(dirs_c.engine.join("_downloads"));
-        Ok(())
-    })
-    .await
-    .map_err(|e| AppError::Io(e.to_string()))??;
-    Ok(())
 }
 
 /// Stops a download in progress. What has been downloaded is kept.
@@ -632,11 +564,25 @@ pub fn wake<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
         inner.phase = Phase::Waking;
         inner.last_log.clear();
     }
-    let server = paths::server_path(&dirs, b.backend);
-    if !engine_ready(&dirs, b.backend) {
-        set_problem(app, not_installed("The engine"));
-        return Ok(());
-    }
+    let run_dir = match paths::runnable_engine(&dirs) {
+        Ok(d) => d,
+        Err(e) => {
+            set_problem(
+                app,
+                Problem {
+                    title: "The AI engine is missing".into(),
+                    steps: vec![
+                        "The engine is part of Nexmio Work, but it is not in this installation."
+                            .into(),
+                        "Install Nexmio Work again from the same source.".into(),
+                    ],
+                    details: e.to_string(),
+                },
+            );
+            return Ok(());
+        }
+    };
+    let server = run_dir.join(paths::SERVER_NAME);
     let Some(model) = model_path(&dirs, &b.model_id) else {
         set_problem(app, not_installed("The chosen model"));
         return Ok(());
@@ -646,7 +592,7 @@ pub fn wake<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     emit(app);
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
-        wake_task(&app, &b, &dirs, &server, &model, &cancel).await;
+        wake_task(&app, &b, &dirs, &run_dir, &server, &model, &cancel).await;
         with_inner(&app, |i| i.wake_cancel = None);
     });
     Ok(())
@@ -655,7 +601,6 @@ pub fn wake<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 fn context_for(b: &BuiltInSettings, dirs_os: Os, port: u16) -> Context {
     Context {
         os: dirs_os,
-        backend: b.backend,
         port,
         context_tokens: b.context_tokens,
     }
@@ -665,6 +610,7 @@ async fn wake_task<R: Runtime>(
     app: &AppHandle<R>,
     b: &BuiltInSettings,
     dirs: &Dirs,
+    run_dir: &Path,
     server: &Path,
     model: &Path,
     cancel: &CancellationToken,
@@ -690,7 +636,7 @@ async fn wake_task<R: Runtime>(
     let args = process::build_args(b, model, port);
     let launch = Launch {
         server: server.to_path_buf(),
-        dir: paths::engine_dir(dirs, b.backend),
+        dir: run_dir.to_path_buf(),
         args: args.clone(),
         token: token.clone(),
         log_file: dirs.logs.join("engine.log"),
@@ -973,9 +919,6 @@ pub async fn remove<R: Runtime>(app: &AppHandle<R>, what: RemoveWhat) -> AppResu
                 .map_err(|e| AppError::Io(format!("Could not delete {}: {e}", file.display())))?;
             let _ = std::fs::remove_file(file.with_extension("gguf.part"));
         }
-        RemoveWhat::Engine => {
-            remove_dir(&dirs.engine)?;
-        }
         RemoveWhat::All => {
             remove_dir(&dirs.root)?;
         }
@@ -1078,17 +1021,13 @@ mod tests {
     }
 
     #[test]
-    fn the_engine_is_ready_only_with_the_program_and_the_marker() {
+    fn the_engine_is_ready_when_the_package_has_the_program() {
         let d = tempfile::tempdir().unwrap();
         let dirs = dirs(d.path());
-        let dir = paths::engine_dir(&dirs, Backend::Cpu);
-        std::fs::create_dir_all(&dir).unwrap();
-        assert!(!engine_ready(&dirs, Backend::Cpu));
-        std::fs::write(dir.join(paths::SERVER_NAME), b"x").unwrap();
-        assert!(!engine_ready(&dirs, Backend::Cpu), "half-installed");
-        std::fs::write(paths::ready_marker(&dirs, Backend::Cpu), b"ok").unwrap();
-        assert!(engine_ready(&dirs, Backend::Cpu));
-        assert!(!engine_ready(&dirs, Backend::Vulkan));
+        std::fs::create_dir_all(&dirs.engine).unwrap();
+        assert!(!engine_ready(&dirs));
+        std::fs::write(dirs.engine.join(paths::SERVER_NAME), b"x").unwrap();
+        assert!(engine_ready(&dirs));
     }
 
     #[test]
@@ -1126,15 +1065,14 @@ mod tests {
     }
 
     /// Wakes the real engine through the same code the Wake button uses, chats with it through the
-    /// provider settings, and puts it to sleep (not run by default). Needs `NEXMIO_WORK_TEST_ENGINE_DIR`
-    /// (an unpacked Vulkan or CPU engine) and `NEXMIO_WORK_TEST_MODEL` (a .gguf file):
+    /// provider settings, and puts it to sleep (not run by default). Needs the engine in
+    /// `src-tauri/engine-bundle/` (`pnpm engine:fetch`) and `NEXMIO_WORK_TEST_MODEL` (a .gguf file):
     /// `cargo test engine::service::tests::real_wake -- --ignored --nocapture`.
     // Uses symbolic links to put the engine and model in place, so it is for Linux only.
     #[cfg(unix)]
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "needs a downloaded engine and model"]
     async fn real_wake_chat_and_sleep_through_the_service() {
-        let engine_src = PathBuf::from(std::env::var("NEXMIO_WORK_TEST_ENGINE_DIR").unwrap());
         let model_src = PathBuf::from(std::env::var("NEXMIO_WORK_TEST_MODEL").unwrap());
         let tmp = tempfile::tempdir().unwrap();
         // Keep everything in the temporary folder, not in the user's own data folder.
@@ -1142,7 +1080,6 @@ mod tests {
         let app = tauri::test::mock_app();
         let handle = app.handle().clone();
         let mut settings = settings::Settings::default();
-        settings.ai.builtin.backend = Backend::Vulkan;
         settings.ai.builtin.model_id = "custom:test-model.gguf".into();
         settings.ai.builtin.context_tokens = 4096;
         settings.ai.default_provider_id = BUILTIN_ID.into();
@@ -1153,16 +1090,8 @@ mod tests {
             None,
         ));
 
-        // Put the engine and model where Nexmio Work keeps them.
+        // Put the model where Nexmio Work keeps it (the engine is the one in the package).
         let dirs = dirs_of(&handle).unwrap();
-        let engine_dir = paths::engine_dir(&dirs, Backend::Vulkan);
-        std::fs::create_dir_all(&engine_dir).unwrap();
-        for entry in std::fs::read_dir(&engine_src).unwrap().flatten() {
-            let target = engine_dir.join(entry.file_name());
-            #[cfg(unix)]
-            std::os::unix::fs::symlink(entry.path(), target).unwrap();
-        }
-        std::fs::write(paths::ready_marker(&dirs, Backend::Vulkan), b"ok").unwrap();
         std::fs::create_dir_all(&dirs.models).unwrap();
         #[cfg(unix)]
         std::os::unix::fs::symlink(&model_src, dirs.models.join("test-model.gguf")).unwrap();
