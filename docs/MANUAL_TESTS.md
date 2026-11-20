@@ -18,13 +18,13 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] Press **Ctrl+S** or wait: History of the page lists the change; restore the earlier version and then undo it.
 - [ ] Settings → Vault → Backup: choose a folder, **Back up now**: "Backed up today …".
 - [ ] Settings → Appearance → Theme: pick Midnight; it applies at once (no Save); restart: the theme stays.
-- [ ] Settings → AI: the engine you chose can **Download** a small model (Windows and Linux installer), then **Load AI**; the status bar chip changes.
+- [ ] Settings → AI: **Download** a small model (Windows and Linux installer; nothing else is downloaded), then **Load AI**; the status bar chip changes.
 - [ ] One AI command with its review: select a sentence with a spelling mistake → **Fix**; the change is shown beside the original; **Accept** writes it, and **Undo last AI change** brings it back.
 - [ ] With no AI running, an AI button is greyed out and says why; everything else still works.
 - [ ] Help → **What's new** shows the changes of this version; **Help → Check for new version…** opens the releases page in the browser.
 - [ ] **File → Export** a page to HTML and open the file; **Import** a small folder of Markdown.
 - [ ] Resize the window narrow: the panels fold and nothing runs off the screen.
-- [ ] The Microsoft Store package (when there is one, `nexmio-work-msix-test` from the workflow): install it with `Install-TestMsix.ps1`, start it, open a vault; Settings → AI offers the built-in AI, and it downloads, loads and answers (on a managed laptop too, if you have one); LM Studio works if it is running.
+- [ ] The Microsoft Store package (when there is one, `nexmio-work-preview-msix` from the workflow, once the Store has signed it): install it, start it, open a vault; Settings → AI offers the built-in AI, and it downloads a model, loads and answers, with the engine from the package (on a managed laptop too, if you have one); LM Studio works if it is running.
 - [ ] Close Nexmio Work with a page just changed; start it again: the change is there, and History has it.
 - [ ] The website (https://work.nexmio.com/) shows the new version in its top line, and the README's pictures load.
 - [ ] `PRIVACY.md` and `docs/STORE-LISTING.md` still say what the app does (a cloud AI only after consent, no automatic update check).
@@ -164,7 +164,7 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] **Old settings:** open Nexmio Work with a settings file that has Foundry Local or Phi Silica as the chosen AI: it opens, the AI falls back to the built-in AI, and nothing says the settings could not be read.
 - [ ] **Settings → AI**: one built-in engine, **llama.cpp**; none is chosen for a new user.
-- [ ] llama.cpp: the hardware found is shown and the engine is pre-selected. There are two engines only, **Graphics card (Vulkan)** and **CPU only** (no CUDA, ROCm, SYCL, and no boxes for processor or graphics card); with a graphics card **Vulkan** is selected, without one **CPU only**. A settings file that says `cuda12` opens and shows Vulkan. Then: a model shows its size and memory; **Download** shows progress, Cancel and continue work; the built-in AI becomes Nexmio Work's provider. **Add my own model file…** copies a `.gguf`.
+- [ ] llama.cpp: the hardware found is shown. There is no engine to choose or download (it is part of the program): **Use the graphics card** → "Not at all (processor only)" runs on the processor, and the status bar chip then says CPU. A settings file that says `cuda12` still opens. Then: a model shows its size and memory; **Download** shows progress, Cancel and continue work; the built-in AI becomes Nexmio Work's provider. **Add my own model file…** copies a `.gguf`.
 - [ ] **Settings → AI**: one list "Which AI to use" with three lines: **Built-in AI · llama.cpp** (Beta), **LM Studio, or another AI on this computer**, and **Cloud AI** (last, off). Each line shows its state; the chosen line has its own setup under it. No line for Foundry Local, Phi Silica or Windows AI.
 - [ ] **Cloud AI**: add an OpenAI-compatible provider with a cloud address and key; choose Cloud AI: the warning lists what is sent, **Use the cloud AI** is greyed out until "I understand…" is ticked; **Keep the AI on this computer** changes nothing. After using it: the status bar shows **Cloud AI**, the chat page is orange ("your pages go to …"), and a chat answer comes from it. A project with **Local AI only** uses a local AI instead. Choose another AI, then Cloud AI again: the warning comes again.
 - [ ] **Load AI** (status bar, and in the settings of the AI) loads the model; **Unload AI** frees the memory (no `llama-server` or helper `nexmio-work` process left). An AI command while the AI is not loaded loads it by itself. Closing or killing Nexmio Work stops the engine. **Sleep after** 1 minute works.
@@ -249,8 +249,8 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] Windows 11: the `…-setup.exe` installs **without** an administrator prompt; Nexmio Work starts from the Start menu with the purple "M" icon; pictures show; **Reveal in file manager** opens Explorer; uninstalling (which also removes `nexmio-work-ai` next to the program) leaves the vaults untouched.
 - [ ] Linux: the `.AppImage` starts and Help → Report a bug… opens the browser (or a dialog shows the address). The `.rpm` installs.
-- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the built-in AI downloads its engine and a model into the package's data folder, loads and answers; uninstalling leaves the pages.
-- [ ] The release run has the artifacts `nexmio-work-msix` (unsigned) and `nexmio-work-msix-test`.
+- [ ] Microsoft Store package ([docs/MSIX.md](MSIX.md)), in Windows Sandbox or a virtual machine: it installs and starts; a vault opens and saves; Settings and recent vaults are kept after a restart; the built-in AI downloads a model into the package's data folder, loads and answers with the engine in the package; uninstalling leaves the pages.
+- [ ] The release run has the artifact `nexmio-work-<edition>-msix` (unsigned), and no `-msix-test`. The installer is about 30 MB bigger than before: the engine (`engine` folder next to the program) is in it, also in the `.deb`, `.rpm` and `.AppImage`; `llama-server --version` runs from it.
 
 ### 20. Help, About and reporting
 

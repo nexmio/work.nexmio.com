@@ -1,12 +1,12 @@
 //! Where the built-in AI keeps its files.
 //!
-//! One folder, `nexmio-work-ai`, with `engine/` (the program), `models/` (the model files) and `logs/`.
-//! On Windows it sits next to the installed program, so uninstalling Nexmio Work can remove it. Where
-//! that is not possible (Linux packages, `pnpm tauri dev`, a program folder that cannot be written
-//! to) it is in the user's own data folder.
+//! The engine (llama.cpp) is part of Nexmio Work's package: the folder `engine/` next to the
+//! program (`bundled_engine`). Only what the app downloads or is given is kept in one folder,
+//! `nexmio-work-ai`, with `models/` (the model files) and `logs/`. On Windows it sits next to the
+//! installed program, so uninstalling Nexmio Work can remove it. Where that is not possible (Linux
+//! packages, the Store package, `pnpm tauri dev`, a program folder that cannot be written to) it is
+//! in the user's own data folder.
 
-use super::catalog::ENGINE_BUILD;
-use super::hardware::Backend;
 use crate::error::{AppError, AppResult};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Runtime};
@@ -18,7 +18,7 @@ pub const FOLDER: &str = "nexmio-work-ai";
 #[derive(Debug, Clone)]
 pub struct Dirs {
     pub root: PathBuf,
-    /// One sub-folder per engine build and graphics backend.
+    /// The engine that is part of the package (read-only).
     pub engine: PathBuf,
     pub models: PathBuf,
     pub logs: PathBuf,
@@ -90,7 +90,7 @@ pub fn dirs<R: Runtime>(app: &AppHandle<R>) -> AppResult<Dirs> {
     };
     let (root, note) = choose_root(install.as_deref(), &data);
     Ok(Dirs {
-        engine: root.join("engine"),
+        engine: bundled_engine(app),
         models: root.join("models"),
         logs: root.join("logs"),
         root,
@@ -98,9 +98,25 @@ pub fn dirs<R: Runtime>(app: &AppHandle<R>) -> AppResult<Dirs> {
     })
 }
 
-/// The folder an engine build is unpacked into.
-pub fn engine_dir(dirs: &Dirs, backend: Backend) -> PathBuf {
-    dirs.engine.join(format!("{ENGINE_BUILD}-{}", backend.id()))
+/// The folder with the engine that is part of the package: `engine/` among the program's
+/// resources. A development build (`pnpm tauri dev`) uses `src-tauri/engine-bundle/`, which
+/// `pnpm engine:fetch` fills.
+pub fn bundled_engine<R: Runtime>(app: &AppHandle<R>) -> PathBuf {
+    let packaged = app.path().resource_dir().ok().map(|d| d.join("engine"));
+    match packaged {
+        Some(p) if p.join(SERVER_NAME).is_file() => p,
+        #[cfg(debug_assertions)]
+        other => {
+            let dev = Path::new(env!("CARGO_MANIFEST_DIR")).join("engine-bundle");
+            if dev.join(SERVER_NAME).is_file() {
+                dev
+            } else {
+                other.unwrap_or(dev)
+            }
+        }
+        #[cfg(not(debug_assertions))]
+        other => other.unwrap_or_default(),
+    }
 }
 
 /// The name of the engine program.
@@ -110,14 +126,42 @@ pub const SERVER_NAME: &str = if cfg!(windows) {
     "llama-server"
 };
 
-/// The full path of the engine program of a build.
-pub fn server_path(dirs: &Dirs, backend: Backend) -> PathBuf {
-    engine_dir(dirs, backend).join(SERVER_NAME)
+/// The full path of the engine program, when the package has it.
+pub fn server_path(dirs: &Dirs) -> PathBuf {
+    dirs.engine.join(SERVER_NAME)
 }
 
-/// The file that marks an engine build as completely installed and checked.
-pub fn ready_marker(dirs: &Dirs, backend: Backend) -> PathBuf {
-    engine_dir(dirs, backend).join("nexmio-engine.ok")
+/// Where the engine runs from: the package's own folder, or (when a package format dropped the
+/// executable bit, as some Linux packages do) a copy in Nexmio Work's data folder.
+pub fn runnable_engine(dirs: &Dirs) -> AppResult<PathBuf> {
+    if !server_path(dirs).is_file() {
+        return Err(AppError::NotFound(
+            "The AI engine is missing from this installation of Nexmio Work. Reinstall Nexmio Work."
+                .into(),
+        ));
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let executable = |p: &Path| {
+            std::fs::metadata(p)
+                .map(|m| m.permissions().mode() & 0o111 != 0)
+                .unwrap_or(false)
+        };
+        if !executable(&server_path(dirs)) {
+            let copy = dirs.root.join("engine-copy");
+            std::fs::create_dir_all(&copy)?;
+            for entry in std::fs::read_dir(&dirs.engine)?.flatten() {
+                let dest = copy.join(entry.file_name());
+                if entry.path().is_file() {
+                    std::fs::copy(entry.path(), &dest)?;
+                    std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o755))?;
+                }
+            }
+            return Ok(copy);
+        }
+    }
+    Ok(dirs.engine.clone())
 }
 
 #[cfg(test)]
@@ -169,17 +213,35 @@ mod tests {
     }
 
     #[test]
-    fn engine_folders_are_named_after_build_and_backend() {
+    fn the_engine_is_found_in_the_package_folder() {
+        let engine = tempfile::tempdir().unwrap();
+        let root = tempfile::tempdir().unwrap();
         let dirs = Dirs {
-            root: "/r".into(),
-            engine: "/r/engine".into(),
-            models: "/r/models".into(),
-            logs: "/r/logs".into(),
+            root: root.path().into(),
+            engine: engine.path().into(),
+            models: root.path().join("models"),
+            logs: root.path().join("logs"),
             note: None,
         };
-        let d = engine_dir(&dirs, Backend::Vulkan);
-        assert_eq!(d, PathBuf::from(format!("/r/engine/{ENGINE_BUILD}-vulkan")));
-        assert!(server_path(&dirs, Backend::Cpu).ends_with(SERVER_NAME));
-        assert!(ready_marker(&dirs, Backend::Cpu).ends_with("nexmio-engine.ok"));
+        assert!(server_path(&dirs).ends_with(SERVER_NAME));
+        assert!(runnable_engine(&dirs).is_err(), "missing engine");
+        std::fs::write(server_path(&dirs), b"x").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            // Without the executable bit the engine is copied and made runnable.
+            std::fs::set_permissions(server_path(&dirs), std::fs::Permissions::from_mode(0o644))
+                .unwrap();
+            let run = runnable_engine(&dirs).unwrap();
+            assert_eq!(run, root.path().join("engine-copy"));
+            let mode = std::fs::metadata(run.join(SERVER_NAME))
+                .unwrap()
+                .permissions()
+                .mode();
+            assert!(mode & 0o111 != 0);
+            std::fs::set_permissions(server_path(&dirs), std::fs::Permissions::from_mode(0o755))
+                .unwrap();
+        }
+        assert_eq!(runnable_engine(&dirs).unwrap(), engine.path());
     }
 }

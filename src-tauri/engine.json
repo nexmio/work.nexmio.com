@@ -1,0 +1,15 @@
+{
+  "about": "The llama.cpp engine that is part of Nexmio Work (one build per operating system: it has the graphics card backend (Vulkan) and every processor backend, so it runs on either). `pnpm engine:fetch` downloads it, checks size and SHA-256, and puts the files the app needs in src-tauri/engine-bundle/. The model is the only thing the app downloads.",
+  "build": "b11636",
+  "url": "https://github.com/ggml-org/llama.cpp/releases/download",
+  "windows": {
+    "file": "llama-b11636-bin-win-vulkan-x64.zip",
+    "size": 32142425,
+    "sha256": "50f23bc8b87d611e332e1529fa849095719f4f5c257b6c4c847f62c0d391ff1c"
+  },
+  "linux": {
+    "file": "llama-b11636-bin-ubuntu-vulkan-x64.tar.gz",
+    "size": 30450220,
+    "sha256": "23927de7c4080d3eceb32920d670205f495c345fb1b06de173637b549efa11f0"
+  }
+}

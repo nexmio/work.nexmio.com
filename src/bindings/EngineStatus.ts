@@ -14,7 +14,7 @@ export type EngineStatus = { state: EngineState,
  */
 message: string, problem: Problem | null, install: InstallProgress | null, 
 /**
- * The engine installed for the chosen graphics backend, if any.
+ * The engine in the package, when it is there.
  */
 engine: InstalledEngine | null, models: Array<InstalledModel>, 
 /**

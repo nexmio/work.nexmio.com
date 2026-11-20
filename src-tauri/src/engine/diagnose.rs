@@ -2,14 +2,13 @@
 //! engine's own last lines. The patterns come from what llama.cpp, CUDA, Vulkan and Windows
 //! really print.
 
-use super::hardware::{Backend, Os};
+use super::hardware::Os;
 use super::Problem;
 
 /// What is known about the failed start, to make the advice specific.
 #[derive(Debug, Clone)]
 pub struct Context {
     pub os: Os,
-    pub backend: Backend,
     pub port: u16,
     pub context_tokens: u32,
 }
@@ -45,8 +44,8 @@ fn problem(title: &str, list: &[&str], details: String) -> Problem {
 pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Problem {
     let code_text = exit_code.map_or("none".to_string(), |c| format!("{c} (0x{:08X})", c as u32));
     let details = format!(
-        "Exit code: {code_text}\nEngine: {} ({:?})\n\n{}",
-        ctx.backend.id(),
+        "Exit code: {code_text}\nEngine: llama.cpp {} ({:?})\n\n{}",
+        super::catalog::ENGINE_BUILD,
         ctx.os,
         tail(log, 40)
     );
@@ -97,7 +96,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
                     "Lower the context size in Settings → Built-in AI (now {}). A smaller context uses much less memory.",
                     ctx.context_tokens
                 ),
-                "Under Graphics card use, choose a lower number of layers, or CPU only, to use ordinary memory instead of the graphics card's memory.",
+                "Under Use the graphics card, choose a lower number of layers, or \"Not at all (processor only)\", to use ordinary memory instead of the graphics card's memory.",
                 "Or choose a smaller model (Gemma 4 E4B or E2B) and download it.",
             ],
             details,
@@ -119,8 +118,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             "The Nvidia graphics driver does not work with this engine",
             &[
                 "Update the Nvidia graphics driver to the latest version and restart the computer.",
-                "If it still fails, choose the engine \"Graphics card (Vulkan)\" in Settings → Built-in AI and download it.",
-                "Or choose \"CPU only\", which works without any graphics driver.",
+                "If it still fails, set \"Use the graphics card\" to \"Not at all (processor only)\" in Settings → Built-in AI. That works without any graphics driver.",
             ],
             details,
         );
@@ -144,7 +142,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             &[
                 "Update the graphics driver (AMD, Intel or Nvidia) and restart the computer.",
                 "On Linux, install the Vulkan driver for your card (for example mesa-vulkan-drivers, or the Nvidia driver).",
-                "If it still fails, choose \"CPU only\" in Settings → Built-in AI and download that engine.",
+                "If it still fails, set \"Use the graphics card\" to \"Not at all (processor only)\" in Settings → Built-in AI.",
             ],
             details,
         );
@@ -157,8 +155,8 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             &[
                 "Install \"Microsoft Visual C++ Redistributable 2015-2022\", the 64-bit (x64) version, not x86: https://aka.ms/vs/17/release/vc_redist.x64.exe . The message may name vcruntime140_1.dll or msvcp140.dll; both are in that package. If it is already installed, choose Repair.",
                 "Check in Settings → Apps that the list has \"Microsoft Visual C++ 2015-2022 Redistributable (x64)\" with version 14.3 or higher, then press Load AI again.",
-                "If you use an Nvidia engine, update the Nvidia driver too.",
-                "If it still fails, use Remove files, then download the engine again: an antivirus program may have removed part of it.",
+                "If you use an Nvidia graphics card, update the Nvidia driver too.",
+                "If it still fails, an antivirus program may have removed part of the engine. Restore it from the antivirus program, or install Nexmio Work again.",
             ],
             details,
         );
@@ -183,7 +181,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             &[
                 &format!("The engine needs a library that is not installed: {lib}"),
                 "Install the package that provides it (the name is in the line above), then press Load AI again.",
-                "For a graphics engine, the graphics driver packages must be installed. \"CPU only\" needs no extra libraries.",
+                "The graphics driver packages must be installed to use the graphics card. With \"Use the graphics card\" set to \"Not at all (processor only)\" no extra libraries are needed.",
             ],
             details,
         );
@@ -193,7 +191,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             "The engine does not fit this computer",
             &[
                 "The program was stopped by the processor or Windows (bad image or an unsupported instruction).",
-                "Choose \"CPU only\" or \"Graphics card (Vulkan)\" in Settings → Built-in AI and download it.",
+                "Set \"Use the graphics card\" to \"Not at all (processor only)\" in Settings → Built-in AI, and press Load AI again.",
             ],
             details,
         );
@@ -211,7 +209,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
             "The engine is too old for this model",
             &[
                 "The model needs a newer engine than the one installed.",
-                "Update Nexmio Work, which comes with a newer engine, then download the engine again.",
+                "Update Nexmio Work, which comes with a newer engine.",
                 "Or choose another model.",
             ],
             details,
@@ -268,7 +266,7 @@ pub fn diagnose(exit_code: Option<i32>, log: &[String], ctx: &Context) -> Proble
         &[
             "Press Load AI again.",
             "Look at the last lines under Show details: they usually say what is wrong.",
-            "If a graphics engine fails, try \"CPU only\" in Settings → Built-in AI to see if the model itself works.",
+            "If the graphics card fails, set \"Use the graphics card\" to \"Not at all (processor only)\" in Settings → Built-in AI to see if the model itself works.",
         ],
         details,
     )
@@ -283,7 +281,7 @@ pub fn diagnose_spawn(error: &std::io::Error, program: &std::path::Path) -> Prob
             &[
                 "The files of the engine are not where Nexmio Work expects them.",
                 "Security software may have removed the program. Allow \"llama-server\" in your antivirus program.",
-                "Use Remove files in Settings → Built-in AI, then download the engine again.",
+                "Install Nexmio Work again.",
             ],
             details,
         ),
@@ -300,7 +298,7 @@ pub fn diagnose_spawn(error: &std::io::Error, program: &std::path::Path) -> Prob
             "The engine could not be started",
             &[
                 "Press Load AI again.",
-                "If it keeps happening, use Remove files and download the engine again.",
+                "If it keeps happening, install Nexmio Work again.",
             ],
             details,
         ),
@@ -314,7 +312,6 @@ mod tests {
     fn ctx() -> Context {
         Context {
             os: Os::Linux,
-            backend: Backend::Vulkan,
             port: 8123,
             context_tokens: 16_384,
         }
@@ -359,14 +356,14 @@ mod tests {
     fn graphics_driver_problems_point_to_drivers_and_to_other_engines() {
         let v = diagnose(Some(1), &log(&["ggml_vulkan: No devices found."]), &ctx());
         assert!(v.title.contains("Vulkan"));
-        assert!(v.steps.iter().any(|s| s.contains("CPU only")));
+        assert!(v.steps.iter().any(|s| s.contains("processor only")));
         let c = diagnose(
             Some(1),
             &log(&["CUDA error: CUDA driver version is insufficient for CUDA runtime version"]),
             &ctx(),
         );
         assert!(c.title.contains("Nvidia"));
-        assert!(c.steps.iter().any(|s| s.contains("Vulkan")));
+        assert!(c.steps.iter().any(|s| s.contains("processor only")));
     }
 
     #[test]

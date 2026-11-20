@@ -18,7 +18,7 @@ cpu: CpuVendor,
  */
 gpu: GpuVendor, 
 /**
- * The engine build downloaded for it.
+ * Not used any more (the engine in the package serves every graphics card); kept so settings files from before still read.
  */
 backend: Backend, 
 /**

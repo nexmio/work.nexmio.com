@@ -43,14 +43,13 @@ describe("Settings → AI", () => {
   it("explains before the download what is fetched, from where, and what it takes", () => {
     render(<BuiltInAiSettings draft={settings()} onChange={onChange} />);
     const box = screen.getByTestId("download-explained");
-    expect(box).toHaveTextContent("not part of Nexmio Work");
-    expect(box).toHaveTextContent("github.com");
+    expect(box).toHaveTextContent("engine is part of Nexmio Work");
     expect(box).toHaveTextContent("huggingface.co");
     expect(box).toHaveTextContent("Nothing is downloaded until you press Download");
     expect(box).toHaveTextContent("memory");
   });
 
-  it("pre-selects what was found: AMD processor, AMD graphics card, the Vulkan engine", async () => {
+  it("pre-selects what was found: AMD processor, AMD graphics card", async () => {
     render(<BuiltInAiSettings draft={settings()} onChange={onChange} />);
     expect(screen.getByTestId("hardware-found")).toHaveTextContent("AMD Ryzen AI 7 PRO 350");
     expect(screen.getByTestId("hardware-found")).toHaveTextContent("31 GB memory");
@@ -58,42 +57,27 @@ describe("Settings → AI", () => {
       expect(onChange).toHaveBeenCalled();
     });
     const next = onChange.mock.calls[0]?.[0] as Settings;
-    expect(next.ai.builtin).toMatchObject({ cpu: "amd", gpu: "amd", backend: "vulkan" });
+    expect(next.ai.builtin).toMatchObject({ cpu: "amd", gpu: "amd" });
   });
 
-  it("offers two engines only, the graphics card and the CPU, with their download sizes", () => {
+  it("has no engine to choose or download: it is part of the program", () => {
     useEngineStore.setState({ hardware: null });
     render(<BuiltInAiSettings draft={settings()} onChange={onChange} />);
-    const group = screen.getByRole("radiogroup", { name: "Run the AI on" });
-    expect(within(group).getAllByRole("radio")).toHaveLength(2);
-    expect(within(group).getByText(/Graphics card \(Vulkan\)/)).toBeInTheDocument();
-    expect(within(group).getByText("CPU only")).toBeInTheDocument();
-    expect(within(group).getByText(/30\.5 MB/)).toBeInTheDocument();
-    expect(screen.queryByLabelText("Graphics card (GPU)")).toBeNull();
-    expect(screen.queryByText(/CUDA|ROCm|SYCL/)).toBeNull();
-  });
-
-  it("choosing the CPU engine is saved", async () => {
-    useEngineStore.setState({ hardware: null });
-    const draft = settings();
-    draft.ai.builtin = { ...draft.ai.builtin, backend: "vulkan" };
-    render(<BuiltInAiSettings draft={draft} onChange={onChange} />);
-    await userEvent.setup().click(screen.getByRole("radio", { name: /CPU only/ }));
-    const next = onChange.mock.calls.at(-1)?.[0] as Settings;
-    expect(next.ai.builtin.backend).toBe("cpu");
+    expect(screen.queryByRole("radiogroup", { name: "Run the AI on" })).toBeNull();
+    expect(screen.queryByText(/Graphics card \(Vulkan\)/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /Remove the engine/ })).toBeNull();
   });
 
   it("Download sends the choices, and says how much will be downloaded", async () => {
     useEngineStore.setState({ hardware: null });
     const draft = settings();
-    draft.ai.builtin = { ...draft.ai.builtin, cpu: "amd", gpu: "amd", backend: "vulkan" };
+    draft.ai.builtin = { ...draft.ai.builtin, cpu: "amd", gpu: "amd" };
     render(<BuiltInAiSettings draft={draft} onChange={onChange} />);
     expect(screen.getByText(/7\.0 GB will be downloaded/)).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: "Download" }));
     expect(install).toHaveBeenCalledWith({
       cpu: "amd",
       gpu: "amd",
-      backend: "vulkan",
       modelId: "gemma-4-12b-qat",
       useForApp: true,
     });
@@ -142,7 +126,6 @@ describe("Settings → AI", () => {
   it("shows where the files are, can remove a model, and asks before removing everything", async () => {
     useEngineStore.setState({ status: engineStatus() });
     const draft = settings();
-    draft.ai.builtin = { ...draft.ai.builtin, backend: "vulkan" };
     render(<BuiltInAiSettings draft={draft} onChange={onChange} />);
     expect(screen.getByTestId("engine-folder")).toHaveTextContent(
       "/data/nexmio-work-ai · 7.0 GB used",

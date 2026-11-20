@@ -1,101 +1,13 @@
-//! What can be downloaded: the engine (llama.cpp's `llama-server`) and the models. Every file is
-//! pinned to a size and a SHA-256, so a changed or damaged download is refused.
+//! What can be downloaded: the models. Every file is pinned to a size and a SHA-256, so a changed or
+//! damaged download is refused. The engine (llama.cpp's `llama-server`) is part of the package; its
+//! pins are in `src-tauri/engine.json`.
 
-use super::hardware::{current_os, Backend, GpuVendor, Os};
+use super::hardware::{current_os, Os};
 use serde::Serialize;
 use ts_rs::TS;
 
-/// The llama.cpp release the engine files come from.
+/// The llama.cpp release of the engine in the package (the same as `engine.json`; a test checks).
 pub const ENGINE_BUILD: &str = "b11636";
-
-/// Where llama.cpp releases are downloaded from.
-const ENGINE_URL: &str = "https://github.com/ggml-org/llama.cpp/releases/download";
-
-/// One downloadable file with its expected size and SHA-256.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EngineFile {
-    pub name: &'static str,
-    pub size: u64,
-    pub sha256: &'static str,
-}
-
-impl EngineFile {
-    /// The address the file is downloaded from.
-    pub fn url(&self) -> String {
-        format!("{ENGINE_URL}/{ENGINE_BUILD}/{}", self.name)
-    }
-}
-
-/// The files that make up one engine build (the program, and for CUDA the runtime too).
-pub fn engine_files(os: Os, backend: Backend) -> Option<&'static [EngineFile]> {
-    Some(match (os, backend) {
-        (Os::Windows, Backend::Cpu) => &[EngineFile {
-            name: "llama-b11636-bin-win-cpu-x64.zip",
-            size: 19519411,
-            sha256: "1318f9043a8dfdbaf461f2a56ceea5b6ae31b8f25649cb1b85e2bb744d032db5",
-        }],
-        (Os::Windows, Backend::Vulkan) => &[EngineFile {
-            name: "llama-b11636-bin-win-vulkan-x64.zip",
-            size: 32142425,
-            sha256: "50f23bc8b87d611e332e1529fa849095719f4f5c257b6c4c847f62c0d391ff1c",
-        }],
-        (Os::Linux, Backend::Cpu) => &[EngineFile {
-            name: "llama-b11636-bin-ubuntu-x64.tar.gz",
-            size: 17823415,
-            sha256: "4295a463857a767d957c724cbad2f366d1e6aad21f54f8f88782287da86324ba",
-        }],
-        (Os::Linux, Backend::Vulkan) => &[EngineFile {
-            name: "llama-b11636-bin-ubuntu-vulkan-x64.tar.gz",
-            size: 30450220,
-            sha256: "23927de7c4080d3eceb32920d670205f495c345fb1b06de173637b549efa11f0",
-        }],
-        _ => return None,
-    })
-}
-
-/// One engine build as shown in the settings.
-#[derive(Debug, Clone, Serialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-pub struct BackendInfo {
-    pub id: Backend,
-    pub label: String,
-    pub description: String,
-    /// The graphics cards this build is the default for.
-    pub default_for: Vec<GpuVendor>,
-    #[ts(type = "number")]
-    pub download_bytes: u64,
-}
-
-/// The engine builds that exist for this operating system.
-pub fn backends(os: Os) -> Vec<BackendInfo> {
-    let all = [
-        (
-            Backend::Cpu,
-            "CPU only",
-            "Runs on the processor. Works everywhere and is the slowest.",
-            vec![GpuVendor::None],
-        ),
-        (
-            Backend::Vulkan,
-            "Graphics card (Vulkan)",
-            "Works with AMD, Intel and Nvidia graphics cards. Needs an up-to-date graphics driver.",
-            vec![GpuVendor::Nvidia, GpuVendor::Amd, GpuVendor::Intel],
-        ),
-    ];
-    all.into_iter()
-        .filter_map(|(id, label, description, default_for)| {
-            let files = engine_files(os, id)?;
-            Some(BackendInfo {
-                id,
-                label: label.into(),
-                description: description.into(),
-                default_for,
-                download_bytes: files.iter().map(|f| f.size).sum(),
-            })
-        })
-        .collect()
-}
 
 /// A model that can be downloaded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -188,15 +100,14 @@ pub struct ModelInfo {
 pub struct Catalog {
     pub engine_build: String,
     pub os: Os,
-    pub backends: Vec<BackendInfo>,
     pub models: Vec<ModelInfo>,
     /// Set when the built-in AI cannot be downloaded in this version of Nexmio Work, and why.
     pub unavailable_reason: Option<String>,
 }
 
-/// Why the llama.cpp engine cannot be downloaded here, or `None` when it can. Every version of
-/// Nexmio Work can, the Microsoft Store package too (since 0.28: the Store and the GitHub
-/// versions are the same; the Store package keeps the engine in its data folder, `paths::dirs`).
+/// Why the built-in AI cannot be used here, or `None` when it can. Every version of Nexmio Work
+/// can, the Microsoft Store package too (the Store and the GitHub versions are the same build,
+/// with the engine inside).
 /// Kept as the one place to say no, should a version ever need to.
 pub fn unavailable_reason() -> Option<String> {
     None
@@ -208,7 +119,6 @@ pub fn catalog() -> Catalog {
         unavailable_reason: unavailable_reason(),
         engine_build: ENGINE_BUILD.into(),
         os: current_os(),
-        backends: backends(current_os()),
         models: MODELS
             .iter()
             .map(|m| ModelInfo {
@@ -226,8 +136,7 @@ pub fn catalog() -> Catalog {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const ALL: [Backend; 2] = [Backend::Cpu, Backend::Vulkan];
+    use crate::engine::hardware::Backend;
 
     fn is_sha256(s: &str) -> bool {
         s.len() == 64
@@ -236,35 +145,13 @@ mod tests {
     }
 
     #[test]
-    fn every_engine_file_is_pinned_and_comes_from_the_pinned_build() {
-        for os in [Os::Windows, Os::Linux] {
-            for b in ALL {
-                let files = engine_files(os, b).unwrap_or_else(|| panic!("{os:?} {b:?}"));
-                assert!(!files.is_empty());
-                for f in files {
-                    assert!(is_sha256(f.sha256), "{}", f.name);
-                    assert!(f.size > 1_000_000, "{}", f.name);
-                    assert!(f.url().starts_with(&format!(
-                        "https://github.com/ggml-org/llama.cpp/releases/download/{ENGINE_BUILD}/"
-                    )));
-                    // Windows gets zip files, Linux tar.gz files.
-                    assert_eq!(f.name.ends_with(".zip"), os == Os::Windows, "{}", f.name);
-                    assert!(f.name.ends_with(".zip") || f.name.ends_with(".tar.gz"));
-                }
-            }
-        }
-        assert!(engine_files(Os::Unsupported, Backend::Cpu).is_none());
-    }
-
-    #[test]
-    fn only_the_cpu_and_the_vulkan_builds_are_offered() {
-        for os in [Os::Windows, Os::Linux] {
-            let ids: Vec<Backend> = backends(os).iter().map(|b| b.id).collect();
-            assert_eq!(ids, vec![Backend::Cpu, Backend::Vulkan]);
-            // One file each: the build is a single archive, with no runtime to add.
-            for b in ALL {
-                assert_eq!(engine_files(os, b).unwrap().len(), 1);
-            }
+    fn the_engine_build_is_the_one_in_engine_json() {
+        let json: serde_json::Value =
+            serde_json::from_str(include_str!("../../engine.json")).unwrap();
+        assert_eq!(json["build"], ENGINE_BUILD);
+        for os in ["windows", "linux"] {
+            assert!(is_sha256(json[os]["sha256"].as_str().unwrap()), "{os}");
+            assert!(json[os]["file"].as_str().unwrap().contains(ENGINE_BUILD));
         }
     }
 
@@ -301,25 +188,6 @@ mod tests {
             assert!(m.size > 1_000_000_000);
         }
         assert_eq!(MODELS.iter().filter(|m| m.recommended).count(), 1);
-    }
-
-    #[test]
-    fn the_catalog_lists_a_default_engine_for_every_graphics_vendor() {
-        for os in [Os::Windows, Os::Linux] {
-            let list = backends(os);
-            for v in [
-                GpuVendor::Nvidia,
-                GpuVendor::Amd,
-                GpuVendor::Intel,
-                GpuVendor::None,
-            ] {
-                assert!(
-                    list.iter().any(|b| b.default_for.contains(&v)),
-                    "{os:?} {v:?}"
-                );
-            }
-        }
-        assert!(backends(Os::Unsupported).is_empty());
     }
 
     #[test]

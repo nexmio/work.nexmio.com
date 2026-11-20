@@ -61,6 +61,9 @@
       "rpm"
     ],
     "category": "Productivity",
+    "resources": {
+      "engine-bundle/": "engine/"
+    },
     "shortDescription": "Markdown notes and tasks with a local AI",
     "icon": [
       "icons/32x32.png",

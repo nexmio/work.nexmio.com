@@ -5,6 +5,6 @@
  */
 export type InstallProgress = { 
 /**
- * `engine`, `unpacking`, `model` or `copying`.
+ * `model` or `copying`.
  */
 phase: string, file: string, done: number, total: number, };

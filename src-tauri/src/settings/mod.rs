@@ -219,7 +219,7 @@ pub struct BuiltInSettings {
     pub cpu: CpuVendor,
     /// The graphics card the user chose.
     pub gpu: GpuVendor,
-    /// The engine build downloaded for it.
+    /// Not used any more (the engine in the package serves every graphics card); kept so settings files from before still read.
     pub backend: Backend,
     /// A model from the catalog, or `custom:<file name>` for the user's own file.
     pub model_id: String,

@@ -64,6 +64,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The AI engine (llama.cpp) is part of the program: the same files in the installer, the Linux
+      # packages and the Store package. Only the model is downloaded by the app. --smoke starts the
+      # engine program, so a missing library fails the build here (src-tauri/engine.json pins it).
+      - name: Fetch the AI engine
+        run: pnpm engine:fetch ${{ matrix.platform == 'windows-latest' && 'windows' || 'linux' }} --smoke
+
       # Preview is its own app ("Nexmio Work Preview", its own identity), so both can be installed.
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -86,8 +92,7 @@ jobs:
             -IdentityName "${{ vars.MSIX_IDENTITY_NAME || (inputs.edition == 'stable' && 'Nexmio.Work.Placeholder' || 'Nexmio.Work.Preview.Placeholder') }}" `
             -DisplayName "${{ vars.MSIX_DISPLAY_NAME || (inputs.edition == 'stable' && 'Nexmio Work' || 'Nexmio Work Preview') }}" `
             -Publisher "${{ vars.MSIX_PUBLISHER || 'CN=00000000-0000-0000-0000-000000000000' }}" `
-            -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Nexmio' }}" `
-            -TestSign
+            -PublisherDisplayName "${{ vars.MSIX_PUBLISHER_DISPLAY_NAME || 'Nexmio' }}"
 
       - name: Keep the Microsoft Store package
         if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
@@ -96,18 +101,4 @@ jobs:
         with:
           name: nexmio-work-${{ inputs.edition }}-msix
           path: msix-out/NexmioWork_*_x64.msix
-          if-no-files-found: warn
-
-      # The copy for trying the package on a test Windows (Sandbox or a virtual machine), signed with
-      # a throw-away certificate that is NOT valid in the Store. See docs/MSIX.md.
-      - name: Keep the test copy of the Microsoft Store package
-        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: nexmio-work-${{ inputs.edition }}-msix-test
-          path: |
-            msix-out/*_test.msix
-            msix-out/nexmio-work-test.cer
-            msix-out/Install-TestMsix.ps1
           if-no-files-found: warn

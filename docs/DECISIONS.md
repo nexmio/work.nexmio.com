@@ -159,13 +159,15 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 
 ## Built-in AI
 
-- llama.cpp's `llama-server` started as a hidden child process, files downloaded and pinned to size and SHA-256 in `engine/catalog.rs`; models pinned to a commit.
-- Two engines only: Vulkan and CPU; older choices (CUDA, ROCm, SYCL) are read as Vulkan.
+- llama.cpp's `llama-server` started as a hidden child process. **The engine is part of the package** (0.30), one build per OS, pinned to size and SHA-256 in `src-tauri/engine.json` and fetched by `pnpm engine:fetch` into `src-tauri/engine-bundle/` (not in git), which Tauri bundles as `engine/` (installer, deb, rpm, AppImage) and `Build-Msix.ps1` copies into the Store package; a downloaded engine could not run in the Store package. Only models are downloaded, pinned to a commit in `engine/catalog.rs`.
+- One engine, the Vulkan build, which has every CPU backend too; "CPU only" is **Use the graphics card → Not at all** (`--n-gpu-layers 0`). `builtin.backend` is read from old settings and ignored; older choices (CUDA, ROCm, SYCL) still read.
+- The GitHub installer and the Store package are the same build; there is no test-signed copy in the release run.
+- If a Linux package drops the executable bit, the engine is copied to the data folder and run from there (`paths::runnable_engine`).
 - Safe by default: `127.0.0.1`, a free port and a random API key per load (in the environment), no web UI, no extra arguments.
 - It never outlives Nexmio Work (Linux `PR_SET_PDEATHSIG`, Windows job object, a pid file).
 - The chat is locked until it is loaded, in the UI and the backend (`require_awake`); a press loads it (`lib/wake.ts`).
 - Errors are explained by `engine::diagnose`; thinking is off by default (`--reasoning off`).
-- The Store package has the built-in AI too (the owner's choice); the risk under Store policy 10.2.2 is known.
+- The Store package has the built-in AI too (the owner's choice), with the engine inside the signed package.
 - Foundry Local and Phi Silica are removed; their settings load and move to the built-in AI.
 
 ## Settings and help

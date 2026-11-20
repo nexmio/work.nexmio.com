@@ -9,7 +9,7 @@ export function engineStatus(patch: Partial<EngineStatus> = {}): EngineStatus {
     message: "",
     problem: null,
     install: null,
-    engine: { build: "b11636", backend: "vulkan" },
+    engine: { build: "b11636" },
     models: [
       {
         id: "gemma-4-12b-qat",
@@ -34,22 +34,6 @@ export const CATALOG: Catalog = {
   unavailableReason: null,
   engineBuild: "b11636",
   os: "linux",
-  backends: [
-    {
-      id: "cpu",
-      label: "CPU only",
-      description: "Runs on the processor.",
-      defaultFor: ["none"],
-      downloadBytes: 17_823_415,
-    },
-    {
-      id: "vulkan",
-      label: "Graphics card (Vulkan)",
-      description: "Works with AMD, Intel and Nvidia graphics cards.",
-      defaultFor: ["amd", "intel"],
-      downloadBytes: 30_450_220,
-    },
-  ],
   models: [
     {
       id: "gemma-4-12b-qat",

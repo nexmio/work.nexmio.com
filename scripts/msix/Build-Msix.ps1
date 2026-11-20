@@ -62,6 +62,16 @@ New-Item -ItemType Directory -Path (Join-Path $stage "Assets") -Force | Out-Null
 
 # The program and the logos the manifest points at.
 Copy-Item $Exe (Join-Path $stage "nexmio-work.exe")
+
+# The AI engine (llama.cpp) is part of the package, next to the program, where Tauri puts it in the
+# installer too. Files in the package are signed when the Store takes it in, so the engine can run.
+# `pnpm engine:fetch windows` puts it in src-tauri\engine-bundle.
+$engineSrc = Join-Path $here "..\..\src-tauri\engine-bundle"
+if (-not (Test-Path (Join-Path $engineSrc "llama-server.exe"))) {
+  throw "The AI engine is missing in $engineSrc. Run: pnpm engine:fetch windows"
+}
+Copy-Item $engineSrc (Join-Path $stage "engine") -Recurse
+Remove-Item (Join-Path $stage "engine\README.txt") -ErrorAction SilentlyContinue
 foreach ($logo in @("StoreLogo.png", "Square44x44Logo.png", "Square150x150Logo.png")) {
   $src = Join-Path $IconDir $logo
   if (-not (Test-Path $src)) { throw "Missing logo: $src" }

@@ -88,11 +88,11 @@ export function useAiChip() {
   const model = isBuiltin
     ? (engine?.models.find((m) => m.id === settings?.ai.builtin.modelId)?.name ?? "")
     : (provider?.model ?? "");
-  // The engine the built-in AI was set to use (the graphics card through Vulkan, or the CPU).
-  const backend = settings?.ai.builtin.backend;
+  // Whether the built-in AI was set to use the graphics card or only the processor.
+  const gpuUse = settings?.ai.builtin.gpuUse;
   const device =
-    isBuiltin && engine?.state === "awake" && backend !== undefined
-      ? backend === "cpu"
+    isBuiltin && engine?.state === "awake" && gpuUse !== undefined
+      ? gpuUse === "none"
         ? "CPU"
         : "Graphics card"
       : null;
