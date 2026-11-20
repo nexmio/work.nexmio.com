@@ -2,7 +2,7 @@
   "name": "nexmio-work",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

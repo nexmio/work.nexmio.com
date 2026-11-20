@@ -1,13 +1,13 @@
 # Nexmio Work (work.nexmio.com)
 
-Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.27. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
+Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.28. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
 
 ## Read first
 
 - `docs/AREAS.md`: the areas of the app and which files belong to each. Every change names its areas.
 - The `CLAUDE.md` in an area's main folder: what the area does and its rules.
 - `docs/UX-GUIDE.md` and `docs/design-system/`: how every screen looks and works.
-- `docs/DECISIONS.md`: why things are as they are (newest at the bottom). Record every new decision there.
+- `docs/DECISIONS.md`: the rules that hold now and why, by area (read the sections of your areas). Record every new decision there, in its section, as one line. `docs/history/DECISIONS-2026.md` is the history: search it, do not read it whole.
 - `docs/RELEASING.md`: how a release is made (Preview, Stable, a fix for Stable, the Microsoft Store). Read it before any release or tag.
 - `brand/LAYOUT.md`: the layout every Nexmio site and app follows.
 - `brand/preview/site/work.html`: a working reference page for this product.
@@ -73,8 +73,8 @@ The skills `/feature` and `/release` in `.claude/skills/` walk through these ste
 On request only. The full guide is `docs/RELEASING.md`; the rules in short:
 
 - **Two lines.** `main` is **Preview**: features and changes, versions that end in `.0` (0.26.0, 0.27.0). **Stable** ("Nexmio Work") is a Preview that the owner has made Stable.
-- **Preview:** finish `CHANGELOG.md` (`## [X.Y.Z] - date`), `pnpm release:bump X.Y.Z`, commit and merge to `main`, `pnpm release:tag`. GitHub builds Nexmio Work Preview at once (Windows and Linux installers, the Store package "Nexmio Work Preview", private in the Store) and publishes a pre-release. Nothing waits in a run.
-- **Stable:** only when the owner asks for it by name: `pnpm release:stable vX.Y.Z` (the workflow Release Stable builds the same tag as "Nexmio Work", sends it to the Store and makes it the latest release).
+- **Preview:** finish `CHANGELOG.md` (`## [X.Y.Z] - date`), `pnpm release:bump X.Y.Z`, commit and merge to `main`, `pnpm release:tag`. GitHub builds Nexmio Work Preview at once (Windows and Linux installers, and the Store package "Nexmio Work Preview", kept as a download of the run; nothing is sent to the Store for now, the package is uploaded by hand) and publishes a pre-release. Nothing waits in a run.
+- **Stable:** only when the owner asks for it by name: `pnpm release:stable vX.Y.Z` (the workflow Release Stable builds the same tag as "Nexmio Work", keeps its Store package as a download of the run and makes it the latest release).
 - **A bug in Stable** is never released from `main`. `pnpm release:hotfix X.Y.Z` makes `hotfix/X.Y.Z` from the Stable tag with only the fix (a patch version, its own changelog section); `pnpm release:tag` tags it (no Preview is built, the Store takes no older version); `pnpm release:stable vX.Y.Z` makes it Stable; the same fix is cherry-picked to `main` (`git cherry-pick -x`), and the hotfix branch is never merged.
 - **The version** is in `package.json`, `src-tauri/Cargo.toml`, the `nexmio-work` entry of `src-tauri/Cargo.lock`, `docs/MSIX.md` and the line at the top of this file (a test checks they match): change it only with `pnpm release:bump`.
 - **Texts are made, not written twice:** "What's new" for GitHub, the in-app list and the Store comes from the changelog bullets (write them for a person); the Store description and search terms come from `docs/STORE-LISTING.md`. The owner never moves files by hand.

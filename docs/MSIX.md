@@ -2,7 +2,7 @@
 
 Microsoft signs an MSIX package itself when it is published in the Microsoft Store, so there is no certificate to buy and Windows does not show the "unknown publisher" warning. This page is how to build the package, try it, and send it in.
 
-The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and sends each to its Store product with `scripts/store/Submit-Store.ps1`. Both are also kept as workflow artifacts (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`), and a test-signed copy of each (`...-msix-test`).
+The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and keeps each as a workflow artifact. **Nothing is sent to the Store for now:** the release workflows have no step that does it, so the package is uploaded in Partner Center by hand (`scripts/store/Submit-Store.ps1` and "Connect the Store" below are kept for when it is switched on again). The artifacts are (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`), and a test-signed copy of each (`...-msix-test`).
 
 ## 1. Reserve the name and read the identity (once)
 
@@ -44,10 +44,10 @@ On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 ```powershell
 pnpm install
 pnpm tauri build
-./scripts/msix/Build-Msix.ps1 -Version 0.27.0 -TestSign -DisplayName "Nexmio Work"
+./scripts/msix/Build-Msix.ps1 -Version 0.28.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.27.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.27.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.28.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.28.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
 
 **Windows Sandbox** (Windows 11 Pro, feature "Windows Sandbox" turned on): edit `scripts/msix/sandbox.wsb` so that `HostFolder` is the full path of `msix-out`, and double-click it. The sandbox installs Nexmio Work; start it from the Start menu. Everything is gone when you close the sandbox.
 
@@ -58,7 +58,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 ## 3. What to check in the Store version
 
 - Nexmio Work starts, opens a folder as a vault and saves a page (`Ctrl+S`), and the version history works.
-- LM Studio (or another AI on the computer) works if it is installed. Settings → AI says that the built-in llama.cpp engine is not available in the Store version yet.
+- The built-in AI works as in the installer version: Settings → AI downloads the llama.cpp engine and a model into the package's data folder. LM Studio (or another AI on the computer) works too.
 - Settings are kept after closing and starting again. Uninstalling (Settings → Apps) removes the app's own data but not your pages.
 
 ## 4. Send it in
@@ -72,11 +72,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 
 ## The built-in AI in the Store package
 
-The Store package **does not run the llama.cpp engine** (`engine::catalog::unavailable_reason`): a downloaded program was blocked from starting on a managed laptop, and the Store's policy 10.2.2 is against apps that extend themselves with downloaded code. Settings → AI says so for that engine.
-
-The built-in AI in the Store package is planned as `llama-server` (CPU and Vulkan builds) inside the package, signed by the Store like the rest, with only the models downloaded. It is not built yet; until it is, the Store package has no built-in AI. Foundry Local and Phi Silica (Copilot+ PCs) were removed in 0.27: they did not translate well, some models did not run, and they could not be made to work reliably.
-
-Versions 0.8.7 to 0.8.9 also built a second package, `nexmio-work-msix-with-ai`, that could download the llama.cpp engine. It was removed in 0.8.10 because that engine is blocked from starting.
+Since 0.28 the Store package **has the built-in AI**, the same as the installer version (`engine::catalog::unavailable_reason` is always `None`). The engine (`llama-server`) and the models are downloaded into the package's data folder, which goes with the app when it is uninstalled. This reverses the 0.8.x decision that kept it out: the owner wants the Store and GitHub versions to be the same. Known risks: the Store's policy 10.2.2 (an app must not extend itself with downloaded code) and organisations that block a downloaded program from starting (seen on a managed laptop). If the Store refuses an update, or it is blocked, `unavailable_reason` is the one place to turn it off for the Store package again (`paths::is_packaged`).
 
 ## Known risks
 

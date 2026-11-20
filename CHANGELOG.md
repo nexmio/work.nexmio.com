@@ -8,6 +8,51 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-11-20
+
+### Added
+
+- **The AI knows your work.** Ask "What should I do next?", "What am I waiting for?" or "How far is the move?": it reads your projects, tasks and meetings to answer. Ask how something is done in Nexmio Work and it answers from the help, with a **Show me** button that opens the place. It can suggest tasks and parts of a plan for you to accept. An empty chat offers questions to start with.
+- **The AI is a box over the right side.** **AI** in the top bar (or Ctrl/Cmd+L) opens the chat and the queue over anything, also the start page, which stays where it is. Esc or × closes it, and a half-written question is kept.
+- **An AI button in Projects, Tasks, Meetings and on the start page**, with what fits there: find what a plan is missing, break down a part or the task to do now, find the decisions and actions in a meeting's notes (you tick which to add), suggest an agenda from the meeting before, or ask about a project, an epic or a meeting.
+- **Look back** (Tasks → Look back): a week in one place, from Monday: what you finished and what moved on, the time logged, the meetings and their decisions, and the pages you wrote, for all projects or one. **Copy as a status report**, or let the AI **Write it for me**. **This week** on the start page shows the week so far.
+- **Overview of a project:** next to Map and Outline, how far the plan has come and what to do now, the time logged this month, what waits for others, the project's meetings and decisions, and its newest pages. A meeting can belong to a project, and **To plan…** on an idea makes it a part of a plan.
+- **Pin from the right-click menu.** **Pin** is in the right-click menu of a page (in the file list and on its tab), of an epic in Tasks, and of a task; a pinned task shows under Pinned on the start page and opens the task.
+- **A note on a part of a plan.** Write a few words about what a part is for, without making a page for it. Right-click a box on the map and choose **Write a note…**: the note opens in the right panel, ready to write. The box shows **Note**; in the outline it is under the part's name.
+- **Delete an archived plan.** **Delete plan…** in the plan's menu. Tick the plan's epic or the pages linked from it if they should go too. Everything is saved first, so Recover deleted brings it back.
+- **A plan's tag.** A new project gets a tag from its name, shown in its settings, and it stays the same if you rename the project. The plan, its epic, and the tasks and pages you make from the plan get the tag, so you can find all of it at once.
+- **Go to** on every job in the AI queue takes you back to where you asked for it.
+- **Decisions** in the Meetings area: every decision of every meeting, grouped by project, with a search.
+- **Get started** on the start page of a new vault: five small steps (a plan, its parts, a task, a timer, a meeting) that tick themselves as you do them.
+
+### Changed
+
+- **One way to make a project.** **New project** opens the same window from everywhere (it makes the project and its plan). There is also **+ New project** at the bottom of the projects list, **New project…** in the right-click menu of an empty place in the projects list and the Pages panel, and an arrow ▾ next to the New button at the top of the navigation that lists a page, a task, a project, a meeting and an idea wherever you are.
+- **Nexmio Work's own tags are not mixed up with `#tags`.** `#meeting`, `#epic`, `#pinned` and `#plan` are no longer offered after `#`, because written in the text they do nothing. Written anyway, the tags line says so and has a button (for example **Make this page a meeting**) that puts the real tag on.
+- **Plans is now Projects.** The list shows each project with how far its plan has come; a project without a plan has **Make the plan**. A plan opens on the map, and Plans are no longer in beta (the AI still is).
+- **The AI never locks the screen.** **Suggest parts** and **Break it down** in a plan, **Break it down** on a task, **Find tasks** and **In short** run in the AI queue, like the commands on text. The queue opens by itself, and every job has **Go to**. You can work on while the AI answers, and tick what to keep.
+- **Break it down in a plan looks at the whole plan.** The AI reads every part, the plan's page, the pages linked to the part and the plan's tasks. It suggests only what belongs to the part you chose.
+- **Plans are easier to work in.** **Rename** and moves with words (**Earlier**, **Later**, **Under the one before**, **One level up**), **Repeat these steps** draws what it will make, and **Add parts** has an **Add** button.
+- **A page's tags are in one place:** the row above the text, where a `#tag` written in the text shows too (marked "in the text"). An epic's tags stand next to its name.
+- **Landing is now called Inbox** in the Pages panel, and the panel has no New button of its own. **Open the page** of a meeting is in its **···** menu, so the meeting's name has room.
+- **The built-in AI is in the Microsoft Store version too.** The Store version and the version from GitHub are now the same.
+- **Tasks groups the epics by project** at the left, and an epic made for a plan says so, with **Open the plan**. **Go lists every area**, and **Ctrl/Cmd+1 … 6** open Start, Pages, Tasks, Projects, Meetings and Ideas.
+- **The right panel shows the page tabs only when a page is open.** In Tasks, Projects, Meetings, Ideas and Time it no longer shows the outline, tags or history of a page that is not on the screen.
+- **The start page opens faster:** rarely used windows and screens (Settings, Help, Projects, Look back and more) are loaded only when you open them.
+
+### Removed
+
+- **Quick page.** Write it down asks for a task or an idea, and a page is New → Page. Pages you already have in the Quick pages folder stay where they are, and the folder is now where an idea goes with **To page** (Settings → Vault).
+- **Making or linking an epic on a part of a plan.** A plan has its own epic, where the tasks made from it go, so a part is tied to a task or a page. A part that was linked to an epic before still shows it.
+
+### Fixed
+
+- **A new vault shows in the vault list at once**, so you can switch between it and the others without restarting. A vault that cannot be opened leaves the one you are in open.
+- The buttons in the right panel of a plan's map work. **Add a part** there did nothing before.
+- The tasks under **Actions** of a meeting are readable when the column is narrow (the title wraps, the date goes under it).
+- A meeting's text is called **Notes** again on the meeting screen, in the Meetings area and in the help (it said "Pages").
+- Parts arranged in a stack no longer go back to side by side when the part gets a page, a task or an epic, or is renamed.
+
 ## [0.27.0] - 2026-11-19
 
 ### Added
