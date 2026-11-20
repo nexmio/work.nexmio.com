@@ -107,6 +107,10 @@ jobs:
       # The Microsoft Store package: pack a stand-in program with the real manifest and logos and
       # sign it with a test certificate. makeappx rejects a manifest that is wrong, so a mistake in
       # the manifest or the script shows up here and not at the first release.
+      # The engine is part of the package, so the package script needs it (and the engine must start).
+      - name: Fetch the AI engine
+        run: pnpm engine:fetch windows --smoke
+
       - name: Check the Microsoft Store package script
         shell: pwsh
         run: |
