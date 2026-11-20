@@ -66,6 +66,27 @@ if (command === "check") {
     process.exit(1);
   }
   console.log(`Every one of ${String(files.length)} files belongs to an area.`);
+  // Windows and macOS cannot tell `GetStarted.tsx` from `getStarted.ts`: two files whose names
+  // differ only in case (the extension ignored) break the build there, though not on Linux.
+  const tracked = git(["ls-files", "--cached", "--others", "--exclude-standard"]);
+  const byLower = new Map();
+  for (const f of tracked) {
+    const bare = f.replace(/\.[^./]+$/, "");
+    const key = bare.toLowerCase();
+    byLower.set(key, [...(byLower.get(key) ?? []), f]);
+  }
+  const clashes = [...byLower.values()].filter(
+    (names) => new Set(names.map((n) => n.replace(/\.[^./]+$/, ""))).size > 1,
+  );
+  if (clashes.length > 0) {
+    console.error(
+      `These files differ only in case (a problem on Windows). Rename one of each pair:\n  ${clashes
+        .map((c) => c.join("  <->  "))
+        .join("\n  ")}`,
+    );
+    process.exit(1);
+  }
+  console.log("No two files differ only in case.");
 } else if (command === "of") {
   for (const p of rest) console.log(`${p}: ${areaOf(areas, p)?.name ?? "no area"}`);
 } else if (command === "report") {

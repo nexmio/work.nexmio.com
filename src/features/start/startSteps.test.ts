@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeTask } from "@/test/taskFixtures";
-import { startSteps, type StartFacts } from "./getStarted";
+import { startSteps, type StartFacts } from "./startSteps";
 
 const none: StartFacts = { plans: [], tasks: [], epics: [], meetings: 0, resolve: () => null };
 const done = (f: StartFacts) =>

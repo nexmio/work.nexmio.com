@@ -102,7 +102,7 @@ See `src/features/tasks/CLAUDE.md` for the file format and the area. Beyond it:
 - The task list is cached per file by modification time and size (`task_cache`); `taskStore.load` shares one read between callers.
 - Time is a log line `⏱ 1 h 20 min · 09:00–10:20 · note` (`timeLogText`); a running timer's start is kept per computer; the timer replaced Focus.
 - "Left off: …" is a log line written by the person, not history.
-- Ticking writes "Done" (unticking "Open again") with the day in the task's history; tasks ticked before 0.28 have no day.
+- Ticking writes "Done" (unticking "Open again") with the day in the task's history; tasks ticked before 0.29 have no day.
 - Tags on tasks are `#tag` in the line; an epic's tags are in its properties and count for its tasks.
 - TEMPORARY since 0.23: the move of old pins and `for:`/`after:` words into `meta.json` (`meta::migrate`, `MetaMigrationDialog`) is still in the code and should be removed.
 - Look back is read, never stored; a week is Monday to Sunday, this week ends today (`lib/lookBack.ts`).
@@ -180,7 +180,7 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 
 - Versions: `package.json` is the source; a test keeps the other places equal; builds show `+<commit>` and `.dirty`.
 - Two lines: `main` is Preview (`.0` versions); Stable is a Preview the owner makes Stable; a fix for Stable is a `hotfix/X.Y.Z` branch from the Stable tag, cherry-picked to `main` and never merged (`docs/RELEASING.md`).
-- The Store texts and "What's new" are made from `docs/STORE-LISTING.md` and `CHANGELOG.md`; the Store package is a full-trust MSIX built by `scripts/msix/Build-Msix.ps1`. It is kept as a download of the release run and uploaded in Partner Center by hand: the workflows no longer send it to the Store (switched off 0.28, `scripts/store/Submit-Store.ps1` is kept).
+- The Store texts and "What's new" are made from `docs/STORE-LISTING.md` and `CHANGELOG.md`; the Store package is a full-trust MSIX built by `scripts/msix/Build-Msix.ps1`. It is kept as a download of the release run and uploaded in Partner Center by hand: the workflows no longer send it to the Store (switched off 0.29, `scripts/store/Submit-Store.ps1` is kept).
 - No macOS build for now.
 - Licence: Apache-2.0 with the Commons Clause and `NOTICE` (from 0.25.0).
 - The website (`site/`) is plain HTML in English, published by `pages.yml`; downloads follow the GitHub releases; shared sentences with the README are in `docs/shared-facts.json` (checked by a test).
@@ -189,5 +189,6 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 - Toolchain is pinned: Node 22, TypeScript 5.9, ESLint 9, pnpm; Rust `rust-version` in `Cargo.toml`. Pinned majors: `reqwest` 0.12, `keyring` 3, `react-resizable-panels` 3; `git2` without default features.
 - ESLint: only `rules-of-hooks` and `exhaustive-deps` from the hooks plugin; tests may use the `no-unsafe-assignment` and `unbound-method` exemptions.
 - A new dependency is added here with its reason.
+- Two files never differ only in case, the extension ignored (`GetStarted.tsx` and `getStarted.ts` broke the Windows build while Linux was fine): `pnpm areas check`, which CI runs, fails on such a pair.
 - One component per file. `uiStore` is made of parts in `src/stores/ui/` (stored choices, panels, windows, messages); `useUiStore`, `reportError` and every field keep their names.
 - The Rust development container is `rust-dev`.

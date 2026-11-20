@@ -9,7 +9,7 @@ import { usePlanStore } from "@/stores/planStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
-import { startSteps, type StartStep } from "./getStarted";
+import { startSteps, type StartStep } from "./startSteps";
 
 /** Where "Close" is remembered: per vault, on this computer. */
 const closedKey = (vault: string): string => `nexmio.getStarted.closed:${vault}`;
