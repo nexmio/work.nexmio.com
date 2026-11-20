@@ -1,5 +1,5 @@
 import { MoreHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PromptDialog } from "@/components/PromptDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PINNED_TAG } from "@/lib/startPage";
 import { nameError } from "@/lib/nameConflict";
+import { PlainButton } from "@/components/ui/plain-button";
+import { searchForTag } from "@/lib/actions";
 import { isSystemTag, NOTE_TAGS } from "@/lib/noteTags";
+import { tagsOf } from "@/lib/outline";
+import { getActiveEditor } from "@/lib/activeEditor";
+import { useEditorStore } from "@/stores/editorStore";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useNoteTags } from "@/lib/useNoteTags";
 import { dirname, joinPath } from "@/lib/utils";
 import { useUiStore } from "@/stores/uiStore";
@@ -89,7 +95,7 @@ export function NoteMenu({
               void setTag(PINNED_TAG, !tags.includes(PINNED_TAG));
             }}
           >
-            {tags.includes(PINNED_TAG) ? "Unpin from the start page" : "Pin to the start page"}
+            {tags.includes(PINNED_TAG) ? "Unpin" : "Pin"}
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
@@ -145,12 +151,24 @@ export function NoteMenu({
 }
 
 /**
- * The tags of the open note as chips, and "+ tag", in one line above the text. A cross takes a tag
- * off; "+ tag" opens the Tags window.
+ * The tags of the open note as chips, and "+ tag", in one line above the text: the one place a
+ * page's tags are shown. A cross takes a tag off; "+ tag" opens the Tags window. A `#tag` written
+ * in the text is shown too, marked "in the text" (it is changed in the text, so it has no cross);
+ * pressing it searches for the tag.
  */
 export function NoteTagsLine({ path }: { path: string | null }) {
   const { tags, setTag } = useNoteTags(path);
   const [tagging, setTagging] = useState(false);
+  // Read again when the page is saved (no file read: the editor holds the text).
+  const pane = useWorkspaceStore((s) => s.layout.focused);
+  const status = useEditorStore((s) => s.statuses[pane]);
+  const inText = useMemo(() => {
+    const ed = getActiveEditor();
+    if (ed === null || ed.notePath !== path) return [];
+    return tagsOf(ed.view.state.doc.toString()).filter((t) => !tags.includes(t));
+    // `status` changes when the page is saved: that is when the text tags are read again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path, tags, status]);
   if (path === null) return null;
   const shown = [
     ...NOTE_TAGS.map((t) => t.tag).filter((t) => tags.includes(t)),
@@ -170,6 +188,47 @@ export function NoteTagsLine({ path }: { path: string | null }) {
           }}
         />
       ))}
+      {inText.map((t) => {
+        const own = NOTE_TAGS.find((n) => n.tag === t);
+        // One of Nexmio Work's own tags written in the text does nothing there: offer to make it
+        // the real one (in the properties). The text is not changed.
+        if (own !== undefined) {
+          return (
+            <span key={`text-${t}`} className="flex items-center gap-1">
+              <span
+                title={`#${t} written in the text does nothing. ${own.label} is a tag of Nexmio Work, kept in the page's properties.`}
+                className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground"
+              >
+                #{t} · in the text, does nothing
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => {
+                  void setTag(t, true);
+                }}
+              >
+                {own.makeIt}
+              </Button>
+            </span>
+          );
+        }
+        return (
+          <PlainButton
+            key={`text-${t}`}
+            type="button"
+            title={`#${t} is written in the text. Press to find everything with it.`}
+            className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => {
+              searchForTag(t);
+            }}
+          >
+            #{t} · in the text
+          </PlainButton>
+        );
+      })}
       <Button
         type="button"
         variant="ghost"

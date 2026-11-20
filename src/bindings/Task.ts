@@ -19,11 +19,7 @@ end: number, key: string,
  * The title, without the `#tags` and the `due:` / `plan:` / `status:` / `est:` / `for:` /
  * `after:` words.
  */
-title: string, done: boolean, tags: Array<string>, due: string | null, 
-/**
- * A date, or `later`: when the user wants to do it.
- */
-plan: string | null, 
+title: string, done: boolean, tags: Array<string>, 
 /**
  * `doing`, `waiting`, `dropped` or another word the user wrote.
  */
@@ -41,7 +37,12 @@ after: string | null,
  * What Nexmio Work wrote about the task's changes (status and what it waits for), kept in
  * `.vault/meta.json`, not in the note. Put on the task after it is read from the note.
  */
-history: Array<TaskHistory>, estMinutes: number | null, steps: Array<TaskStep>, log: Array<TaskLog>, 
+history: Array<TaskHistory>, 
+/**
+ * The task is pinned to the start page (kept in `.vault/meta.json`, put on the task after it
+ * is read).
+ */
+pinned: boolean, steps: Array<TaskStep>, log: Array<TaskLog>, 
 /**
  * The task's own note: the indented plain text lines (or, in older files, quote lines
  * without a date), joined by newlines.

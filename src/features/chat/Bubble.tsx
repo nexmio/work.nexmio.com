@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { type ChatMessage, useChatStore } from "@/stores/chatStore";
 import { Button } from "@/components/ui/button";
 import { splitLeftOut } from "./leftOut";
+import { openPlace } from "./places";
+import { MapPin } from "lucide-react";
 
 export function Bubble({ m }: { m: ChatMessage }) {
   const user = m.role === "user";
@@ -48,6 +50,23 @@ export function Bubble({ m }: { m: ChatMessage }) {
             ))}
           </ul>
         </details>
+      )}
+      {m.places !== undefined && m.places.length > 0 && (
+        <div className="flex max-w-[92%] flex-wrap gap-1.5">
+          {m.places.map((p) => (
+            <Button
+              key={p.place}
+              size="sm"
+              variant="outline"
+              className="h-7 border-primary/60 text-xs"
+              onClick={() => {
+                openPlace(p.place);
+              }}
+            >
+              <MapPin /> Show me: {p.label}
+            </Button>
+          ))}
+        </div>
       )}
       {m.progress && <ProgressLine progress={m.progress} />}
       {m.error !== null && (

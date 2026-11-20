@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { NoteBox } from "./NoteBox";
 import { epicTrail } from "./epicTrail";
+import { openFrom } from "./openFrom";
+import { PlanOfEpic } from "./PlanOfEpic";
 import { EpicTags } from "./TaskTags";
 import { InlineEdit, RowActions } from "@/components/RowActions";
 import { Trail } from "@/components/Trail";
@@ -59,7 +61,7 @@ export function EpicPage() {
 
   return (
     <section aria-label="Epic" className="flex h-full min-h-0 flex-col bg-background">
-      <ViewHeader title="Epic" back={back}>
+      <ViewHeader title="Epic" back={back} afterTitle={<EpicTags path={group.path} inline />}>
         <Button
           size="sm"
           variant="outline"
@@ -92,14 +94,12 @@ export function EpicPage() {
             useVaultStore.getState().select(folder);
             useUiStore.getState().setLeftTab("files");
           },
-          goPage: (path) => {
-            void useVaultStore.getState().openNote(path);
-          },
+          goPage: openFrom,
         })}
       />
       <div className="min-h-0 flex-1 overflow-auto px-7 py-5">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
-          <EpicTags path={group.path} />
+          <PlanOfEpic from={from} />
           <div className="flex flex-col gap-1">
             {renaming ? (
               <InlineEdit

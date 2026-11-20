@@ -129,6 +129,13 @@ describe("live preview", () => {
     expect(inspect(makeState(text, text.length)).blockWidgets).toBe(1);
     expect(inspect(makeState(text, 6)).blockWidgets).toBe(0);
   });
+
+  it("shows no Properties box for a page whose only property is its tags, and keeps it hidden", () => {
+    const text = "---\ntags: [vpn, it]\n---\n\nBody";
+    const f = inspect(makeState(text, text.length));
+    expect(f.blockWidgets).toBe(0);
+    expect(f.hidden).toContain("---\ntags: [vpn, it]\n---");
+  });
 });
 
 describe("live preview tables", () => {

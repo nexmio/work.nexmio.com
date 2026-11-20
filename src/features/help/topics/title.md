@@ -17,5 +17,5 @@ If you move something to a folder that already has something with that name, Nex
 ## Good to know
 
 - Names Windows and OneDrive cannot keep are not accepted, and a red box says why: the characters `\ / : * ? " < > |`, a dot at the end (`PAM div.`), and names Windows keeps for itself such as `CON`, `NUL` or `COM1`.
-- Pages made from a template (meeting notes, daily pages, quick pages) already have a name.
+- Pages made from a template (meeting notes, daily pages) already have a name.
 - If you later change the first line of a page, the file name is **not** changed. Rename the file in the file tree if you want them to match.

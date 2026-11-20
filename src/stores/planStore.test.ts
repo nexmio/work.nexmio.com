@@ -80,7 +80,10 @@ describe("planStore", () => {
     expect(path).toBe("Plans/Move the office 2.md");
     const [where, text] = apiMock.writeNote.mock.calls[0] as [string, string];
     expect(where).toBe("Plans/Move the office 2.md");
-    expect(text.startsWith("---\ntags: [plan]\n---\n# Move the office\n")).toBe(true);
+    // The plan's own tag (from its name, as it is in no project) is there from the start.
+    expect(text.startsWith("---\ntags: [plan, move-the-office]\n---\n# Move the office\n")).toBe(
+      true,
+    );
     expect(usePlanStore.getState().path).toBe(path);
   });
 

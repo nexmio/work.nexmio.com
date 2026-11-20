@@ -15,15 +15,14 @@ vi.mock("@/lib/api", () => ({
 }));
 vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
 vi.mock("@/lib/useAiBlocked", () => ({ useAiBlocked: () => null }));
-vi.mock("@/lib/askAi", () => ({
-  askAi: () => ({ promise: Promise.resolve("- Pick a date\n- Tell the staff"), cancel: vi.fn() }),
-}));
+vi.mock("@/lib/wake", () => ({ wakeIfNeeded: () => new Promise(() => undefined) }));
 
 import { LinkResolver } from "@/lib/links";
 import { parsePlan } from "@/lib/planTree";
 import { PartSlot } from "./PartSlot";
 import { PlansView } from "./PlansView";
 import { usePlanStore } from "@/stores/planStore";
+import { useAiJobStore } from "@/stores/aiJobStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
@@ -112,12 +111,12 @@ describe("PlansView", () => {
   it("asks you to choose or make a plan when none is open", async () => {
     usePlanStore.setState({ path: null, nodes: [] });
     render(<PlansView />);
-    expect(screen.getByText("Start a plan")).toBeInTheDocument();
-    expect(screen.getByText("Empty plan")).toBeInTheDocument();
+    expect(screen.getByText("Start a project")).toBeInTheDocument();
+    expect(screen.getByText("New project", { selector: "b" })).toBeInTheDocument();
     expect(screen.getByText("This is what a plan looks like:")).toBeInTheDocument();
-    // The Beta badge is there once.
-    expect(screen.getAllByText("Beta")).toHaveLength(1);
-    await userEvent.setup().click(screen.getByRole("button", { name: "New plan" }));
+    // Plans are out of beta: no Beta badge.
+    expect(screen.queryByText("Beta")).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "New project" }));
     expect(usePlanStore.getState().guidedOpen).toBe(true);
   });
 
@@ -202,29 +201,16 @@ describe("PlansView", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Link or make a task…" }));
     await user.click(await screen.findByRole("button", { name: "Make a new task" }));
     await waitFor(() => {
-      expect(addToNote).toHaveBeenCalledWith("Tasks/Move the office.md", ["Network"]);
+      expect(addToNote).toHaveBeenCalledWith("Tasks/Move the office.md", [
+        "Network #move-the-office",
+      ]);
     });
     expect(epicFor).toHaveBeenCalledWith(PATH);
-  });
-
-  it("makes an epic from an idea: the ticked sub-ideas become its tasks, and the idea links to it", async () => {
-    render(<PlansView />);
-    const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "More for Moving day" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Link or make an epic…" }));
-    const dialog = await screen.findByRole("dialog");
-    expect(dialog).toHaveTextContent("Link or make an epic for “Moving day”");
-    await user.click(within(dialog).getByRole("checkbox", { name: "Tell the staff" }));
-    await user.click(within(dialog).getByRole("button", { name: "Make the epic" }));
-    await waitFor(() => {
-      expect(createEpic).toHaveBeenCalledWith("Moving day", false);
-    });
-    expect(addToNote).toHaveBeenCalledWith("Tasks/Find the place 2.md", ["Book the van"]);
-    await waitFor(() => {
-      expect(apiMock.writeNote).toHaveBeenCalled();
-    });
-    expect(apiMock.writeNote.mock.calls[0]?.[1]).toContain(
-      "- Moving day [[Tasks/Find the place 2]]",
+    // The plan's epic gets the plan's tag too.
+    expect(apiMock.noteSetTag).toHaveBeenCalledWith(
+      "Tasks/Move the office.md",
+      "move-the-office",
+      true,
     );
   });
 
@@ -242,21 +228,18 @@ describe("PlansView", () => {
     expect(apiMock.writeNote.mock.calls[0]?.[1]).toContain("- Moving day [[Notes/Other]]");
   });
 
-  it("suggests parts with the AI, and adds only the ticked ones", async () => {
+  it("asks the AI for parts in the queue, without a window that waits", async () => {
+    useAiJobStore.setState({ jobs: [] });
     render(<PlansView />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "More for Network" }));
     await user.click(await screen.findByRole("menuitem", { name: "Break it down…" }));
-    const dialog = await screen.findByRole("dialog");
-    expect(await within(dialog).findByText("Pick a date")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("checkbox", { name: "Tell the staff" }));
-    await user.click(within(dialog).getByRole("button", { name: "Add 1" }));
-    await waitFor(() => {
-      expect(apiMock.writeNote).toHaveBeenCalled();
-    });
-    expect(apiMock.writeNote.mock.calls[0]?.[1]).toContain(
-      "- Network [[Network plan]]\n  - Pick a date\n",
-    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const job = useAiJobStore.getState().jobs[0];
+    expect(job).toMatchObject({ kind: "pick", label: "Break it down: Network" });
+    // The queue is shown by itself, in the AI box.
+    expect(useUiStore.getState().askOpen).toBe(true);
+    useAiJobStore.setState({ jobs: [] });
   });
 
   it("repeats the steps of a branch for several names: one epic, a task for each, the steps as its steps", async () => {
@@ -276,18 +259,25 @@ describe("PlansView", () => {
       within(dialog).getByRole("textbox", { name: "Names" }),
       "Copenhagen{Enter}Aarhus",
     );
+    // The drawing shows what will be made, with the names written.
+    const drawing = within(dialog).getByRole("figure", { name: "What Repeat does" });
+    expect(drawing).toHaveTextContent("Copenhagen");
+    expect(drawing).toHaveTextContent("stays as the heading");
     await user.click(within(dialog).getByRole("button", { name: "Make 2 tasks" }));
     await waitFor(() => {
       expect(apiMock.writeNote).toHaveBeenCalled();
     });
     expect(createEpic).not.toHaveBeenCalled();
-    expect(addToNote).toHaveBeenCalledWith("Tasks/Move the office.md", ["Copenhagen", "Aarhus"]);
+    expect(addToNote).toHaveBeenCalledWith("Tasks/Move the office.md", [
+      "Copenhagen #move-the-office",
+      "Aarhus #move-the-office",
+    ]);
     expect(addStep).toHaveBeenCalledTimes(4);
     const text = apiMock.writeNote.mock.calls[0]?.[1] as string;
+    // Moving day stays as the heading; the names are under it with the steps, which moved in.
     expect(text).toContain(
-      "- Copenhagen [[Tasks/Move the office#Copenhagen]]\n  - Book the van\n  - Tell the staff\n",
+      "- Moving day\n  - Copenhagen [[Tasks/Move the office#Copenhagen]]\n    - Book the van\n    - Tell the staff\n  - Aarhus [[Tasks/Move the office#Aarhus]]\n    - Book the van\n    - Tell the staff\n",
     );
-    expect(text).toContain("- Aarhus [[Tasks/Move the office#Aarhus]]\n");
   });
 
   it("finishes a plan and carries the open ideas over to a new one, which keeps a line about it", async () => {
@@ -343,6 +333,88 @@ describe("PlansView", () => {
     }
     await user.click(within(panel).getByRole("button", { name: "Link or make a task…" }));
     expect(usePlanStore.getState().dialog?.kind).toBe("linktask");
+    usePlanStore.getState().setDialog(null);
+    // "Add a part" opens the window on the map (the outline's own field is not there).
+    await user.click(await within(panel).findByRole("button", { name: "Add a part" }));
+    expect(usePlanStore.getState().dialog).toEqual({ kind: "add", path: [1] });
+    usePlanStore.getState().setDialog(null);
+  });
+
+  it("adds parts in the window with Add or Enter, and closes with Close", async () => {
+    usePlanStore.setState({ view: "map", dialog: { kind: "add", path: [2] } });
+    const written: string[] = [];
+    apiMock.writeNote.mockImplementation((_p: string, text: string) => {
+      written.push(text);
+      return Promise.resolve();
+    });
+    render(<PlansView />);
+    const user = userEvent.setup();
+    const add = await screen.findByRole("button", { name: "Add" });
+    expect(add).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "A new part" }), "Pack the boxes");
+    await user.click(add);
+    await waitFor(() => {
+      expect(written.join("")).toContain("- Pack the boxes");
+    });
+    // The window's own button (the X in the corner is called Close too).
+    const close = await screen.findAllByRole("button", { name: "Close" });
+    const footer = close.find((b) => b.textContent === "Close");
+    expect(footer).toBeDefined();
+    if (footer) await user.click(footer);
+    expect(usePlanStore.getState().dialog).toBeNull();
+  });
+
+  it("writes a short note on a part in the right panel, kept in the plan's page", async () => {
+    usePlanStore.setState({ view: "map", selected: [1] });
+    const written: string[] = [];
+    apiMock.writeNote.mockImplementation((_p: string, text: string) => {
+      written.push(text);
+      return Promise.resolve();
+    });
+    render(
+      <>
+        <PartSlot />
+        <PlansView />
+      </>,
+    );
+    const user = userEvent.setup();
+    const panel = await screen.findByTestId("part-slot");
+    await user.click(await within(panel).findByRole("button", { name: /Write a note/ }));
+    await user.type(
+      within(panel).getByRole("textbox", { name: "Note about this part" }),
+      "Only the office, not home",
+    );
+    await user.click(within(panel).getByRole("button", { name: "Save the note" }));
+    await waitFor(() => {
+      expect(written.join("")).toContain(
+        "- Network [[Network plan]]\n  > Only the office, not home\n",
+      );
+    });
+  });
+
+  it("renames the chosen part in the right panel, not on the map", async () => {
+    usePlanStore.setState({ view: "map", selected: [1] });
+    const written: string[] = [];
+    apiMock.writeNote.mockImplementation((_p: string, text: string) => {
+      written.push(text);
+      return Promise.resolve();
+    });
+    render(
+      <>
+        <PartSlot />
+        <PlansView />
+      </>,
+    );
+    const user = userEvent.setup();
+    const panel = await screen.findByTestId("part-slot");
+    await user.click(await within(panel).findByRole("button", { name: /Rename/ }));
+    const box = within(panel).getByRole("textbox", { name: "Words of Network" });
+    await user.clear(box);
+    await user.type(box, "Network and Wi-Fi{Enter}");
+    await waitFor(() => {
+      expect(written.join("")).toContain("- Network and Wi-Fi");
+    });
   });
 
   it("moves a part up and down and in and out from the right panel", async () => {
@@ -360,14 +432,85 @@ describe("PlansView", () => {
     );
     const user = userEvent.setup();
     const panel = await screen.findByTestId("part-slot");
-    await user.click(await within(panel).findByRole("button", { name: "Move up" }));
+    // The moves say in words what they do; what cannot be done here is greyed out.
+    expect(within(panel).getByRole("button", { name: /Later/ })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: /One level up/ })).toBeDisabled();
+    expect(within(panel).getByRole("button", { name: /Under the one before/ })).toBeEnabled();
+    expect(within(panel).getByText(/makes it a smaller part of the part just/)).toBeInTheDocument();
+    await user.click(await within(panel).findByRole("button", { name: /Earlier/ }));
     await waitFor(() => {
       expect(written.length).toBeGreaterThan(0);
     });
     expect(written[0]).toMatch(/- Moving day[\s\S]*- Network/);
-    for (const n of ["Move down", "One level in", "One level out"]) {
-      expect(within(panel).getByRole("button", { name: n })).toBeInTheDocument();
-    }
+  });
+
+  it("keeps the steps when one of them is tied to something, and puts the names after them", async () => {
+    const NOTE2 = NOTE.replace("  - Book the van", "  - Book the van [[Notes/Other]]");
+    apiMock.readNote.mockImplementation(() => Promise.resolve({ path: PATH, content: NOTE2 }));
+    usePlanStore.setState({ nodes: parsePlan(NOTE2).nodes, dialog: { kind: "repeat", path: [2] } });
+    epicFor.mockResolvedValue(null);
+    render(<PlansView />);
+    const user = userEvent.setup();
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("figure")).toHaveTextContent("with its steps");
+    await user.type(within(dialog).getByRole("textbox", { name: "Names" }), "Aarhus");
+    await user.click(within(dialog).getByRole("button", { name: "Make 1 task" }));
+    await waitFor(() => {
+      expect(apiMock.writeNote).toHaveBeenCalled();
+    });
+    expect(apiMock.writeNote.mock.calls[0]?.[1]).toContain(
+      "- Moving day\n  - Book the van [[Notes/Other]]\n  - Tell the staff\n  - Aarhus\n    - Book the van\n",
+    );
+  });
+
+  it("has no way to make or link an epic on a part: the plan has its own epic", async () => {
+    usePlanStore.setState({ view: "map", selected: [1] });
+    render(
+      <>
+        <PartSlot />
+        <PlansView />
+      </>,
+    );
+    const user = userEvent.setup();
+    const panel = await screen.findByTestId("part-slot");
+    const links = await within(panel).findByRole("region", { name: "Link to" });
+    expect(within(links).queryByRole("button", { name: /epic/i })).toBeNull();
+    expect(within(links).getByRole("button", { name: "Link or make a page…" })).toBeInTheDocument();
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("button", { name: /^Network/ }),
+    });
+    await screen.findByRole("menuitem", { name: "Rename" });
+    expect(screen.queryByRole("menuitem", { name: /epic/i })).toBeNull();
+  });
+
+  it("right-click Write a note on the map opens the note in the right panel", async () => {
+    usePlanStore.setState({ view: "map", noteAt: null });
+    render(
+      <>
+        <PartSlot />
+        <PlansView />
+      </>,
+    );
+    const user = userEvent.setup();
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("button", { name: /^Network/ }),
+    });
+    await user.click(await screen.findByRole("menuitem", { name: "Write a note…" }));
+    expect(useUiStore.getState().rightTab).toBe("part");
+    const panel = await screen.findByTestId("part-slot");
+    const box = await within(panel).findByRole("textbox", { name: "Note about this part" });
+    await waitFor(() => {
+      expect(box).toHaveFocus();
+    });
+    // Rename, not "Change the words", in the menu.
+    await user.keyboard("{Escape}");
+    await user.pointer({
+      keys: "[MouseRight]",
+      target: screen.getByRole("button", { name: /^Network/ }),
+    });
+    expect(await screen.findByRole("menuitem", { name: "Rename" })).toBeInTheDocument();
   });
 
   it("arranges the parts of a chosen box from the right panel", async () => {
@@ -417,6 +560,51 @@ describe("PlansView", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Add a part" }));
     expect(usePlanStore.getState().dialog).toEqual({ kind: "add", path: [] });
     usePlanStore.getState().setDialog(null);
+  });
+
+  it("deletes an archived plan: only the plan's page, unless more is ticked", async () => {
+    const deletePath = vi.fn().mockResolvedValue(true);
+    useVaultStore.setState({ deletePath });
+    usePlanStore.setState({ finished: true });
+    render(<PlansView />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "More for this plan" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Delete plan…" }));
+    const dialog = await screen.findByRole("dialog");
+    // The linked page is offered, not ticked.
+    const page = within(dialog).getByRole("checkbox", { name: /Network plan/ });
+    expect(page).not.toBeChecked();
+    await user.click(within(dialog).getByRole("button", { name: "Delete the plan" }));
+    await waitFor(() => {
+      expect(usePlanStore.getState().path).toBeNull();
+    });
+    expect(deletePath.mock.calls.map((c: unknown[]) => c[0])).toEqual([PATH]);
+  });
+
+  it("deletes what is ticked along with the plan", async () => {
+    const deletePath = vi.fn().mockResolvedValue(true);
+    useVaultStore.setState({ deletePath });
+    usePlanStore.setState({ finished: true, dialog: { kind: "delete" } });
+    render(<PlansView />);
+    const user = userEvent.setup();
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("checkbox", { name: /Network plan/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Delete the plan and 1 more" }));
+    await waitFor(() => {
+      expect(deletePath).toHaveBeenCalledTimes(2);
+    });
+    expect(deletePath.mock.calls[1]?.[0]).toBe("Notes/Network plan.md");
+  });
+
+  it("has an Overview of the project next to the map and the outline", async () => {
+    render(<PlansView />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Overview" }));
+    expect(usePlanStore.getState().view).toBe("overview");
+    expect(await screen.findByRole("region", { name: "How far" })).toBeInTheDocument();
+    for (const box of ["Meetings", "Decisions", "Waiting for others", "Newest pages"]) {
+      expect(screen.getByRole("region", { name: box })).toBeInTheDocument();
+    }
   });
 
   it("switches between the outline and the map, and can be finished and opened again", async () => {

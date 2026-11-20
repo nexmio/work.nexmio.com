@@ -29,6 +29,12 @@ pub struct Project {
     /// project files written before 0.7, which had the same field.)
     #[serde(default)]
     pub local_only: bool,
+    /// The tag of the project (without `#`), made from its name when the project is made and
+    /// kept when it is renamed. Everything a plan in the project makes gets it. Projects made
+    /// before 0.28 have none; the app then makes it from the name (`tag_for`), as here.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub tag: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -79,6 +85,25 @@ pub fn for_path<'a>(projects: &'a [Project], path: &str) -> Option<&'a Project> 
     projects.iter().find(|p| is_inside(path, &p.folder))
 }
 
+/// The tag made from a project's name: lower case, spaces and other marks as `-`, only letters,
+/// digits, `-` and `_` (the same as a `#tag` in a page). "project" when nothing is left of the name.
+pub fn tag_for(name: &str) -> String {
+    let mut out = String::new();
+    for c in name.trim().chars().flat_map(char::to_lowercase) {
+        if c.is_alphanumeric() || c == '_' {
+            out.push(c);
+        } else if !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
+    }
+    let t = out.trim_end_matches('-').to_string();
+    if t.chars().any(char::is_alphabetic) {
+        t
+    } else {
+        "project".to_string()
+    }
+}
+
 /// Current time as RFC 3339 (UTC).
 pub fn now() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
@@ -97,9 +122,29 @@ mod tests {
             instructions: String::new(),
             provider_id: None,
             local_only: false,
+            tag: None,
             created_at: now(),
             updated_at: now(),
         }
+    }
+
+    #[test]
+    fn tag_from_the_name() {
+        assert_eq!(tag_for("Server flytning"), "server-flytning");
+        assert_eq!(tag_for("  Kunde: Acme / 2026 "), "kunde-acme-2026");
+        assert_eq!(tag_for("Ærø_projekt"), "ærø_projekt");
+        assert_eq!(tag_for("2026"), "project");
+        assert_eq!(tag_for("!!!"), "project");
+    }
+
+    #[test]
+    fn a_project_without_a_tag_is_read_and_written_as_before() {
+        let d = tempfile::tempdir().unwrap();
+        let p = project("a1", "Old");
+        save(d.path(), &p).unwrap();
+        let text = std::fs::read_to_string(d.path().join(file_path("a1"))).unwrap();
+        assert!(!text.contains("\"tag\""));
+        assert_eq!(load_all(d.path())[0].tag, None);
     }
 
     #[test]

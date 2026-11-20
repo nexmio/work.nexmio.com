@@ -130,8 +130,8 @@ export function CommandPalette() {
       act("meeting", "Meeting note…", () => {
         ui().setMeetingFormOpen(true);
       }),
-      act("quick-note", "Quick page", () => {
-        ui().openCapture("note");
+      act("new-plan", "New project", () => {
+        ui().requestNewPlan();
       }),
       act("new-task", "New task", () => {
         ui().openCapture("task");

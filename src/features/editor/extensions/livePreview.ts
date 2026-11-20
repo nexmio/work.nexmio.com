@@ -178,11 +178,15 @@ export function buildDecorations(state: EditorState): DecorationSet {
       addLines(fm.from, fm.to, "cm-frontmatter");
     } else {
       const rest = doc.sliceString(fm.from, fm.to);
+      // The tags are shown as chips above the page, so they are not listed here again. A page
+      // whose only property is its tags shows no Properties box at all (the cursor still opens
+      // the lines).
+      const keys = frontmatterKeys(doc, fm).filter((k) => k.trim().toLowerCase() !== "tags");
       ranges.push(
-        Decoration.replace({
-          widget: new PropertiesWidget(frontmatterKeys(doc, fm), rest),
-          block: true,
-        }).range(fm.from, fm.to),
+        (keys.length === 0
+          ? Decoration.replace({ block: true })
+          : Decoration.replace({ widget: new PropertiesWidget(keys, rest), block: true })
+        ).range(fm.from, fm.to),
       );
     }
   }

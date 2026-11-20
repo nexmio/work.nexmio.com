@@ -115,6 +115,22 @@ pub struct CommitEntry {
     pub path: String,
 }
 
+/// A page that was changed in a span of time (Look back).
+#[derive(Debug, Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ChangedPage {
+    /// The page's path as the newest change in the span left it.
+    pub path: String,
+    /// How many saved versions in the span touched it.
+    pub changes: u32,
+    /// It was made in the span.
+    pub new: bool,
+    /// Time of the newest change, seconds since the epoch.
+    #[ts(type = "number")]
+    pub time: i64,
+}
+
 /// A file that existed in history but not in `HEAD`.
 #[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]

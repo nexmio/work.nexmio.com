@@ -88,8 +88,8 @@ describe("Header menus", () => {
     expect(names.slice(0, 7).map((n) => n.replace(/Ctrl\+.+$|⌘.+$/, "").trim())).toEqual([
       "Page",
       "Meeting note…",
-      "Quick page",
       "Task",
+      "Project…",
       "Idea",
       "Today's daily page",
       "Write it down…",
@@ -100,6 +100,18 @@ describe("Header menus", () => {
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Go menu" }));
     expect(await screen.findByRole("menuitem", { name: /Ask about my pages/ })).toBeInTheDocument();
+    // Every area, in the order of the navigation, with Ctrl+1 … 6.
+    const go = (await screen.findAllByRole("menuitem")).map((i) => i.textContent);
+    expect(go.slice(0, 6)).toEqual([
+      "StartCtrl+1",
+      "PagesCtrl+2",
+      "TasksCtrl+3",
+      "ProjectsCtrl+4",
+      "MeetingsCtrl+5",
+      "IdeasCtrl+6",
+    ]);
+    await user.click(screen.getByRole("menuitem", { name: /Meetings/ }));
+    expect(useUiStore.getState().centerView).toBe("meetings");
   });
 });
 

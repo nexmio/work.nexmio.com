@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::git::{history, CommitEntry, CommitReason, DeletedFile};
+use crate::git::{history, ChangedPage, CommitEntry, CommitReason, DeletedFile};
 use crate::state::AppState;
 use crate::vault::ops;
 use tauri::State;
@@ -21,6 +21,18 @@ pub async fn file_history(
     state
         .current_vault()?
         .with_repo(|r| history::file_history(r, &path))
+}
+
+/// The pages changed from `from` up to before `to` (seconds since the epoch), for Look back.
+#[tauri::command]
+pub async fn changed_pages(
+    state: State<'_, AppState>,
+    from: i64,
+    to: i64,
+) -> Result<Vec<ChangedPage>, AppError> {
+    state
+        .current_vault()?
+        .with_repo(|r| history::changed_pages(r, from, to))
 }
 
 #[tauri::command]

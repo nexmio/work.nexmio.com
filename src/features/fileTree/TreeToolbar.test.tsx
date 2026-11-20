@@ -30,6 +30,7 @@ describe("TreeToolbar", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useUiStore.setState({ newPlanNonce: 0, centerView: "notes", projectDialog: null });
     createFolder.mockResolvedValue("Ideas");
     useVaultStore.setState({
       vault: null,
@@ -48,41 +49,22 @@ describe("TreeToolbar", () => {
   async function openMenu(): Promise<ReturnType<typeof userEvent.setup>> {
     const user = userEvent.setup();
     render(<TreeToolbar />);
-    await user.click(screen.getByRole("button", { name: "New" }));
+    await user.click(screen.getByRole("button", { name: "More for pages" }));
     return user;
   }
 
-  it("New → Page creates a page", async () => {
-    const user = await openMenu();
-    await user.click(await screen.findByRole("menuitem", { name: /Page/ }));
-    expect(actions.newNoteInCurrentFolder).toHaveBeenCalled();
+  it("has no New button of its own: pages are made with New in the navigation and in File", async () => {
+    render(<TreeToolbar />);
+    expect(screen.queryByRole("button", { name: "New" })).toBeNull();
+    await userEvent.setup().click(screen.getByRole("button", { name: "More for pages" }));
+    expect(await screen.findByRole("menuitem", { name: /New folder/ })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Quick page/ })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: /^Page$/ })).toBeNull();
   });
 
-  it("New → Quick page opens the write-it-down box on Page, without a new page", async () => {
-    useUiStore.setState({ captureKind: null });
+  it("New folder asks for a name and creates it", async () => {
     const user = await openMenu();
-    await user.click(await screen.findByRole("menuitem", { name: /Quick page/ }));
-    expect(useUiStore.getState().captureKind).toBe("note");
-    expect(createStandardNote).not.toHaveBeenCalled();
-  });
-
-  it("New → Meeting note opens the meeting window", async () => {
-    useUiStore.setState({ meetingFormOpen: false });
-    const user = await openMenu();
-    await user.click(await screen.findByRole("menuitem", { name: /Meeting note/ }));
-    expect(useUiStore.getState().meetingFormOpen).toBe(true);
-  });
-
-  it("New has no starter and no template, and offers the daily page", async () => {
-    await openMenu();
-    expect(await screen.findByRole("menuitem", { name: /Today's daily page/ })).toBeInTheDocument();
-    expect(screen.queryByRole("menuitem", { name: /starter/i })).toBeNull();
-    expect(screen.queryByRole("menuitem", { name: /template/i })).toBeNull();
-  });
-
-  it("New → Folder asks for a name and creates it", async () => {
-    const user = await openMenu();
-    await user.click(await screen.findByRole("menuitem", { name: /Folder/ }));
+    await user.click(await screen.findByRole("menuitem", { name: /New folder/ }));
     await user.type(screen.getByLabelText("Folder name"), "Ideas");
     await user.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => {
@@ -91,7 +73,7 @@ describe("TreeToolbar", () => {
     expect(useUiStore.getState().projectDialog).toBeNull();
   });
 
-  it("New → Project opens the project window for a new project in the vault root", async () => {
+  it("New project opens the same window as in Projects (a project and its plan), never a folder here", async () => {
     // Whatever is selected, a project is never made inside a folder or another project.
     useVaultStore.setState({
       projects: [project],
@@ -100,15 +82,17 @@ describe("TreeToolbar", () => {
       activePath: null,
     });
     const user = await openMenu();
-    await user.click(await screen.findByRole("menuitem", { name: /Project/ }));
-    expect(useUiStore.getState().projectDialog).toEqual({ folder: "", project: null });
+    await user.click(await screen.findByRole("menuitem", { name: /New project/ }));
+    expect(useUiStore.getState().projectDialog).toBeNull();
+    expect(useUiStore.getState().newPlanNonce).toBe(1);
+    expect(useUiStore.getState().centerView).toBe("plans");
     expect(createFolder).not.toHaveBeenCalled();
   });
 
   it("there is no way to turn an existing folder into a project from the menus", async () => {
     const user = await openMenu();
     expect(screen.queryByRole("menuitem", { name: /Make project/ })).toBeNull();
-    expect(await screen.findByRole("menuitem", { name: /Project…/ })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: /New project…/ })).toBeInTheDocument();
     await user.keyboard("{Escape}");
   });
 

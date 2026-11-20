@@ -1,7 +1,6 @@
-import { MoreHorizontal, Sparkles } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { BetaBadge } from "@/components/BetaBadge";
 import { ViewHeader } from "@/components/ViewHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,23 +10,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PlainButton } from "@/components/ui/plain-button";
-import { PLANS_LABEL } from "@/lib/planTree";
+import { nodeAt, PLANS_LABEL } from "@/lib/planTree";
 import { cn } from "@/lib/utils";
-import { useAiBlocked } from "@/lib/useAiBlocked";
+import { askChat } from "@/lib/askChat";
+import { AreaAiMenu } from "@/components/AreaAiMenu";
 import { usePlanStore, type PlanView } from "@/stores/planStore";
+import { suggestParts } from "./suggestParts";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { firstStep } from "./nodeInfo";
 import { PlanDialogs } from "./PlanDialogs";
 import { PlanMap } from "./PlanMap";
+import { ProjectOverview } from "./ProjectOverview";
 import { usePartSlot } from "./PartSlot";
 import { PlanOutline } from "./PlanOutline";
 import { PlanProjectNotice } from "./PlanProjectNotice";
 import { usePlanContext } from "./usePlanContext";
 
 const VIEWS: { id: PlanView; label: string }[] = [
-  { id: "outline", label: "Outline" },
+  { id: "overview", label: "Overview" },
   { id: "map", label: "Map" },
+  { id: "outline", label: "Outline" },
 ];
 
 /** A small drawing of a plan: a root, three parts, and what a part can be tied to. */
@@ -69,7 +72,9 @@ export function PlansView() {
   const finished = usePlanStore((s) => s.finished);
   const nodes = usePlanStore((s) => s.nodes);
   const view = usePlanStore((s) => s.view);
-  const aiOff = useAiBlocked();
+  const selected = usePlanStore((s) => s.selected);
+  const chosenPart =
+    selected === null || selected.length === 0 ? undefined : nodeAt(nodes, selected);
   const ctx = usePlanContext(path);
   const fromProject = useUiStore((s) => s.planFromProjectFolder);
   const planToOpen = useUiStore((s) => s.planToOpen);
@@ -104,22 +109,22 @@ export function PlansView() {
     return (
       <section aria-label={PLANS_LABEL} className="flex h-full min-h-0 flex-col bg-background">
         <ViewHeader title={PLANS_LABEL}>
-          <BetaBadge title="Plans are in beta: still being built, and they will change." />
           <span className="hidden text-sm text-muted-foreground md:inline">
             Break something big down into parts
           </span>
         </ViewHeader>
         <div className="min-h-0 flex-1 overflow-auto px-6 py-8">
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-5">
-            <p className="text-lg font-semibold">Start a plan</p>
+            <p className="text-lg font-semibold">Start a project</p>
             <p className="max-w-lg text-center text-sm text-muted-foreground">
-              Break something big down. Choose a plan at the left, or start one:
+              A project is something big, broken down in its plan. Choose one at the left, or start
+              one:
             </p>
             <div className="grid w-full gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2 rounded-xl border-2 border-primary bg-card p-4">
-                <b>Empty plan</b>
+                <b>New project</b>
                 <span className="text-sm text-muted-foreground">
-                  Write the parts yourself, one at a time.
+                  A folder for it, and its plan: write the parts yourself, one at a time.
                 </span>
                 <Button
                   className="mt-1"
@@ -127,13 +132,13 @@ export function PlansView() {
                     usePlanStore.getState().setGuidedOpen(true);
                   }}
                 >
-                  New plan
+                  New project
                 </Button>
               </div>
               <div className="flex flex-col gap-2 rounded-xl border bg-card p-4">
-                <b>From a project</b>
+                <b>A project you have</b>
                 <span className="text-sm text-muted-foreground">
-                  Make a plan of a project you already have.
+                  Make the plan of a project you already have.
                 </span>
                 <Button
                   className="mt-1"
@@ -142,7 +147,7 @@ export function PlansView() {
                     usePlanStore.getState().setDialog({ kind: "import", folder: null });
                   }}
                 >
-                  Plan from a project…
+                  Make its plan…
                 </Button>
               </div>
             </div>
@@ -159,7 +164,6 @@ export function PlansView() {
   return (
     <section aria-label={PLANS_LABEL} className="flex h-full min-h-0 flex-col bg-background">
       <ViewHeader title={title}>
-        <BetaBadge title="Plans are in beta: still being built, and they will change." />
         <div
           role="group"
           aria-label="View"
@@ -183,17 +187,50 @@ export function PlansView() {
             </PlainButton>
           ))}
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={aiOff !== null || finished}
-          title={aiOff ?? "The AI suggests parts of the plan"}
-          onClick={() => {
-            usePlanStore.getState().setDialog({ kind: "parts", path: [] });
-          }}
-        >
-          <Sparkles /> Suggest parts
-        </Button>
+        <AreaAiMenu
+          label="AI for this project"
+          groups={[
+            {
+              label: "Do",
+              entries: [
+                {
+                  label: "Find what is missing",
+                  hint: "Parts the plan may lack; you choose",
+                  off: finished ? "The project is finished" : undefined,
+                  run: () => {
+                    suggestParts([]);
+                  },
+                },
+                {
+                  label: "Break down the chosen part",
+                  hint: chosenPart === undefined ? "" : `Smaller parts of “${chosenPart.text}”`,
+                  off: finished
+                    ? "The project is finished"
+                    : chosenPart === undefined
+                      ? "Choose a part first"
+                      : undefined,
+                  run: () => {
+                    if (selected !== null) suggestParts(selected);
+                  },
+                },
+              ],
+            },
+            {
+              label: "Ask",
+              entries: [
+                {
+                  label: "Ask about this project",
+                  hint: "How far it is, what is next",
+                  run: () => {
+                    void askChat(
+                      `How far is the project “${title}” (plan ${path}), and what should I do next in it?`,
+                    );
+                  },
+                },
+              ],
+            },
+          ]}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline" aria-label="More for this plan">
@@ -202,13 +239,23 @@ export function PlansView() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {finished ? (
-              <DropdownMenuItem
-                onSelect={() => {
-                  void usePlanStore.getState().setFinished(false);
-                }}
-              >
-                Open it again
-              </DropdownMenuItem>
+              <>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    void usePlanStore.getState().setFinished(false);
+                  }}
+                >
+                  Open it again
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onSelect={() => {
+                    usePlanStore.getState().setDialog({ kind: "delete" });
+                  }}
+                >
+                  Delete plan…
+                </DropdownMenuItem>
+              </>
             ) : (
               <DropdownMenuItem
                 onSelect={() => {
@@ -234,8 +281,8 @@ export function PlansView() {
               Write down everything that comes to mind: Enter adds a part, Tab makes the next one a
               smaller part of it, Shift+Tab goes back up, and a pasted list becomes a tree. Nothing
               has to be tied to anything yet. When you want to, press ··· on a part to make it a
-              task, an epic or a page, or to link one that is there. Double-click a part to change
-              its words. There is no timer: take the time you need, or come back later.
+              task, an epic or a page, or to link one that is there. Double-click a part to rename
+              it. There is no timer: take the time you need, or come back later.
             </p>
             <PlanOutline nodes={nodes} ctx={ctx} />
             {start && (
@@ -255,6 +302,8 @@ export function PlansView() {
               </div>
             )}
           </div>
+        ) : view === "overview" ? (
+          <ProjectOverview planPath={path} />
         ) : (
           <PlanMap nodes={nodes} ctx={ctx} />
         )}

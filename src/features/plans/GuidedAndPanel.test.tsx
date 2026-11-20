@@ -17,6 +17,8 @@ vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
 vi.mock("@/lib/useAiBlocked", () => ({ useAiBlocked: () => null }));
 vi.mock("@/lib/askAi", () => ({ askAi: vi.fn() }));
 
+import { LinkResolver } from "@/lib/links";
+import { makeTask } from "@/test/taskFixtures";
 import { GuidedDialog } from "./GuidedDialog";
 import { PlanDialogs } from "./PlanDialogs";
 import { PlansPanel } from "./PlansPanel";
@@ -124,7 +126,9 @@ describe("GuidedDialog", () => {
     await waitFor(() => {
       expect(usePlanStore.getState().path).toBe("Move the office/Move the office.md");
     });
-    expect(written["Move the office/Move the office.md"]).toContain("tags: [plan]");
+    expect(written["Move the office/Move the office.md"]).toContain(
+      "tags: [plan, move-the-office]",
+    );
     // 2. The parts, and a part broken into a smaller one.
     await user.type(
       await screen.findByRole("textbox", { name: "Add a part" }),
@@ -148,7 +152,9 @@ describe("GuidedDialog", () => {
     await user.click(within(list).getByRole("radio", { name: "Visit the offices" }));
     await user.click(screen.getByRole("button", { name: "Make it a task now" }));
     await waitFor(() => {
-      expect(addToNote).toHaveBeenCalledWith("Tasks/Move.md", ["Visit the offices"]);
+      expect(addToNote).toHaveBeenCalledWith("Tasks/Move.md", [
+        "Visit the offices #move-the-office",
+      ]);
     });
     expect(usePlanStore.getState().guidedOpen).toBe(false);
   });
@@ -197,7 +203,8 @@ describe("ImportProject", () => {
     await waitFor(() => {
       expect(usePlanStore.getState().path).toBe("Move/Move.md");
     });
-    expect(written["Move/Move.md"]).toContain("tags: [plan]");
+    // The project's tag is on the plan, so what the plan makes can carry it too.
+    expect(written["Move/Move.md"]).toContain("tags: [plan, move]");
     expect(written["Move/Move.md"]).toContain("- Notes\n  - Contract [[Move/Notes/Contract]]");
     expect(written["Move/Move.md"]).toContain("- Vans [[Move/Vans]]");
     expect(Object.keys(written)).toEqual(["Move/Move.md"]);
@@ -233,10 +240,30 @@ describe("PlansPanel", () => {
     usePlanStore.setState({ plans: [], loaded: false, path: null, guidedOpen: false });
   });
 
-  it("lists the plans that go on and the finished ones apart, and opens one", async () => {
+  it("lists the plans that go on, with their tasks done of all, the finished ones apart, and opens one", async () => {
+    useVaultStore.setState({
+      projects: [],
+      resolver: new LinkResolver(["Plans/Move.md", "Plans/Old.md", "Plans/Epics/Move.md"]),
+    });
+    useTaskStore.setState({
+      loaded: true,
+      epics: [
+        {
+          path: "Plans/Epics/Move.md",
+          title: "Move",
+          source: "Plans/Move",
+          description: "",
+          tags: [],
+        },
+      ],
+      tasks: [
+        makeTask({ path: "Plans/Epics/Move.md", title: "Book the van", done: true }),
+        makeTask({ path: "Plans/Epics/Move.md", line: 5, title: "Tell the staff" }),
+      ],
+    });
     render(<PlansPanel />);
     const user = userEvent.setup();
-    expect(await screen.findByRole("button", { name: /^Move/ })).toHaveTextContent("2");
+    expect(await screen.findByRole("button", { name: /^Move/ })).toHaveTextContent("1 of 2");
     expect(screen.getByText("Archived · 1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Old one/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /^Move/ }));
@@ -246,7 +273,7 @@ describe("PlansPanel", () => {
     expect(usePlanStore.getState().path).toBe("Plans/Move.md");
   });
 
-  it("lists a plan under its project, one in no project apart, and offers a plan to a project without one", async () => {
+  it("lists each project by its name, a plan in no project apart, and Make the plan for a project without one", async () => {
     const project = (id: string, name: string) => ({
       schemaVersion: 1,
       id,
@@ -264,18 +291,24 @@ describe("PlansPanel", () => {
       { path: "Plans/Trip.md", content: "---\ntags: [plan]\n---\n# Trip\n\n- a\n" },
     ]);
     render(<PlansPanel />);
-    await screen.findByRole("button", { name: /^Move/ });
-    expect(screen.getByRole("heading", { name: "Office" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Not in a project" })).toBeInTheDocument();
-    expect(screen.getByText("Projects without a plan")).toBeInTheDocument();
-    await userEvent.setup().click(screen.getByRole("button", { name: "Make a plan of Course" }));
+    // The project is listed by its own name; its plan opens from it.
+    expect(await screen.findByRole("button", { name: /^Office/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Plans in no project" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Trip/ })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Make the plan of Course" }));
     expect(useUiStore.getState().planFromProjectFolder).toBe("Course");
     useVaultStore.setState({ projects: [] });
   });
 
-  it("starts a new plan from the + button", async () => {
+  it("starts a new project from the + button", async () => {
     render(<PlansPanel />);
-    await userEvent.setup().click(screen.getByRole("button", { name: "New plan" }));
+    // The + New button at the top and the row at the bottom of the list do the same.
+    const buttons = screen.getAllByRole("button", { name: "New project" });
+    expect(buttons).toHaveLength(2);
+    await userEvent.setup().click(buttons[0] as HTMLElement);
+    expect(usePlanStore.getState().guidedOpen).toBe(true);
+    usePlanStore.getState().setGuidedOpen(false);
+    await userEvent.setup().click(buttons[1] as HTMLElement);
     expect(usePlanStore.getState().guidedOpen).toBe(true);
   });
 });

@@ -18,7 +18,7 @@ export function ChatHeader({
   return (
     <div className="flex h-9 shrink-0 items-center gap-1 border-b px-3">
       <span className="flex items-center gap-1.5 text-xs font-semibold">
-        Ask about my pages <BetaBadge />
+        AI <BetaBadge />
       </span>
       <span className="flex-1" />
       {children}

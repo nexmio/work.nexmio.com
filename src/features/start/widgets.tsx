@@ -16,7 +16,7 @@ import {
   whenChanged,
   type RecentFilter,
 } from "@/lib/startPage";
-import { epicGroups, recentLeftOff } from "@/lib/taskLogic";
+import { epicGroups, noteName, recentLeftOff } from "@/lib/taskLogic";
 import { formatTime } from "@/lib/timeFormat";
 import { useAiBlocked } from "@/lib/useAiBlocked";
 import { cn, dirname, noteTitle } from "@/lib/utils";
@@ -268,11 +268,43 @@ export function RecentWidget({ narrow }: { narrow: boolean }) {
   );
 }
 
-/** The notes with the tag `pinned`. */
+/** The pages and the tasks that are pinned. */
 export function PinnedWidget() {
   const { paths, unpin } = usePinned();
+  const tasks = useTaskStore((s) => s.tasks);
+  const pinnedTasks = tasks.filter((t) => t.pinned);
   return (
     <div className="flex flex-col gap-1.5">
+      {pinnedTasks.map((t) => (
+        <div
+          key={`${t.path}:${t.title}`}
+          className="group flex items-center rounded-md border hover:bg-muted"
+        >
+          <PlainButton
+            type="button"
+            title={`Task in ${noteName(t.path)}`}
+            className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left text-sm focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => {
+              useTaskStore.getState().open(t);
+            }}
+          >
+            <Star className="size-3.5 shrink-0 fill-primary text-primary" aria-hidden />
+            <span className="truncate">{t.title}</span>
+            <StatusChip status={t.status} />
+          </PlainButton>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-7"
+            aria-label={`Unpin ${t.title}`}
+            onClick={() => {
+              void useTaskStore.getState().setPinned(t, false);
+            }}
+          >
+            <X />
+          </Button>
+        </div>
+      ))}
       {paths.map((p) => (
         <div key={p} className="group flex items-center rounded-md border hover:bg-muted">
           <PlainButton
@@ -300,7 +332,7 @@ export function PinnedWidget() {
         </div>
       ))}
       <p className="rounded-md border border-dashed px-2 py-1.5 text-xs text-muted-foreground">
-        Pin a page from its <b>···</b> menu.
+        Pin a page, an epic or a task: right-click it, or use its <b>···</b> menu.
       </p>
     </div>
   );
@@ -446,7 +478,7 @@ export function WorkingOnWidget() {
   );
 }
 
-/** Quick notes and open ideas. */
+/** Pages made from ideas and open ideas. */
 export function InboxWidget() {
   const tree = useVaultStore((s) => s.tree);
   const folder = useVaultStore((s) => s.vault?.config.quickNotesFolder) ?? "";

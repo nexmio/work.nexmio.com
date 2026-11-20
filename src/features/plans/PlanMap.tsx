@@ -1,4 +1,4 @@
-import { LocateFixed, Rows3, ZoomIn, ZoomOut } from "lucide-react";
+import { LocateFixed, Rows3, StickyNote, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { InlineEdit } from "@/components/RowActions";
@@ -28,17 +28,19 @@ import { usePlanStore } from "@/stores/planStore";
 import { useUiStore } from "@/stores/uiStore";
 import { NodeChips } from "./NodeChips";
 import { infoFor, type InfoContext } from "./nodeInfo";
-import { nodeActions } from "./planActions";
+import { nodeActions, saveNote } from "./planActions";
 import { ChosenPart } from "./ChosenPart";
 import { usePartSlot } from "./PartSlot";
 import {
   type Arrange,
   BOX_H,
   BOX_W,
+  keyOf,
   layout,
   lines,
   moveBoxes,
   readChoices,
+  renameKey,
   writeChoices,
   type MapChoices,
 } from "./mapLayout";
@@ -179,21 +181,35 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan]);
 
-  /** What can be done with a box: the plan itself only takes new parts and AI parts. */
-  const actionsFor = (path: NodePath) =>
-    nodeActions(path)
-      .filter((a) => !["up", "down", "in", "out"].includes(a.id))
-      .filter((a) => path.length > 0 || a.id === "sub" || a.id === "parts")
-      .map((a) =>
-        a.id === "sub"
+  /**
+   * What can be done with a box on the map (its menu and the right panel): "Add a part" opens a
+   * window here, as the outline's own field is not on the map.
+   */
+  const mapActions = (path: NodePath) =>
+    nodeActions(path).map((a) =>
+      a.id === "sub"
+        ? {
+            ...a,
+            run: () => {
+              usePlanStore.getState().setDialog({ kind: "add", path });
+            },
+          }
+        : a.id === "note"
           ? {
               ...a,
+              // On the map the note is written in the right panel, opened on the part.
               run: () => {
-                usePlanStore.getState().setDialog({ kind: "add", path });
+                choosePart(path);
+                usePlanStore.getState().setNoteAt(path);
               },
             }
           : a,
-      );
+    );
+  /** The menu of a box: the plan itself only takes new parts and AI parts; moving is in the panel. */
+  const actionsFor = (path: NodePath) =>
+    mapActions(path)
+      .filter((a) => !["up", "down", "in", "out"].includes(a.id))
+      .filter((a) => path.length > 0 || a.id === "sub" || a.id === "parts");
   /** How the parts under a box can stand: the choices are offered, and the one in use is ticked. */
   const arrangeFor = (p: { key: string; node: PlanNode }) => {
     if (p.node.children.length === 0) return [];
@@ -215,8 +231,14 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
       pick("In 3 rows", { by: "rows", n: 3 }),
     ];
   };
+  /** Changes the words of a box; what the map remembers about it moves to its new words. */
   const change = (path: NodePath, node: PlanNode, t: string): void => {
     const links = splitText(node.text).links;
+    const box = shown.find((p) => samePath(p.path, path));
+    if (box) {
+      const to = keyOf([...box.key.split("\u001f").slice(0, -1), t]);
+      choose(renameKey(current, box.key, to));
+    }
     void usePlanStore.getState().edit((all) => setText(all, path, joinText(t, links)));
   };
   const chosen = selected ? shown.find((p) => samePath(p.path, selected)) : undefined;
@@ -226,7 +248,10 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
 
   /** Chooses a box and shows it in the right panel. */
   const choosePart = (path: NodePath): void => {
-    usePlanStore.getState().select(path);
+    const store = usePlanStore.getState();
+    // A note that was being written for another part is let go (nothing was saved).
+    if (store.noteAt !== null && !samePath(store.noteAt, path)) store.setNoteAt(null);
+    store.select(path);
     useUiStore.getState().setRightTab("part");
   };
 
@@ -399,9 +424,7 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
                           type="button"
                           aria-pressed={isSel}
                           title={
-                            isRoot
-                              ? plain
-                              : `${plain} (drag to move it, double-click to change the words)`
+                            isRoot ? plain : `${plain} (drag to move it, double-click to rename it)`
                           }
                           className="absolute inset-0 touch-none rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
                           aria-label={plain || "(empty)"}
@@ -418,8 +441,16 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
                             if (!isRoot) setEditing(k);
                           }}
                         />
-                        <span className="pointer-events-none max-w-full truncate">
-                          {plain || "(empty)"}
+                        <span className="pointer-events-none flex max-w-full items-center gap-1">
+                          <span className="truncate">{plain || "(empty)"}</span>
+                          {p.node.note !== undefined && (
+                            <span
+                              className="flex shrink-0 items-center gap-0.5 text-[10px] font-normal opacity-70"
+                              title={p.node.note}
+                            >
+                              <StickyNote className="size-3" aria-hidden /> Note
+                            </span>
+                          )}
                         </span>
                         {tied && !isRoot && (
                           <span className="relative z-10 flex max-w-full flex-wrap justify-center gap-1 overflow-hidden">
@@ -428,7 +459,25 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
                         )}
                       </div>
                     </ContextMenuTrigger>
-                    <ContextMenuContent className="w-60">
+                    <ContextMenuContent
+                      className="w-60"
+                      onCloseAutoFocus={(e) => {
+                        // "Write a note…" puts the cursor in the note in the right panel: keep it there.
+                        if (usePlanStore.getState().noteAt !== null) e.preventDefault();
+                      }}
+                    >
+                      {!isRoot && (
+                        <>
+                          <ContextMenuItem
+                            onSelect={() => {
+                              setEditing(k);
+                            }}
+                          >
+                            Rename
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                        </>
+                      )}
                       {arrange.length > 0 && (
                         <>
                           <ContextMenuSub>
@@ -459,15 +508,6 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
                           </ContextMenuItem>
                         </div>
                       ))}
-                      {!isRoot && (
-                        <ContextMenuItem
-                          onSelect={() => {
-                            setEditing(k);
-                          }}
-                        >
-                          Change the words
-                        </ContextMenuItem>
-                      )}
                     </ContextMenuContent>
                   </ContextMenu>
                 );
@@ -483,14 +523,19 @@ export function PlanMap({ nodes, ctx }: { nodes: readonly PlanNode[]; ctx: InfoC
               info={info}
               node={chosen.node}
               path={chosen.path}
+              actions={mapActions(chosen.path)}
               arrange={chosenArrange}
               arrangedNow={arranged[chosen.key]}
               onArrange={(how) => {
                 setArrange(chosen.key, how);
               }}
-              onEdit={() => {
-                setEditing(chosen.path.join("."));
+              onRename={(t) => {
+                change(chosen.path, chosen.node, t);
               }}
+              onNote={(t) => {
+                void saveNote(chosen.path, t);
+              }}
+              siblings={chosen.parent?.node.children.length ?? 1}
               aiOff={aiOff}
             />
           ) : (

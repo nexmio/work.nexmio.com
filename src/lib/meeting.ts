@@ -85,6 +85,8 @@ export interface MeetingInput {
   agenda: string[];
   /** Left out: all three parts. */
   parts?: MeetingParts;
+  /** Tags besides `meeting`, such as the tag of the project the meeting belongs to. */
+  tags?: string[];
 }
 
 export interface AgendaItem {
@@ -101,6 +103,8 @@ export interface Meeting {
   people: string[];
   agenda: AgendaItem[];
   parts: MeetingParts;
+  /** The tags in its properties besides `meeting` (a project's tag, for one). */
+  tags: string[];
 }
 
 /** A name without the characters that would break the list in the frontmatter. */
@@ -122,7 +126,10 @@ export function buildMeetingNote(input: MeetingInput): string {
   const people = input.people.map(cleanName).filter((p) => p !== "");
   const agenda = input.agenda.map(cleanItem).filter((a) => a !== "");
   const parts = input.parts ?? ALL_PARTS;
-  const front = ["tags: [meeting]"];
+  const extra = (input.tags ?? [])
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t !== "" && t !== "meeting");
+  const front = [`tags: [${["meeting", ...extra].join(", ")}]`];
   if (input.date !== "") {
     front.push(`meeting: ${input.date}${input.time !== "" ? ` ${input.time}` : ""}`);
   }
@@ -169,7 +176,15 @@ export function parseMeeting(content: string): Meeting {
   let time: string | null = null;
   let people: string[] = [];
   let parts: MeetingParts = { ...ALL_PARTS };
+  let tags: string[] = [];
   for (const l of front.body) {
+    const tagged = /^tags:\s*\[(.*)\]\s*$/.exec(l);
+    if (tagged) {
+      tags = (tagged[1] ?? "")
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t !== "" && t !== "meeting");
+    }
     const when = /^meeting:\s*(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?/.exec(l);
     if (when) {
       date = when[1] ?? null;
@@ -208,6 +223,7 @@ export function parseMeeting(content: string): Meeting {
     people,
     agenda,
     parts,
+    tags,
   };
 }
 
@@ -485,6 +501,8 @@ export interface MeetingSeed {
   who: string;
   agenda: string;
   parts: MeetingParts;
+  /** The tags besides `meeting` (the project it belongs to), kept for the next meeting. */
+  tags?: string[];
 }
 
 /** What the window for the next meeting starts with, taken from a meeting that has been held. */
@@ -498,5 +516,6 @@ export function nextMeetingSeed(content: string): MeetingSeed {
     who: m.people.join(", "),
     agenda: left.join("\n"),
     parts: m.parts,
+    tags: m.tags,
   };
 }

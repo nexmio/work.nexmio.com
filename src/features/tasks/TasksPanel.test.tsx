@@ -17,6 +17,7 @@ vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
 import { TasksPanel } from "./TasksPanel";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
+import { useVaultStore } from "@/stores/vaultStore";
 
 describe("TasksPanel", () => {
   beforeEach(() => {
@@ -40,20 +41,46 @@ describe("TasksPanel", () => {
       chosenArea: null,
     });
     useUiStore.setState({ centerView: "tasks" });
+    useVaultStore.setState({ projects: [] });
   });
 
-  it("lists the areas with how far each has come, finished ones folded away", async () => {
+  it("puts the epics of a project under its name, and the others under Other epics", async () => {
+    apiMock.listTasks.mockResolvedValue([
+      makeTask({ path: "Office/Epics/Move.md", title: "One" }),
+      makeTask({ path: "Tasks/A.md", title: "Two" }),
+    ]);
+    apiMock.listEpics.mockResolvedValue([
+      {
+        path: "Office/Epics/Move.md",
+        title: "Office move",
+        source: null,
+        description: "",
+        tags: [],
+      },
+      { path: "Tasks/A.md", title: "Alpha", source: null, description: "", tags: [] },
+    ]);
+    useVaultStore.setState({
+      projects: [{ id: "p1", name: "Office move", folder: "Office" } as never],
+    });
+    render(<TasksPanel />);
+    const office = await screen.findByRole("list", { name: "Epics of Office move" });
+    expect(office).toHaveTextContent("Office move");
+    expect(screen.getByText("Project · Office move")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Other epics" })).toHaveTextContent("Alpha");
+  });
+
+  it("lists the epics with how far each has come, finished ones folded away", async () => {
     render(<TasksPanel />);
     const user = userEvent.setup();
     const alpha = await screen.findByRole("button", { name: /Alpha/ });
     expect(alpha).toHaveTextContent("1 of 2");
-    expect(screen.getByText("Choose one area")).toBeInTheDocument();
+    expect(screen.getByText("Choose an epic")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Beta/ })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Finished areas · 1" }));
+    await user.click(screen.getByRole("button", { name: "Finished epics · 1" }));
     expect(screen.getByRole("button", { name: /Beta/ })).toBeInTheDocument();
   });
 
-  it("chooses an area, keeps the choice and shows the task list", async () => {
+  it("chooses an epic, keeps the choice and shows the task list", async () => {
     useUiStore.setState({ centerView: "epic" });
     render(<TasksPanel />);
     await userEvent.setup().click(await screen.findByRole("button", { name: /Alpha/ }));

@@ -36,6 +36,7 @@ pub fn create(
     // Creates the folder and refuses a name that is taken or not allowed in a folder name.
     let folder = fs_ops::create_folder(&v.root, "", &name)?;
     let stamp = now();
+    let tag = super::tag_for(&name);
     let project = Project {
         schema_version: 1,
         id: Uuid::new_v4().to_string(),
@@ -44,6 +45,7 @@ pub fn create(
         instructions,
         provider_id,
         local_only: false,
+        tag: Some(tag),
         created_at: stamp.clone(),
         updated_at: stamp,
     };
@@ -68,8 +70,11 @@ pub fn update(v: &OpenVault, project: Project) -> AppResult<Project> {
         .find(|p| p.id == project.id)
         .ok_or_else(|| AppError::NotFound("Project not found".into()))?;
     ensure_unique_name(&v.project_list(), &project.name, Some(&project.id))?;
+    // The tag stays what it was when the project was made, also when the project is renamed.
+    let tag = existing.tag.or(project.tag.clone());
     let updated = Project {
         folder: existing.folder,
+        tag,
         created_at: existing.created_at,
         updated_at: now(),
         ..project
@@ -132,6 +137,19 @@ mod tests {
     }
 
     #[test]
+    fn a_new_project_gets_a_tag_from_its_name_and_keeps_it_when_renamed() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        let p = create(&v, "Server move", String::new(), None).unwrap();
+        assert_eq!(p.tag.as_deref(), Some("server-move"));
+        let mut renamed = p.clone();
+        renamed.name = "Server and network".into();
+        renamed.tag = None;
+        let u = update(&v, renamed).unwrap();
+        assert_eq!(u.tag.as_deref(), Some("server-move"));
+    }
+
+    #[test]
     fn empty_name_and_missing_project_are_rejected() {
         let d = tempfile::tempdir().unwrap();
         let v = open_for_test(d.path());
@@ -145,6 +163,7 @@ mod tests {
             instructions: String::new(),
             provider_id: None,
             local_only: false,
+            tag: None,
             created_at: String::new(),
             updated_at: String::new(),
         };

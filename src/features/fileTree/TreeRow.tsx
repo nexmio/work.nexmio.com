@@ -1,3 +1,4 @@
+import { PinMenuItem } from "@/components/PinMenuItem";
 import { countNotes, displayName, findFolder, topLevelPaths, type RowProps } from "./treeUtils";
 import { FolderTagMenu } from "./FolderTagMenu";
 import { SkillsSubmenu } from "./SkillsSubmenu";
@@ -355,6 +356,7 @@ export function TreeRow({
                   )}
                 </>
               )}
+              {isMarkdown(node.name) && <PinMenuItem path={node.path} kind="context" />}
               <ContextMenuItem
                 onSelect={() => {
                   useUiStore.getState().openExportDialog({ path: node.path, isFolder: node.isDir });

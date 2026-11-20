@@ -1,8 +1,9 @@
 name: Build an edition
 
 # Called by release.yml, once for Preview and once for Stable. Builds the installers (Windows and
-# Linux), adds them to the draft release, and on Windows builds the Microsoft Store package and
-# sends it to the Store (see docs/MSIX.md and scripts/store/Submit-Store.ps1).
+# Linux), adds them to the draft release, and on Windows builds the Microsoft Store package and keeps
+# it as a download of the run (see docs/MSIX.md). Nothing is sent to the Store: the package is
+# uploaded in Partner Center by hand for now (scripts/store/Submit-Store.ps1 is kept for later).
 on:
   workflow_call:
     inputs:
@@ -71,12 +72,6 @@ jobs:
           releaseId: ${{ inputs.release_id }}
           args: ${{ inputs.edition == 'preview' && '--config src-tauri/tauri.preview.conf.json' || '' }}
 
-      - uses: actions/download-artifact@v4
-        if: matrix.platform == 'windows-latest'
-        with:
-          name: release-texts
-          path: release-texts
-
       # The Microsoft Store package (see docs/MSIX.md). Preview and Stable have their own identity,
       # reserved in Partner Center, kept in repository variables. A problem here must not stop the
       # installers, so it only shows up as a failed step.
@@ -102,22 +97,6 @@ jobs:
           name: nexmio-work-${{ inputs.edition }}-msix
           path: msix-out/NexmioWork_*_x64.msix
           if-no-files-found: warn
-
-      # Sends the package and the texts (description, search terms, What's new) to the Store. Without
-      # the Store connection (the secrets below) it says so and does nothing.
-      - name: Send it to the Microsoft Store
-        if: matrix.platform == 'windows-latest' && steps.msix.outcome == 'success'
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $pkg = (Get-ChildItem msix-out -Filter 'NexmioWork_*_x64.msix' | Where-Object { $_.Name -notlike '*_test*' } | Select-Object -First 1).FullName
-          ./scripts/store/Submit-Store.ps1 -AppId "${{ vars.STORE_APP_ID }}" `
-            -PackagePath $pkg -ListingJson release-texts/store-listing.json -NotesFile release-texts/store-notes.txt `
-            -Edition "${{ inputs.edition == 'stable' && 'Stable' || 'Preview' }}"
-        env:
-          STORE_TENANT_ID: ${{ secrets.STORE_TENANT_ID }}
-          STORE_CLIENT_ID: ${{ secrets.STORE_CLIENT_ID }}
-          STORE_CLIENT_SECRET: ${{ secrets.STORE_CLIENT_SECRET }}
 
       # The copy for trying the package on a test Windows (Sandbox or a virtual machine), signed with
       # a throw-away certificate that is NOT valid in the Store. See docs/MSIX.md.

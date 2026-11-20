@@ -7,16 +7,18 @@ import { Button } from "@/components/ui/button";
 import { PlainButton } from "@/components/ui/plain-button";
 import { missingFacts } from "@/lib/facts";
 import { noteTitle } from "@/lib/utils";
-import { useAiJobStore, type AiJob } from "@/stores/aiJobStore";
+import { useAiJobStore, type EditJob } from "@/stores/aiJobStore";
+import { GoToButton } from "./GoToButton";
+import { PickJobCard } from "./PickJobCard";
 
-const STATUS: Record<AiJob["status"], string> = {
+const STATUS: Record<EditJob["status"], string> = {
   queued: "Waiting",
   running: "Working…",
   ready: "Ready to look at",
   failed: "Could not finish",
 };
 
-function Job({ job }: { job: AiJob }) {
+function Job({ job }: { job: EditJob }) {
   const [showOld, setShowOld] = useState(false);
   const lost = job.status === "ready" && !job.answer ? missingFacts(job.text, job.result) : [];
   const remove = (): void => {
@@ -34,6 +36,12 @@ function Job({ job }: { job: AiJob }) {
             {noteTitle(job.notePath)} · {STATUS[job.status]}
           </p>
         </div>
+        <GoToButton
+          label={job.label}
+          onClick={() => {
+            useAiJobStore.getState().goTo(job.id);
+          }}
+        />
         <PlainButton
           type="button"
           aria-label={
@@ -129,15 +137,16 @@ export function JobsTab() {
     <div className="min-h-0 flex-1 overflow-auto p-3" aria-live="polite">
       {jobs.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          Nothing is waiting. Choose an AI command on some text in a page: it is added here, the AI
-          takes them one at a time, and you can work on another page meanwhile. When the answer is
-          ready, accept it here and Nexmio Work writes it in the right page.
+          Nothing is waiting. What you ask the AI for (a command on some text, parts for a plan,
+          steps for a task, tasks in a page) is added here, the AI takes them one at a time, and you
+          can work on something else meanwhile. When the answer is ready, look at it here: nothing
+          is written before you accept it.
         </p>
       ) : (
         <ul className="flex flex-col gap-2" aria-label="AI tasks">
-          {jobs.map((j) => (
-            <Job key={j.id} job={j} />
-          ))}
+          {jobs.map((j) =>
+            j.kind === "pick" ? <PickJobCard key={j.id} job={j} /> : <Job key={j.id} job={j} />,
+          )}
         </ul>
       )}
     </div>

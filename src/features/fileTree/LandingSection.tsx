@@ -32,7 +32,7 @@ export function LandingSection({
   );
   if (nodes.length === 0) return null;
   return (
-    <SidebarSection title="Landing" storageKey="landing" count={fresh.length}>
+    <SidebarSection title="Inbox" storageKey="landing" count={fresh.length}>
       <MeetingLine />
       {fresh.length > 0 && (
         <ul aria-label="New pages" className="px-1 pb-1">
@@ -67,7 +67,7 @@ export function LandingSection({
           ))}
         </ul>
       )}
-      <FileTree nodes={nodes} rootFolder="" label="Landing folders" onAction={onAction} />
+      <FileTree nodes={nodes} rootFolder="" label="Inbox folders" onAction={onAction} />
     </SidebarSection>
   );
 }

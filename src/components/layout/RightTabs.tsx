@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import { PlainButton } from "@/components/ui/plain-button";
 import { cn } from "@/lib/utils";
-import { useChatStore } from "@/stores/chatStore";
 import { type RightTab, useUiStore } from "@/stores/uiStore";
 
 export const RIGHT_LABELS: Record<RightTab, string> = {
@@ -12,15 +11,10 @@ export const RIGHT_LABELS: Record<RightTab, string> = {
   history: "History",
   images: "Images",
   timer: "Timer",
-  ai: "AI",
 };
 
-/**
- * The tabs across the top of the right panel, and the button that closes the panel. The streaming
- * dot on the AI tab says an answer is being written, also while another tab is shown.
- */
+/** The tabs across the top of the right panel, and the button that closes the panel. */
 export function RightTabs({ tabs, current }: { tabs: readonly RightTab[]; current: RightTab }) {
-  const streaming = useChatStore((s) => s.streaming);
   return (
     <div className="flex h-9 shrink-0 items-stretch border-b pl-1 pr-1">
       <div
@@ -45,13 +39,6 @@ export function RightTabs({ tabs, current }: { tabs: readonly RightTab[]; curren
             }}
           >
             {RIGHT_LABELS[id]}
-            {id === "ai" && streaming && (
-              <span
-                data-testid="ai-streaming-dot"
-                aria-label="The AI is writing"
-                className="size-1.5 rounded-full bg-primary"
-              />
-            )}
           </PlainButton>
         ))}
       </div>

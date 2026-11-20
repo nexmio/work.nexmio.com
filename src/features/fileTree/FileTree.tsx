@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/context-menu";
 
 import { useTreeStore } from "@/stores/treeStore";
-import { reportError } from "@/stores/uiStore";
+import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { TreeRow } from "./TreeRow";
 import { droppedPaths, moveMany } from "./treeMoves";
@@ -125,6 +125,15 @@ export function FileTree({
         >
           {rootFolder === "" ? "Create index page for the whole vault" : "Create index page"}
         </ContextMenuItem>
+        {rootFolder === "" && (
+          <ContextMenuItem
+            onSelect={() => {
+              useUiStore.getState().requestNewPlan();
+            }}
+          >
+            New project…
+          </ContextMenuItem>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   );

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { tagFor } from "@/lib/noteTags";
 import { localAiOf } from "@/lib/aiChoice";
 import { nameError, projectNameError } from "@/lib/nameConflict";
 import { reportError, type ProjectDialogState, useUiStore } from "@/stores/uiStore";
@@ -135,6 +136,11 @@ export function ProjectForm({
                   {nameProblem}
                 </p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Tag: <code>#{p0?.tag ?? tagFor(isNew ? name : (p0?.name ?? name))}</code>. A plan in
+                this project puts it on everything it makes (its epic, tasks and pages).
+                {isNew ? "" : " It stays the same when you rename the project."}
+              </p>
             </div>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1.5">

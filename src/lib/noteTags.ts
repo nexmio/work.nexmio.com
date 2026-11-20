@@ -8,6 +8,8 @@ export interface NoteTag {
   label: string;
   /** What it does, shown in the menu. */
   does: string;
+  /** The button text when the word is written as `#tag` in the text, where it does nothing. */
+  makeIt: string;
 }
 
 export const NOTE_TAGS: readonly NoteTag[] = [
@@ -15,26 +17,31 @@ export const NOTE_TAGS: readonly NoteTag[] = [
     tag: "meeting",
     label: "Meeting",
     does: "Start meeting shows, and the agenda is not read as tasks.",
+    makeIt: "Make this page a meeting",
   },
   {
     tag: "epic",
     label: "Epic",
     does: "Its tasks are listed with your epics in Tasks.",
+    makeIt: "Make this page an epic",
   },
   {
     tag: "pinned",
     label: "Pinned",
     does: "The page is listed under Pinned on the start page.",
+    makeIt: "Pin to the start page",
   },
   {
     tag: "plan",
     label: "Plan",
     does: "Its list is the ideas of a plan, shown as an outline or a map under Plans.",
+    makeIt: "Make this page a plan",
   },
   {
     tag: "plan-finished",
     label: "Plan finished",
     does: "The plan is listed under Finished in Plans.",
+    makeIt: "Mark the plan as archived",
   },
 ];
 
@@ -59,6 +66,26 @@ export function cleanTagName(text: string): string | null {
   const t = text.trim().replace(/^#+/, "").toLowerCase();
   if (t === "" || !/^[\p{L}\p{N}_-]+$/u.test(t) || /^\d+$/.test(t)) return null;
   return t;
+}
+
+/**
+ * The tag made from a name (a project or a plan): lower case, spaces and other marks as `-`, only
+ * letters, digits, `-` and `_`. "project" when nothing is left. The same as `projects::tag_for`
+ * in the backend.
+ */
+export function tagFor(name: string): string {
+  let out = "";
+  for (const c of name.trim().toLowerCase()) {
+    if (/[\p{L}\p{N}_]/u.test(c)) out += c;
+    else if (out !== "" && !out.endsWith("-")) out += "-";
+  }
+  const t = out.replace(/-+$/, "");
+  return /\p{L}/u.test(t) ? t : "project";
+}
+
+/** The tag of a project: the one it was given when it was made, else one made from its name. */
+export function projectTag(project: { tag?: string | null; name: string }): string {
+  return project.tag ?? tagFor(project.name);
 }
 
 /** The `#tags` written in the text of a note (not in its properties or in code), lower case. */

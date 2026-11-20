@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { cleanTagName, isSystemTag, NOTE_TAGS, SYSTEM_TAGS, textTags, userTags } from "./noteTags";
+import {
+  cleanTagName,
+  isSystemTag,
+  NOTE_TAGS,
+  SYSTEM_TAGS,
+  tagFor,
+  textTags,
+  userTags,
+} from "./noteTags";
 
 describe("Nexmio Work's tags and the person's own", () => {
   it("knows Nexmio Work's own tags by name, whatever the case", () => {
@@ -26,5 +34,16 @@ describe("Nexmio Work's tags and the person's own", () => {
       "---\ntags: [epic, hidden]\n---\n# Plan\n\nSee #idea and (#Q4).\n\n```\n#code\n```\n\nInline `#also` and a heading #1 stays out. #idea again.\n";
     expect(textTags(note)).toEqual(["idea", "q4"]);
     expect(textTags("no tags here")).toEqual([]);
+  });
+});
+
+describe("tagFor", () => {
+  it("makes the same tag from a name as the backend does", () => {
+    expect(tagFor("Server flytning")).toBe("server-flytning");
+    expect(tagFor("  Kunde: Acme / 2026 ")).toBe("kunde-acme-2026");
+    expect(tagFor("Ærø_projekt")).toBe("ærø_projekt");
+    expect(tagFor("2026")).toBe("project");
+    expect(tagFor("!!!")).toBe("project");
+    expect(cleanTagName(tagFor("Move the office"))).toBe("move-the-office");
   });
 });

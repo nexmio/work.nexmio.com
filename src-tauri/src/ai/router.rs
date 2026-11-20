@@ -32,7 +32,7 @@ impl NotesProvider {
     }
 }
 
-fn is_local(config: &ProviderConfig) -> bool {
+pub(crate) fn is_local(config: &ProviderConfig) -> bool {
     config.effective_location() == Location::Local
 }
 
@@ -161,6 +161,7 @@ mod tests {
             instructions: String::new(),
             provider_id: provider.map(str::to_string),
             local_only: false,
+            tag: None,
             created_at: String::new(),
             updated_at: String::new(),
         }

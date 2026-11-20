@@ -89,10 +89,7 @@ export function AiChoice({
     () => (current && clouds.some((p) => p.id === current.id) ? current.id : clouds[0]?.id) ?? "",
   );
 
-  const order = aiOrder({
-    os: platform?.os ?? "",
-    store: platform?.store ?? false,
-  });
+  const order = aiOrder();
   const inUse = optionOf(current);
   const cloudOn = current !== undefined && inUse === "cloud" && cloudConsented(draft, current);
   const selected = picked ?? inUse;

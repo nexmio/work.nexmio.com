@@ -149,28 +149,30 @@ describe("StartPage", () => {
     expect(apiMock.noteSetTag).toHaveBeenCalledWith("Ops/Runbook.md", "pinned", false);
   });
 
-  it("New offers a page, a meeting, a quick page, a task and an idea", async () => {
+  it("New offers a page, a meeting, a task and an idea, and no quick page", async () => {
     render(<StartPage />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /New/ }));
+    const banner = screen.getByTestId("start-banner");
+    await user.click(within(banner).getByRole("button", { name: /New/ }));
     await user.click(await screen.findByRole("menuitem", { name: "Meeting" }));
     expect(useUiStore.getState().meetingFormOpen).toBe(true);
-    await user.click(screen.getByRole("button", { name: /New/ }));
+    await user.click(within(banner).getByRole("button", { name: /New/ }));
     await user.click(await screen.findByRole("menuitem", { name: "Task" }));
     expect(useUiStore.getState().captureKind).toBe("task");
-    await user.click(screen.getByRole("button", { name: /New/ }));
-    expect(await screen.findByRole("menuitem", { name: "Quick page" })).toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Idea" })).toBeInTheDocument();
+    await user.click(within(banner).getByRole("button", { name: /New/ }));
+    expect(await screen.findByRole("menuitem", { name: "Idea" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Quick page" })).toBeNull();
   });
 
-  it("welcomes a new vault with three buttons instead of empty lists", async () => {
+  it("welcomes a new vault with Get started and two buttons instead of empty lists", async () => {
     useRecent.setState({ paths: [] });
     apiMock.taggedNotes.mockResolvedValue([]);
     render(<StartPage />);
     expect(await screen.findByText("Welcome to Nexmio Work")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New page" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "New meeting" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open a folder" })).toBeInTheDocument();
+    // A meeting is one of the steps of Get started, so it has no button of its own here.
+    expect(await screen.findByRole("region", { name: "Get started" })).toBeInTheDocument();
   });
 
   it("is rearranged with Customize: add, move, widen, remove and reset, and it is remembered", async () => {
@@ -228,13 +230,14 @@ describe("StartPage: the default layout and Today", () => {
     useVaultStore.setState({ tree: [], files: [], reloadNonce: 0 });
   });
 
-  it("starts with Today, Pinned, Recent, Progress and Plans, and Today is wide", () => {
+  it("starts with Today, Pinned, Recent, Progress, Plans and This week, and Today is wide", () => {
     expect(DEFAULT_LAYOUT.map((p) => p.id)).toEqual([
       "today",
       "pinned",
       "recent",
       "epics",
       "plans",
+      "week",
     ]);
     expect(DEFAULT_LAYOUT[0]?.wide).toBe(true);
   });

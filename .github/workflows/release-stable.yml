@@ -1,7 +1,8 @@
 name: Release Stable
 
 # Makes a Preview release that is already out into Nexmio Work: builds the same tag as "Nexmio Work",
-# sends it to the Microsoft Store product "Nexmio Work", and makes the GitHub release the latest one,
+# keeps the Microsoft Store package "Nexmio Work" as a download of the run (it is not sent to the
+# Store; it is uploaded in Partner Center by hand for now), and makes the GitHub release the latest one,
 # which the website's main download follows. Start it by hand: Actions → Release Stable → Run workflow.
 # Starting it is the decision, so nothing asks again (add a required reviewer to the environment
 # "stable" if you want a second question).

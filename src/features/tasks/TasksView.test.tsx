@@ -34,8 +34,10 @@ import { useTimerStore } from "@/stores/timerStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { LOOSE_AREA } from "@/lib/taskLogic";
+import { LinkResolver } from "@/lib/links";
+import { usePlanIndex } from "@/stores/planIndexStore";
 
-describe("TasksView: one area at a time", () => {
+describe("TasksView: one epic at a time", () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -103,16 +105,43 @@ describe("TasksView: one area at a time", () => {
     useVaultStore.setState({ activePath: null });
   });
 
-  it("shows only the chosen area, with its progress, and the task to do Now", async () => {
+  it("shows only the chosen epic, with its progress, and the task to do Now", async () => {
     render(<TasksView />);
     const now = await screen.findByRole("region", { name: "Now" });
     expect(within(now).getByText("Write the steps")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "VPN guide" })).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
     expect(screen.getByText("1 of 4")).toBeInTheDocument();
+    // The epic's tags are in the header, so Now is the first thing on the page.
+    expect(screen.queryByText("Tags of this epic")).toBeNull();
+    expect(now.parentElement?.firstElementChild).toBe(now);
     // Nothing of the other areas.
     expect(screen.queryByText("Order headsets")).toBeNull();
     expect(screen.queryByText("Renew the licence")).toBeNull();
+  });
+
+  it("says which plan an epic made for a plan belongs to, and opens it", async () => {
+    apiMock.listEpics.mockResolvedValue([
+      { path: "Tasks/VPN guide.md", title: "VPN guide", source: "Plans/VPN" },
+    ]);
+    useVaultStore.setState({ resolver: new LinkResolver(["Plans/VPN.md", "Tasks/VPN guide.md"]) });
+    usePlanIndex.setState({ paths: ["Plans/VPN.md"], loaded: true });
+    render(<TasksView />);
+    expect(await screen.findByText(/Part of the plan/)).toHaveTextContent("“VPN”");
+    await userEvent.setup().click(screen.getByRole("button", { name: "Open the plan" }));
+    expect(useUiStore.getState().planToOpen).toBe("Plans/VPN.md");
+    expect(useUiStore.getState().centerView).toBe("plans");
+    usePlanIndex.setState({ paths: [], loaded: true });
+  });
+
+  it("shows no plan line for an epic that came from an ordinary page", async () => {
+    useVaultStore.setState({
+      resolver: new LinkResolver(["IT/VPN client guide.md", "Tasks/VPN guide.md"]),
+    });
+    usePlanIndex.setState({ paths: [], loaded: true });
+    render(<TasksView />);
+    await screen.findByRole("region", { name: "Now" });
+    expect(screen.queryByText(/Part of the plan/)).toBeNull();
   });
 
   it("has no filters, no fold buttons and no Today", async () => {
@@ -268,7 +297,7 @@ describe("TasksView: one area at a time", () => {
     });
     render(<TasksView />);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "More for this area" }));
+    await user.click(await screen.findByRole("button", { name: "More for this epic" }));
     await user.click(await screen.findByRole("menuitem", { name: "New epic…" }));
     await user.type(screen.getByLabelText("Name"), "New one{Enter}");
     expect(apiMock.epicCreate).toHaveBeenCalledWith("New one");
@@ -289,14 +318,14 @@ describe("TasksView: one area at a time", () => {
     const user = userEvent.setup();
     await screen.findByRole("region", { name: "Now" });
     expect(screen.queryByRole("textbox", { name: /^Name/ })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "More for this area" }));
+    await user.click(screen.getByRole("button", { name: "More for this epic" }));
     await user.click(await screen.findByRole("menuitem", { name: "Rename this epic…" }));
     const field = screen.getByLabelText("Name");
     await user.clear(field);
     await user.type(field, "VPN{Enter}");
     expect(apiMock.epicSetTitle).toHaveBeenCalledWith("Tasks/VPN guide.md", "VPN");
 
-    await user.click(screen.getByRole("button", { name: "More for this area" }));
+    await user.click(screen.getByRole("button", { name: "More for this epic" }));
     await user.click(await screen.findByRole("menuitem", { name: "Delete this epic…" }));
     expect(apiMock.deletePath).not.toHaveBeenCalled();
     await user.click(await screen.findByRole("button", { name: "Delete" }));
@@ -305,7 +334,7 @@ describe("TasksView: one area at a time", () => {
     });
   });
 
-  it("moves the area up and down among the areas", async () => {
+  it("moves the epic up and down among the epics", async () => {
     apiMock.listEpics.mockResolvedValue([
       { path: "Tasks/Inbox.md", title: "Inbox", source: null },
       { path: "Tasks/VPN guide.md", title: "VPN guide", source: null },
@@ -319,8 +348,8 @@ describe("TasksView: one area at a time", () => {
     render(<TasksView />);
     const user = userEvent.setup();
     await screen.findByRole("region", { name: "Now" });
-    await user.click(screen.getByRole("button", { name: "More for this area" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Move this area up" }));
+    await user.click(screen.getByRole("button", { name: "More for this epic" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Move this epic up" }));
     expect(apiMock.setEpicOrder).toHaveBeenCalledWith(["Tasks/VPN guide.md", "Tasks/Office.md"]);
   });
 

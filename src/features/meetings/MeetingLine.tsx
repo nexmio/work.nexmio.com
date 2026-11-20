@@ -63,7 +63,7 @@ export function useComingMeetings(): { coming: PlannedMeeting[]; now: Date } {
 }
 
 /**
- * One line at the top of Landing: the next meeting, with a Start button. "+2" shows the others.
+ * One line at the top of the Inbox: the next meeting, with a Start button. "+2" shows the others.
  * Nothing is shown when no meeting is today or tomorrow.
  */
 export function MeetingLine() {

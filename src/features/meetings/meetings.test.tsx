@@ -88,11 +88,14 @@ beforeEach(() => {
 });
 
 describe("MeetingFocus", () => {
-  it("opens with the agenda, the pages of the whole meeting, decisions and actions, and writes what you type", async () => {
+  it("opens with the agenda, the notes of the whole meeting, decisions and actions, and writes what you type", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     useUiStore.setState({ meetingFocus: PATH });
     render(<MeetingFocus />);
     await screen.findByLabelText("Notes for the meeting");
+    // The meeting's text is its notes (it said "Pages" after a bulk rename).
+    expect(screen.getByRole("heading", { name: "Notes" })).toBeInTheDocument();
+    expect(screen.getByText("It does not end up in the meeting's notes.")).toBeInTheDocument();
     expect(screen.getByText("with Mette, Peter")).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Agenda" })).toBeInTheDocument();
     expect(screen.getByLabelText("Add a decision")).toBeInTheDocument();
@@ -106,7 +109,7 @@ describe("MeetingFocus", () => {
     vi.useRealTimers();
   });
 
-  it("keeps the pages when you go to another agenda item: it is only marked Now", async () => {
+  it("keeps the notes when you go to another agenda item: it is only marked Now", async () => {
     useUiStore.setState({ meetingFocus: PATH });
     render(<MeetingFocus />);
     await screen.findByLabelText("Notes for the meeting");
@@ -124,15 +127,15 @@ describe("MeetingFocus", () => {
     );
   });
 
-  it("writes an agenda item on a new line at the bottom of the pages with its arrow", async () => {
+  it("writes an agenda item on a new line at the bottom of the notes with its arrow", async () => {
     useUiStore.setState({ meetingFocus: PATH });
     render(<MeetingFocus />);
     await screen.findByLabelText("Notes for the meeting");
     typeInField("Notes for the meeting", "First line.");
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Write in the pages: Hiring" }));
+    await user.click(screen.getByRole("button", { name: "Write in the notes: Hiring" }));
     expect(fieldView("Notes for the meeting").state.doc.toString()).toBe("First line.\nHiring");
-    await user.click(screen.getByRole("button", { name: "Write in the pages: Budget" }));
+    await user.click(screen.getByRole("button", { name: "Write in the notes: Budget" }));
     expect(fieldView("Notes for the meeting").state.doc.toString()).toBe(
       "First line.\nHiring\nBudget",
     );
@@ -179,10 +182,11 @@ describe("MeetingFocus", () => {
           "## Decisions\n\n- Buy licences",
         );
       },
-      { timeout: 5000 },
+      // A full test run keeps the machine busy, so the write can take more than 5 s to land.
+      { timeout: 12_000 },
     );
     expect(apiMock.writeNote.mock.calls.at(-1)?.[1]).not.toContain("Rollout starts Monday");
-    // The test waits up to 5 s for the write itself, so it needs more than the default 5 s in all.
+    // The test waits up to 12 s for the write itself, so it needs more than the default 5 s in all.
   }, 20_000);
 
   it("adds an action as a task with its made date, and ticks it", async () => {
@@ -201,17 +205,21 @@ describe("MeetingFocus", () => {
   });
 
   it("turns a part on during the meeting, and the page gets its section", async () => {
-    apiMock.readNote.mockResolvedValue({
-      path: PATH,
-      content: buildMeetingNote({
-        title: "Lunch",
-        date: "",
-        time: "",
-        people: [],
-        agenda: [],
-        parts: { agenda: false, decisions: false, actions: false },
-      }),
-      mtime: 0,
+    // The page as a file: what is written is what is read next (the writes come in any order).
+    let page = buildMeetingNote({
+      title: "Lunch",
+      date: "",
+      time: "",
+      people: [],
+      agenda: [],
+      parts: { agenda: false, decisions: false, actions: false },
+    });
+    apiMock.readNote.mockImplementation(() =>
+      Promise.resolve({ path: PATH, content: page, mtime: 0 }),
+    );
+    apiMock.writeNote.mockImplementation((_p: string, text: string) => {
+      page = text;
+      return Promise.resolve();
     });
     useUiStore.setState({ meetingFocus: PATH });
     render(<MeetingFocus />);
@@ -229,14 +237,14 @@ describe("MeetingFocus", () => {
     });
     await waitFor(
       () => {
-        expect(apiMock.writeNote.mock.calls.at(-1)?.[1]).toContain("parts: [agenda, actions]");
+        expect(page).toContain("parts: [agenda, actions]");
+        expect(page).toContain("- [ ] First");
       },
       { timeout: 5000 },
     );
-    expect(apiMock.writeNote.mock.calls.at(-1)?.[1]).toContain("- [ ] First");
   });
 
-  it("shows only the parts the meeting has: no agenda gives the pages the whole width", async () => {
+  it("shows only the parts the meeting has: no agenda gives the notes the whole width", async () => {
     apiMock.readNote.mockResolvedValue({
       path: PATH,
       content: buildMeetingNote({
@@ -276,6 +284,31 @@ describe("MeetingFocus", () => {
 });
 
 describe("MeetingForm", () => {
+  it("can give the meeting a project: it gets the project's tag", async () => {
+    apiMock.createNote.mockResolvedValue("Meetings/Check-in.md");
+    apiMock.writeNote.mockClear();
+    useVaultStore.setState({
+      projects: [{ id: "p1", name: "Server move", folder: "Server", tag: "server-move" } as never],
+    });
+    useUiStore.setState({ meetingFormOpen: true });
+    render(<MeetingForm />);
+    const user = userEvent.setup();
+    await user.type(await screen.findByLabelText("Title"), "Check-in");
+    await user.selectOptions(screen.getByLabelText("Project"), "server-move");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() => {
+      expect(
+        apiMock.writeNote.mock.calls.some((c) => (c[1] as string).includes("server-move")),
+      ).toBe(true);
+    });
+    const text =
+      apiMock.writeNote.mock.calls
+        .map((c) => c[1] as string)
+        .find((t) => t.includes("# Check-in")) ?? "";
+    expect(text).toContain("tags: [meeting, server-move]");
+    useVaultStore.setState({ projects: [] });
+  });
+
   it("makes the page in the meetings folder, and starts the meeting when asked", async () => {
     apiMock.createNote.mockResolvedValue(PATH);
     useUiStore.setState({ meetingFormOpen: true });
@@ -349,11 +382,11 @@ describe("MeetingForm", () => {
   });
 });
 
-describe("the next meeting in Landing", () => {
+describe("the next meeting in the Inbox", () => {
   it("keeps a meeting for two hours after it started, in the order they happen", () => {
     const mk = (date: string, time: string | null, title: string) => ({
       path: title,
-      meeting: { title, date, time, people: [], agenda: [], parts: ALL_PARTS },
+      meeting: { title, date, time, people: [], agenda: [], parts: ALL_PARTS, tags: [] },
     });
     const list = [
       mk("2026-10-28", "09:00", "Tomorrow"),
@@ -462,6 +495,7 @@ describe("after the meeting", () => {
       who: "Mette, Peter",
       agenda: "Hiring",
       parts: ALL_PARTS,
+      tags: [],
     });
     render(<MeetingForm />);
     expect(await screen.findByLabelText("Title")).toHaveValue("Weekly with Mette");

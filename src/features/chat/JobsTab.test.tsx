@@ -8,10 +8,11 @@ vi.mock("@/lib/api", () => ({
 }));
 vi.mock("@/components/DiagramPreview", () => ({ DiagramPreview: () => <div>diagram</div> }));
 
-import { useAiJobStore, type AiJob } from "@/stores/aiJobStore";
+import { useAiJobStore, type EditJob, type PickJob } from "@/stores/aiJobStore";
 import { JobsTab } from "./JobsTab";
 
-const job = (over: Partial<AiJob>): AiJob => ({
+const job = (over: Partial<EditJob>): EditJob => ({
+  kind: "edit",
   id: "1",
   status: "queued",
   label: "Fix spelling",
@@ -80,5 +81,52 @@ describe("JobsTab", () => {
     render(<JobsTab />);
     expect(screen.getByText("diagram")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Add under the text/ })).toBeInTheDocument();
+  });
+
+  it("goes back to where a job was asked", async () => {
+    const goTo = vi.fn();
+    useAiJobStore.setState({ jobs: [job({})], goTo });
+    render(<JobsTab />);
+    await userEvent.click(screen.getByRole("button", { name: /Go to where you asked/ }));
+    expect(goTo).toHaveBeenCalledWith("1");
+  });
+
+  it("a list to tick: the points, the items, and only the ticked ones are added", async () => {
+    const acceptPicks = vi.fn().mockResolvedValue(undefined);
+    const again = vi.fn();
+    const pick: PickJob = {
+      kind: "pick",
+      id: "p1",
+      status: "ready",
+      error: null,
+      createdAt: 0,
+      label: "Break it down: Write the rules",
+      instruction: "x",
+      picks: { points: ["The page is about access"], items: ["List who has access", "Ask Lene"] },
+      spec: {
+        label: "Break it down: Write the rules",
+        where: "Security",
+        instruction: "x",
+        read: () => Promise.resolve(""),
+        notePath: null,
+        parse: () => ({ points: [], items: [] }),
+        noun: ["step", "steps"],
+        addTo: " to the task",
+        firstIsStart: true,
+        other: { label: "Make the steps smaller", instruction: "smaller" },
+        add: () => Promise.resolve(),
+        goTo: vi.fn(),
+      },
+    };
+    useAiJobStore.setState({ jobs: [pick], acceptPicks, again });
+    render(<JobsTab />);
+    const user = userEvent.setup();
+    expect(screen.getByText("The page is about access")).toBeInTheDocument();
+    expect(screen.getByText("Start here")).toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: /Ask Lene/ }));
+    await user.click(screen.getByRole("button", { name: /Add 1 step to the task/ }));
+    expect(acceptPicks).toHaveBeenCalledWith("p1", ["List who has access"]);
+    await user.click(screen.getByRole("button", { name: "Make the steps smaller" }));
+    expect(again).toHaveBeenCalledWith("p1", "smaller");
   });
 });

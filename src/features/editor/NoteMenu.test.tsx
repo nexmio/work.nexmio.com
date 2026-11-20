@@ -13,6 +13,17 @@ vi.mock("@/lib/api", () => ({
   toApiError: (e: unknown) => ({ code: "Unknown", message: String(e) }),
 }));
 vi.mock("@/lib/flush", () => ({ flushPendingWrites: () => Promise.resolve() }));
+// The editor holds the page: its text has a #tag written in it.
+const editorText = vi.hoisted(() => ({
+  path: "Work/Plan.md",
+  doc: "# Plan\n\nPart of #q4 and #vpn.\n",
+}));
+vi.mock("@/lib/activeEditor", () => ({
+  getActiveEditor: () => ({
+    notePath: editorText.path,
+    view: { state: { doc: { toString: () => editorText.doc } } },
+  }),
+}));
 
 import { NoteMenu, NoteTagsLine } from "./NoteMenu";
 import { useUiStore } from "@/stores/uiStore";
@@ -48,10 +59,10 @@ describe("NoteMenu", () => {
     render(<NoteMenu path="Work/Plan.md" />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "More for this page" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Pin to the start page" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Pin" }));
     expect(apiMock.noteSetTag).toHaveBeenCalledWith("Work/Plan.md", "pinned", true);
     await user.click(screen.getByRole("button", { name: "More for this page" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Unpin from the start page" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Unpin" }));
     expect(apiMock.noteSetTag).toHaveBeenLastCalledWith("Work/Plan.md", "pinned", false);
   });
 
@@ -199,6 +210,29 @@ describe("NoteMenu without its tag chips, and the tags line", () => {
     expect(screen.getByRole("button", { name: "+ tag" })).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole("button", { name: /vpn/i }));
     expect(apiMock.noteSetTag).toHaveBeenCalledWith("Work/Plan.md", "vpn", false);
+  });
+
+  it("shows a #tag written in the text in the same line, marked, without a cross", async () => {
+    apiMock.noteTags.mockResolvedValue(["vpn"]);
+    render(<NoteTagsLine path="Work/Plan.md" />);
+    const q4 = await screen.findByRole("button", { name: "#q4 · in the text" });
+    expect(q4).toBeInTheDocument();
+    // #vpn is a property tag too: it is shown once, as a chip with its cross.
+    expect(screen.queryByRole("button", { name: "#vpn · in the text" })).toBeNull();
+  });
+
+  it("a tag of Nexmio Work written in the text does nothing there: it says so and offers the real one", async () => {
+    editorText.doc = "# Plan\n\nThis is a #meeting about #q4.\n";
+    apiMock.noteTags.mockResolvedValue([]);
+    apiMock.noteSetTag.mockResolvedValue(["meeting"]);
+    render(<NoteTagsLine path="Work/Plan.md" />);
+    expect(await screen.findByText("#meeting · in the text, does nothing")).toBeInTheDocument();
+    // An ordinary tag in the text is still a search button.
+    expect(screen.getByRole("button", { name: "#q4 · in the text" })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole("button", { name: "Make this page a meeting" }));
+    // The property is put on; the text is not touched.
+    expect(apiMock.noteSetTag).toHaveBeenCalledWith("Work/Plan.md", "meeting", true);
+    editorText.doc = "# Plan\n\nPart of #q4 and #vpn.\n";
   });
 
   it("shows nothing without a page", () => {

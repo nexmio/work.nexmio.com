@@ -57,7 +57,7 @@ export function FilesPanel() {
           All files
           <InfoHint
             label="The file tree"
-            text="Everything that is not in a project. Meetings, Quick pages and Tasks have their own place, Landing, above. Right-click a folder or a page for more, and drag pages to move them, also into a project."
+            text="Everything that is not in a project. Meetings, Tasks and pages made from ideas have their own place, the Inbox, above. Right-click a folder or a page for more, and drag pages to move them, also into a project."
             topic="start"
           />
         </div>

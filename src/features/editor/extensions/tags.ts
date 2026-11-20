@@ -1,6 +1,7 @@
 import type { Completion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
 import type { Range } from "@codemirror/state";
 import { Decoration } from "@codemirror/view";
+import { isSystemTag } from "@/lib/noteTags";
 
 const TAG_RE = /(^|[\s(])#([\p{L}\p{N}_\-/]+)/gu;
 
@@ -30,13 +31,18 @@ export function tagDecorations(matches: TagMatch[]): Range<Decoration>[] {
   );
 }
 
-/** The tags that begin with what was typed after `#`, most used first (at most 8). */
+/**
+ * The tags that begin with what was typed after `#`, most used first (at most 8). Nexmio Work's own
+ * tags (`meeting`, `epic`, `pinned`…) are not offered: written in the text they do nothing, they
+ * only work in the page's properties (the Tags window and the menus put them there).
+ */
 export function filterTags(
   tags: readonly { tag: string; count: number }[],
   query: string,
 ): { tag: string; count: number }[] {
   const q = query.toLowerCase();
   return tags
+    .filter((t) => !isSystemTag(t.tag))
     .filter((t) => t.tag.toLowerCase().startsWith(q) && t.tag.toLowerCase() !== q)
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
     .slice(0, 8);

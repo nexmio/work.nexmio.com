@@ -263,6 +263,15 @@ pub async fn epic_for_note_cmd(
     epic_for_note(&v, &note, folder.as_deref())
 }
 
+/// The history line of a task that was ticked or unticked.
+pub(crate) fn done_text(done: bool) -> &'static str {
+    if done {
+        "Done"
+    } else {
+        "Open again"
+    }
+}
+
 /// Ticks or unticks a task or a step.
 #[tauri::command]
 pub async fn task_set_done(
@@ -274,6 +283,12 @@ pub async fn task_set_done(
 ) -> Result<Vec<Task>, AppError> {
     let v = state.current_vault()?;
     let list = edit_note(&v, &path, |c| tasks::set_done(c, line, &key, done))?;
+    // The day a task was ticked or unticked goes in its history, so Look back can find it.
+    if let Some(t) = list.iter().find(|t| t.line == line && t.done == done) {
+        let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+        meta::add_history(&v.root, &t.path, &t.title, &today, done_text(done))?;
+    }
+    let list = meta::overlaid(&v.root, list);
     if done {
         match task_containing(&list, line) {
             Some(t) if t.line == line => {
@@ -386,6 +401,20 @@ pub async fn task_history_add(
     let v = state.current_vault()?;
     check_path(&path)?;
     meta::add_history(&v.root, &path, &title, &date, &text)?;
+    Ok(tasks_of(&v, &path))
+}
+
+/// Pins a task to the start page, or unpins it (kept in `.vault/meta.json`).
+#[tauri::command]
+pub async fn task_set_pinned(
+    state: State<'_, AppState>,
+    path: String,
+    title: String,
+    on: bool,
+) -> Result<Vec<Task>, AppError> {
+    let v = state.current_vault()?;
+    check_path(&path)?;
+    meta::set_task_pinned(&v.root, &path, &title, on)?;
     Ok(tasks_of(&v, &path))
 }
 
@@ -1074,7 +1103,6 @@ mod tests {
         .unwrap();
         assert_eq!(after.len(), 2, "{after:#?}");
         assert_eq!(after[1].title, "Send the quote");
-        assert_eq!(after[1].due.as_deref(), Some("2026-10-23"));
         let text = std::fs::read_to_string(d.path().join("Meeting.md")).unwrap();
         let made = today();
         assert_eq!(

@@ -122,7 +122,7 @@ export function isManagedNote(path: string): boolean {
 /** The folder the epics are kept in. */
 export const EPICS_FOLDER = "Tasks";
 
-/** The top-level folders that are shown in the Landing section, in the order they are given. */
+/** The top-level folders that are shown in the Inbox section, in the order they are given. */
 export function landingNodes(tree: readonly TreeNode[], folders: readonly string[]): TreeNode[] {
   return folders
     .map((f) => tree.find((n) => n.isDir && n.path === f))

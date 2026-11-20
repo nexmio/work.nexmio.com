@@ -137,10 +137,10 @@ export function VaultSettingsTab() {
       </div>
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
-          <Label htmlFor="v-quick">Folder for quick pages</Label>
+          <Label htmlFor="v-quick">Folder for pages made from ideas</Label>
           <InfoHint
-            label="Quick pages folder"
-            text="Quick pages made with New, Quick page go in this folder."
+            label="Folder for pages made from ideas"
+            text="An idea turned into a page with To page goes in this folder. It is listed in the Inbox."
             topic="templates"
           />
         </div>

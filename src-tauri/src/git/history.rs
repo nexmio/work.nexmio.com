@@ -1,6 +1,6 @@
 //! File history, deleted-file discovery and reading old versions.
 
-use super::{CommitEntry, DeletedFile};
+use super::{ChangedPage, CommitEntry, DeletedFile};
 use crate::error::{AppError, AppResult};
 use git2::{Delta, DiffFindOptions, Oid, Repository, Sort};
 use std::collections::HashSet;
@@ -31,6 +31,60 @@ fn entry(commit: &git2::Commit, path: &str) -> CommitEntry {
         time: commit.time().seconds(),
         path: path.to_string(),
     }
+}
+
+/// The pages (`.md`, outside `.vault/`) changed by commits made from `from` up to before `to`
+/// (seconds since the epoch), the most recently changed first. A page that was deleted again is
+/// left out only when it is not in `HEAD`.
+pub fn changed_pages(repo: &Repository, from: i64, to: i64) -> AppResult<Vec<ChangedPage>> {
+    if repo.head().is_err() {
+        return Ok(Vec::new());
+    }
+    let head = repo.head()?.peel_to_tree()?;
+    let mut walk = repo.revwalk()?;
+    walk.push_head()?;
+    walk.set_sorting(Sort::TIME)?;
+    let mut out: Vec<ChangedPage> = Vec::new();
+    for oid in walk {
+        let commit = repo.find_commit(oid?)?;
+        let time = commit.time().seconds();
+        if time >= to {
+            continue;
+        }
+        if time < from {
+            break;
+        }
+        let diff = diff_for(repo, &commit)?;
+        for delta in diff.deltas() {
+            let Some(path) = delta
+                .new_file()
+                .path()
+                .map(|p| p.to_string_lossy().replace('\\', "/"))
+            else {
+                continue;
+            };
+            if !path.ends_with(".md")
+                || path.starts_with(".vault/")
+                || delta.status() == Delta::Deleted
+            {
+                continue;
+            }
+            match out.iter_mut().find(|c| c.path == path) {
+                Some(c) => {
+                    c.changes += 1;
+                    c.new |= delta.status() == Delta::Added;
+                }
+                None => out.push(ChangedPage {
+                    path,
+                    changes: 1,
+                    new: delta.status() == Delta::Added,
+                    time,
+                }),
+            }
+        }
+    }
+    out.retain(|c| head.get_path(Path::new(&c.path)).is_ok());
+    Ok(out)
 }
 
 /// Commits touching `path`, newest first, following renames.
@@ -162,6 +216,26 @@ pub fn deleted_files(repo: &Repository) -> AppResult<Vec<DeletedFile>> {
 mod tests {
     use super::super::repo::test_util::*;
     use super::*;
+
+    #[test]
+    fn changed_pages_in_a_span_count_their_changes_and_say_what_is_new() {
+        let (d, r) = new_repo();
+        write(&d, "Old.md", "one\n");
+        commit_all(&r, "first");
+        write(&d, "Old.md", "one two\n");
+        write(&d, "New.md", "new\n");
+        write(&d, ".vault/meta.json", "{}");
+        commit_all(&r, "second");
+        write(&d, "New.md", "new page\n");
+        commit_all(&r, "third");
+        let all = changed_pages(&r, 0, i64::MAX).unwrap();
+        let new = all.iter().find(|c| c.path == "New.md").unwrap();
+        assert_eq!((new.changes, new.new), (2, true));
+        let old = all.iter().find(|c| c.path == "Old.md").unwrap();
+        assert_eq!((old.changes, old.new), (2, true));
+        assert!(all.iter().all(|c| !c.path.starts_with(".vault")));
+        assert!(changed_pages(&r, 0, 1).unwrap().is_empty());
+    }
 
     #[test]
     fn history_follows_renames() {

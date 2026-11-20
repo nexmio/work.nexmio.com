@@ -11,6 +11,7 @@ Nexmio Work is a desktop app for Markdown pages with a local AI. It is calm and 
 - **Show a design before building a UI change**, and build what was approved.
 - **Reuse before inventing.** Find the screen that already does something similar (an area, a dialog, a row, a menu) and copy its parts and its words.
 - **Everything works without AI.** An AI button is disabled with the reason as its tooltip (`useAiBlocked`), never hidden in a way that breaks the screen.
+- **The AI is found the same way everywhere:** above a page (`NoteAiMenu`) and at the top of an area (`AreaAiMenu`: what the AI can do there, and a question for the chat).
 - **The AI only proposes.** Nothing the AI writes reaches a page before the person accepts it.
 - **Nothing is lost.** Deleting asks first and says that the thing stays in the version history.
 - **Tags decide what a page is** (`epic`, `meeting`, `pinned` in its properties), never the folder.
@@ -32,10 +33,11 @@ Nexmio Work is a desktop app for Markdown pages with a local AI. It is calm and 
 Header (`sidebar`) on top, status bar at the bottom. At the top: the wordmark, the menus File, Go and Help, the vault, the search field in the middle (it opens quick open), the AI status, the help button and the two buttons that hide the list panel and the right panel. Left edge: the **navigation** (`ActivityRail`): a primary "New …" button that makes the thing of the area that is shown, then Start, Pages, Tasks, Plans, Meetings and Ideas, each with an icon and a name (and a number or a dot for what waits), and Settings and **Collapse** at the bottom. Collapsed, it is the narrow icon column and each icon shows its name on hover. Then the list panel, the middle and the right panel. Panels are resizable and remember their size.
 
 - **An area** (Pages, Tasks, Plans, Meetings, Ideas) is its row in the navigation + a list panel at the left (`PanelHeader`) + a page in the middle (`ViewHeader`) + the chosen thing in the right panel when it has one (the Task tab, the Part tab). A click in the list shows the thing in the middle.
-- **The right panel has tabs** (`RightTabs`): Outline, Links, History, Images and AI, with one in front for the area. The chat is the AI tab; it stays mounted so a half-written question is kept.
+- **The right panel has tabs** (`RightTabs`): Outline, Links, History and Images where a page is shown; an area without a page has only its own tab (Task, Part) and the Timer while one runs. The panel never shows a page that is not on the screen.
+- **The AI is a box over the right side** (`AiBox`): round corners, a shadow, from under the top bar to the bottom, about as wide as a side panel. **AI** in the top bar or Ctrl/Cmd+L opens it over anything; Esc or × closes it; it stays mounted so a half-written question is kept.
 - **Full screen for the text:** hide both panels with the two buttons at the top right and fold the navigation; the text keeps its line width and stands in the middle.
 - **The start page** fills the window: both side panels hide while it is shown and come back as they were.
-- **Middle pages** start with a `ViewHeader`: title left, the page's buttons right, the main action last as the primary button. Everything else about the page is in a `···` menu. The page below has the `space-5` gutter.
+- **Middle pages** start with a `ViewHeader`: title left, the page's buttons right, the main action last as the primary button. Small things that belong to the title (an epic's tags) stand right after it (`afterTitle`). Everything else about the page is in a `···` menu. The page below has the `space-5` gutter.
 - **Reading rules** (for dyslexia and for a short attention): small headings are in sentence case (`section-label`), a done item is dimmed with its tick and never struck through, an icon always has a word beside it except a checkbox, and a screen shows one thing to do at a time where it can (the Now card).
 - **Narrow widths** stack to one column (start page under 640px and three columns from 1100px, the calendar's short names under 230px; `useNarrow`).
 

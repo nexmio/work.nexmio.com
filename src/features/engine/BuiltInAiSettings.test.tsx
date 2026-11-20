@@ -169,7 +169,7 @@ describe("Settings → AI", () => {
     expect((onChange.mock.calls.at(-1)?.[0] as Settings).ai.builtin.thinking).toBe(true);
   });
 
-  it("in the Microsoft Store version it only says that the built-in AI is not available", () => {
+  it("only says why, when a version cannot have the built-in AI", () => {
     useEngineStore.setState({
       catalog: {
         ...CATALOG,

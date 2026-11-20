@@ -5,7 +5,7 @@ Nexmio Work can run its own AI **on this computer**, so you do not need LM Studi
 ## Set it up
 
 1. Open **Settings → AI** (or press **Set up** in the status bar).
-2. Choose what to run it on: **Graphics card (Vulkan)**, which works with AMD, Intel and Nvidia cards and is fast, or **CPU only**, which works everywhere but is slower. Nexmio Work pre-selects what it finds. If the graphics card gives an error, choose CPU only. The built-in AI is not in the Microsoft Store version yet.
+2. Choose what to run it on: **Graphics card (Vulkan)**, which works with AMD, Intel and Nvidia cards and is fast, or **CPU only**, which works everywhere but is slower. Nexmio Work pre-selects what it finds. If the graphics card gives an error, choose CPU only. The Microsoft Store version has the built-in AI too, and keeps it in its own data folder.
 3. Choose a **model**. **Gemma 4 12B** is the recommended one and needs about 12 GB of memory. **E4B** and **E2B** are lighter. You can also add your own `.gguf` file.
 4. Press **Download**. This fetches two things, and nothing is downloaded before you press it: the **engine** (the open-source program llama.cpp, MIT licence) from github.com, and the **model** (Google Gemma 4, Apache-2.0) from huggingface.co. Together they are several GB, shown before you start, and they take about as much disk space. The files are checked after the download and kept in Nexmio Work's own folder. If the connection breaks, press Download again: it continues where it stopped.
 

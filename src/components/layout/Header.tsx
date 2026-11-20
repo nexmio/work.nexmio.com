@@ -1,4 +1,5 @@
 import { CircleHelp, PanelLeft, PanelRight, Search } from "lucide-react";
+import { AiBoxButton } from "./AiBoxButton";
 import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setWindowTitle } from "@/lib/window";
 import { RELEASES_URL, releaseStage } from "@/lib/version";
-import { newNoteInCurrentFolder, openDailyNote } from "@/lib/actions";
+import { newNoteInCurrentFolder, openDailyNote, openNavArea } from "@/lib/actions";
+import { PLANS_LABEL } from "@/lib/planTree";
 import { formatShortcut } from "@/lib/shortcuts";
 import { Wordmark } from "@/components/Wordmark";
 import { AiChip } from "./AiChip";
@@ -68,11 +70,11 @@ export function Header() {
           {item("Meeting note…", null, () => {
             ui.setMeetingFormOpen(true);
           })}
-          {item("Quick page", null, () => {
-            ui.openCapture("note");
-          })}
           {item("Task", null, () => {
             ui.openCapture("task");
+          })}
+          {item("Project…", null, () => {
+            ui.requestNewPlan();
           })}
           {item("Idea", null, () => {
             ui.openCapture("idea");
@@ -119,6 +121,25 @@ export function Header() {
       {menu(
         "Go",
         <>
+          {item("Start", "Mod+1", () => {
+            openNavArea("start");
+          })}
+          {item("Pages", "Mod+2", () => {
+            openNavArea("pages");
+          })}
+          {item("Tasks", "Mod+3", () => {
+            openNavArea("tasks");
+          })}
+          {item(PLANS_LABEL, "Mod+4", () => {
+            openNavArea("plans");
+          })}
+          {item("Meetings", "Mod+5", () => {
+            openNavArea("meetings");
+          })}
+          {item("Ideas", "Mod+6", () => {
+            openNavArea("ideas");
+          })}
+          <DropdownMenuSeparator />
           {item("Quick open…", "Mod+P", () => {
             ui.setQuickOpen(true);
           })}
@@ -127,13 +148,6 @@ export function Header() {
           })}
           {item("Search", "Mod+Shift+F", () => {
             ui.focusSearch();
-          })}
-          <DropdownMenuSeparator />
-          {item("Tasks", "Mod+Shift+T", () => {
-            ui.openArea("tasks");
-          })}
-          {item("Ideas", null, () => {
-            ui.openArea("ideas");
           })}
           {item("Ask about my pages", "Mod+L", () => {
             ui.focusChat();
@@ -199,6 +213,7 @@ export function Header() {
         </button>
       </div>
       <AiChip />
+      <AiBoxButton />
       <Button
         variant="ghost"
         size="icon"

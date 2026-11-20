@@ -159,3 +159,17 @@ export async function openInSplit(path: string): Promise<void> {
   }
   useWorkspaceStore.getState().open(path, "secondary");
 }
+
+/** The areas of the navigation, in its order: Ctrl/Cmd+1 … 6 and the Go menu follow it. */
+export const NAV_AREAS = ["start", "pages", "tasks", "plans", "meetings", "ideas"] as const;
+export type NavArea = (typeof NAV_AREAS)[number];
+
+/** Opens an area as its row in the navigation does (Start, Pages with the page in the middle, …). */
+export function openNavArea(area: NavArea): void {
+  const ui = useUiStore.getState();
+  if (area === "start") ui.openStart();
+  else if (area === "pages") {
+    ui.setLeftTab("files");
+    ui.setCenterView("notes");
+  } else ui.openArea(area);
+}

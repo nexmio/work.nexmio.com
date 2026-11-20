@@ -12,6 +12,9 @@ import { useActiveAi } from "./useActiveAi";
 import { ChatHistoryMenu } from "./ChatHistoryMenu";
 import { PrivacyNote } from "./PrivacyNote";
 import { Bubble } from "./Bubble";
+import { askChat } from "@/lib/askChat";
+import { PlainButton } from "@/components/ui/plain-button";
+import { useAiBlocked } from "@/lib/useAiBlocked";
 import { ChatComposer } from "./ChatComposer";
 import { ChatHeader } from "./ChatHeader";
 import { JobsTab } from "./JobsTab";
@@ -22,12 +25,17 @@ import { AiMistakesNote } from "@/components/AiMistakesNote";
 import { Checkbox } from "@/components/ui/checkbox";
 
 /**
- * "Ask about my notes": a plain chat with the local AI. It reads the open note, and the notes and
- * folders you point at with `/`, and searches your notes to answer; it does not change anything
- * (the AI commands in the app do that). A run started from those commands shows its progress and
+ * "Ask about my notes": the assistant. It reads the open note, the notes and folders you point at
+ * with `/`, your tasks, projects and meetings, and the help, to answer; it can propose tasks and
+ * parts for review, and offer a place to open ("Show me"). It does not change pages (the AI
+ * commands in the app do that). A run started from those commands shows its progress and
  * its review here. A built-in AI that is not loaded is loaded when you send.
  */
+/** Questions an empty chat offers, so a new person sees what the assistant can do. */
+const STARTERS = ["What should I do next?", "What am I waiting for?", "How do I make a plan?"];
+
 export function ChatPanel({ onClose }: { onClose?: () => void } = {}) {
+  const aiOff = useAiBlocked();
   const {
     messages,
     streaming,
@@ -145,12 +153,34 @@ export function ChatPanel({ onClose }: { onClose?: () => void } = {}) {
           <PrivacyNote />
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-3" aria-live="polite">
             {messages.length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Ask about your pages, for example “What did we decide about the VPN?”. The AI reads
-                the open page and searches your pages to answer. Type <b>/</b> to point at a page or
-                a folder. It does not change anything here: use the AI button above a page, the bar
-                over selected text, or right-click a folder.
-              </p>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Ask about your pages, tasks and projects, or how Nexmio Work works. The AI reads
+                  the open page and looks up what it needs. Type <b>/</b> to point at a page or a
+                  folder. It can propose tasks and parts for you to accept; to change a page, use
+                  the AI button above it, the bar over selected text, or right-click a folder.
+                </p>
+                <ul
+                  aria-label="Questions to start with"
+                  className="flex flex-col items-start gap-1.5"
+                >
+                  {STARTERS.map((q) => (
+                    <li key={q}>
+                      <PlainButton
+                        type="button"
+                        className="rounded-full border px-3 py-1 text-xs hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                        disabled={aiOff !== null}
+                        title={aiOff ?? undefined}
+                        onClick={() => {
+                          void askChat(q);
+                        }}
+                      >
+                        {q}
+                      </PlainButton>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {messages.map((m) => (
               <Bubble key={m.id} m={m} />

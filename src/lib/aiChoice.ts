@@ -5,18 +5,12 @@ import { effectiveLocation } from "@/lib/providers";
 /** The kinds of AI on the AI tab, one line each. */
 export type AiOption = "llama" | "local" | "cloud";
 
-export interface Where {
-  os: string;
-  /** The Microsoft Store package. */
-  store: boolean;
-}
-
 /**
- * The AI choices: the built-in AI first (llama.cpp, not in the Microsoft Store version yet), then an
- * AI of your own on this computer, and the cloud AI last.
+ * The AI choices: the built-in AI first (llama.cpp, in every version, the Microsoft Store one too),
+ * then an AI of your own on this computer, and the cloud AI last.
  */
-export function aiOrder(w: Where): AiOption[] {
-  return w.store ? ["local", "cloud"] : ["llama", "local", "cloud"];
+export function aiOrder(): AiOption[] {
+  return ["llama", "local", "cloud"];
 }
 
 /** True when `p` is the cloud AI the user agreed to, at the address they agreed to. */

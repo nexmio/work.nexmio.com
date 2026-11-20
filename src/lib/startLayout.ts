@@ -12,7 +12,8 @@ export type WidgetId =
   | "areas"
   | "changed"
   | "epics"
-  | "plans";
+  | "plans"
+  | "week";
 
 export interface WidgetInfo {
   id: WidgetId;
@@ -59,6 +60,11 @@ export const WIDGETS: readonly WidgetInfo[] = [
     title: "Plans",
     does: "The plans that are going, each with how many parts it has.",
   },
+  {
+    id: "week",
+    title: "This week",
+    does: "What you finished, the time logged and the meetings this week, with Look back.",
+  },
 ];
 
 /** One widget on the page: `wide` takes two columns, otherwise one. */
@@ -74,6 +80,7 @@ export const DEFAULT_LAYOUT: readonly Placed[] = [
   { id: "recent", wide: false },
   { id: "epics", wide: false },
   { id: "plans", wide: false },
+  { id: "week", wide: false },
 ];
 
 const KEY = "nexmio.startLayout";

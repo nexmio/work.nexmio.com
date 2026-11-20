@@ -2,18 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MarkdownField } from "@/features/editor/MarkdownField";
-import { openFile } from "@/lib/actions";
-import { api } from "@/lib/api";
 import { noteName, taskText } from "@/lib/taskLogic";
-import { fileNameFrom } from "@/lib/noteTitle";
 import { useIdeaStore } from "@/stores/ideaStore";
 import { useTaskStore } from "@/stores/taskStore";
 import { reportError, useUiStore } from "@/stores/uiStore";
-import { useVaultStore } from "@/stores/vaultStore";
 import { PlainButton } from "@/components/ui/plain-button";
 import { Select } from "@/components/ui/select";
 
-export type CaptureKind = "task" | "idea" | "note";
+export type CaptureKind = "task" | "idea";
 
 /** The name of each box, what it does and its save button. */
 export const CAPTURE_KINDS: Record<CaptureKind, { title: string; help: string; save: string }> = {
@@ -26,11 +22,6 @@ export const CAPTURE_KINDS: Record<CaptureKind, { title: string; help: string; s
     title: "New idea",
     help: "Goes to your Ideas, to look at later.",
     save: "Save idea",
-  },
-  note: {
-    title: "Quick page",
-    help: "Becomes a page in the Quick pages folder. You can keep writing in it.",
-    save: "Save page",
   },
 };
 
@@ -48,7 +39,7 @@ function lastEpic(): string | null {
 }
 
 /**
- * One box to write one kind of thing down: a task, an idea or a quick note. The person has already
+ * One box to write one kind of thing down: a task or an idea (a page is New → Page). The person has already
  * said which, so there is nothing to choose but, for a task, the epic it goes into. It is used in
  * the window that opens from New and Ctrl/Cmd+Shift+N, in Ideas, in a meeting, in Focus and on the
  * start page. Nothing else on the screen changes.
@@ -75,7 +66,6 @@ export function CaptureBox({
   const [text, setText] = useState("");
   const [note, setNote] = useState("");
   const [noteOpen, setNoteOpen] = useState(withNote);
-  const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const known = useTaskStore((s) => s.epics);
@@ -86,7 +76,6 @@ export function CaptureBox({
       : [...known, { path: epicPath, title: noteName(epicPath), source: null, description: "" }];
   const [epic, setEpic] = useState<string | null>(null);
   const [epicName, setEpicName] = useState("");
-  const quickFolder = useVaultStore((s) => s.vault?.config.quickNotesFolder) ?? "";
   const info = CAPTURE_KINDS[kind];
 
   useEffect(() => {
@@ -107,9 +96,7 @@ export function CaptureBox({
         : (epics.find((e) => e.path === lastEpic())?.path ?? epics[0]?.path ?? NEW_EPIC));
 
   const empty =
-    kind === "note"
-      ? title.trim() === "" && text.trim() === ""
-      : text.trim() === "" || (kind === "task" && chosen === NEW_EPIC && epicName.trim() === "");
+    text.trim() === "" || (kind === "task" && chosen === NEW_EPIC && epicName.trim() === "");
 
   const save = async (): Promise<void> => {
     const value = text.trim();
@@ -140,24 +127,12 @@ export function CaptureBox({
         onSaved?.(into ? `the task in ${into}` : "a task", () => {
           useTaskStore.getState().openEpic(path);
         });
-      } else if (kind === "idea") {
-        if (await useIdeaStore.getState().add(value, note)) {
-          onSaved?.("an idea", () => {
-            useUiStore.getState().openArea("ideas");
-          });
-        }
-      } else {
-        const name =
-          title.trim() === "" ? (value.split("\n")[0]?.slice(0, 60) ?? "Page") : title.trim();
-        const path = await api.createNote(quickFolder, fileNameFrom(name));
-        await api.writeNote(path, `# ${name}\n\n${value}\n`);
-        await useVaultStore.getState().refreshTree();
-        onSaved?.(`the page “${name}”`, () => {
-          void openFile(path);
+      } else if (await useIdeaStore.getState().add(value, note)) {
+        onSaved?.("an idea", () => {
+          useUiStore.getState().openArea("ideas");
         });
       }
       setText("");
-      setTitle("");
       setNote("");
       input.current?.focus();
     } catch (e) {
@@ -180,39 +155,6 @@ export function CaptureBox({
       {info.save}
     </Button>
   );
-
-  if (kind === "note") {
-    return (
-      <div className="flex w-full flex-col gap-2">
-        <Input
-          ref={input}
-          aria-label="Title of the page"
-          placeholder="Title (optional)"
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-          }}
-        />
-        <MarkdownField
-          label="Write the note"
-          rows={4}
-          placeholder="Write it here…"
-          value={text}
-          onChange={setText}
-          submitKey="mod-enter"
-          onSubmit={() => {
-            void save();
-          }}
-        />
-        <div className="flex items-center gap-2">
-          <span className="flex-1 text-xs text-muted-foreground">
-            {info.help} Ctrl+Enter saves.
-          </span>
-          {saveButton}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <form

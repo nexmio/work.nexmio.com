@@ -23,8 +23,8 @@ describe("ActivityRail", () => {
   it("lists the areas in order with a name beside each icon", () => {
     render(<ActivityRail />);
     const names = screen.getAllByRole("tab").map((t) => t.getAttribute("aria-label"));
-    expect(names).toEqual(["Pages", "Tasks", "Plans", "Meetings", "Ideas"]);
-    expect(screen.getByRole("tab", { name: "Plans" })).toHaveTextContent("Plans");
+    expect(names).toEqual(["Pages", "Tasks", "Projects", "Meetings", "Ideas"]);
+    expect(screen.getByRole("tab", { name: "Projects" })).toHaveTextContent("Projects");
     expect(screen.queryByRole("tab", { name: "Search" })).toBeNull();
   });
 
@@ -61,7 +61,7 @@ describe("ActivityRail", () => {
   it("makes the new thing of the area that is shown", async () => {
     expect(newAction("notes").label).toBe("New page");
     expect(newAction("task").label).toBe("New task");
-    expect(newAction("plans").label).toBe("New plan");
+    expect(newAction("plans").label).toBe("New project");
     expect(newAction("meetings").label).toBe("New meeting");
     expect(newAction("ideas").label).toBe("New idea");
     expect(newAction("start").label).toBe("New");
@@ -77,7 +77,24 @@ describe("ActivityRail", () => {
     act(() => {
       useUiStore.setState({ captureKind: null, centerView: "plans" });
     });
-    await userEvent.setup().click(screen.getByRole("button", { name: "New plan" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "New project" }));
+    expect(useUiStore.getState().newPlanNonce).toBe(1);
+    expect(useUiStore.getState().centerView).toBe("plans");
+  });
+
+  it("the arrow next to New lists everything that can be made, whatever area is shown", async () => {
+    useUiStore.setState({ centerView: "tasks", newPlanNonce: 0 });
+    render(<ActivityRail />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Everything you can make" }));
+    expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual([
+      "Page",
+      "Task",
+      "Project",
+      "Meeting",
+      "Idea",
+    ]);
+    await user.click(screen.getByRole("menuitem", { name: "Project" }));
     expect(useUiStore.getState().newPlanNonce).toBe(1);
     expect(useUiStore.getState().centerView).toBe("plans");
   });

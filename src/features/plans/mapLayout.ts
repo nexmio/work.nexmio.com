@@ -1,4 +1,4 @@
-import type { NodePath, PlanNode } from "@/lib/planTree";
+import { splitText, type NodePath, type PlanNode } from "@/lib/planTree";
 
 export const BOX_W = 176;
 export const BOX_H = 58;
@@ -13,7 +13,7 @@ export const PAD = 24;
 
 export interface Placed {
   path: NodePath;
-  /** The text of this box and of those above it: what a choice about it is remembered by. */
+  /** The words of this box and of those above it (links left out): what a choice about it is remembered by. */
   key: string;
   node: PlanNode;
   x: number;
@@ -40,9 +40,17 @@ export interface MapChoices {
 
 export const NO_CHOICES: MapChoices = { arranged: {}, moved: {} };
 
-/** The key of a box: the words of it and of everything above it (the plan itself is ""). */
+/**
+ * The key of a box: the words of it and of everything above it (the plan itself is ""). The
+ * `[[links]]` of a line are left out, so tying a part to a page or a task keeps its choices.
+ */
 export function keyOf(trail: readonly string[]): string {
-  return trail.join("\u001f");
+  return trail.map((t) => splitText(t).plain).join("\u001f");
+}
+
+/** A key remembered before links were left out, made the way keys are made now. */
+function cleanKey(key: string): string {
+  return key === "" ? "" : keyOf(key.split("\u001f"));
 }
 
 /**
@@ -216,6 +224,22 @@ function readAll(): All {
 }
 
 /** What was chosen for the map of a plan. */
+/**
+ * The choices after a box was renamed: what was remembered for the box at `from` and the boxes
+ * under it is kept under the new key `to`.
+ */
+export function renameKey(choices: MapChoices, from: string, to: string): MapChoices {
+  if (from === to || from === "") return choices;
+  const move = <T>(rec: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(
+      Object.entries(rec).map(([k, v]) => [
+        k === from ? to : k.startsWith(`${from}\u001f`) ? to + k.slice(from.length) : k,
+        v,
+      ]),
+    );
+  return { arranged: move(choices.arranged), moved: move(choices.moved) };
+}
+
 export function readChoices(plan: string | null): MapChoices {
   if (plan === null) return NO_CHOICES;
   const c = readAll()[plan] as (Partial<MapChoices> & { stacked?: unknown }) | undefined;
@@ -224,15 +248,21 @@ export function readChoices(plan: string | null): MapChoices {
     for (const [k, a] of Object.entries(c.arranged)) {
       const by: string = a.by;
       if ((by === "cols" || by === "rows") && Number.isFinite(a.n) && a.n >= 1) {
-        arranged[k] = { by, n: Math.round(a.n) };
+        arranged[cleanKey(k)] = { by, n: Math.round(a.n) };
       }
     }
   }
   // Before grids there was only "stacked": one column.
   if (Array.isArray(c?.stacked)) {
-    for (const k of c.stacked) if (typeof k === "string") arranged[k] ??= { by: "cols", n: 1 };
+    for (const k of c.stacked) {
+      if (typeof k === "string") arranged[cleanKey(k)] ??= { by: "cols", n: 1 };
+    }
   }
-  return { arranged, moved: typeof c?.moved === "object" ? c.moved : {} };
+  const moved: Record<string, [number, number]> = {};
+  if (typeof c?.moved === "object") {
+    for (const [k, v] of Object.entries(c.moved)) moved[cleanKey(k)] = v;
+  }
+  return { arranged, moved };
 }
 
 export function writeChoices(plan: string | null, choices: MapChoices): void {

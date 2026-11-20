@@ -11,6 +11,7 @@ import { flushPendingWrites } from "@/lib/flush";
 import { flattenTree, LinkResolver } from "@/lib/links";
 import { basename, dirname, isInside, isMarkdown } from "@/lib/utils";
 import { useEditorStore } from "./editorStore";
+import { useSettingsStore } from "./settingsStore";
 import { reportError, useUiStore } from "./uiStore";
 import { forgetRename, noteRename } from "@/lib/renameHint";
 import { useRecent } from "./recentStore";
@@ -101,6 +102,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     try {
       await flushPendingWrites();
       const vault = await api.openVault(path);
+      // The backend put the vault first in the recent list: read it again, so the vault
+      // switcher lists it (also a vault that was just made).
+      await useSettingsStore.getState().load();
       // Read the saved tabs before anything can overwrite them.
       const saved = loadLayout(vault.path);
       set({ vault, activePath: null, selectedPath: null, tree: [], files: [], projects: [] });

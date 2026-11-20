@@ -12,6 +12,7 @@ import {
 } from "@/lib/planTree";
 import { basename, dirname } from "@/lib/utils";
 import { fileNameFrom } from "@/lib/noteTitle";
+import { projectTag, tagFor } from "@/lib/noteTags";
 import { usePlanIndex } from "./planIndexStore";
 import { reportError, useUiStore } from "./uiStore";
 import { projectForPath, useVaultStore } from "./vaultStore";
@@ -45,19 +46,32 @@ export function planHome(planPath: string): { epics: string | undefined; notes: 
   return { epics: undefined, notes: dirname(planPath) };
 }
 
-export type PlanView = "outline" | "map";
+/**
+ * The tag of a plan: the tag of its project (made from the project's name when the project was
+ * made), or one made from the plan's own name when it is in no project. Everything the plan makes
+ * (its page, its epic, tasks and pages) gets it.
+ */
+export function planTag(planPath: string, title?: string): string {
+  const project = projectForPath(useVaultStore.getState().projects, planPath);
+  if (project) return projectTag(project);
+  return tagFor(title ?? basename(planPath).replace(/\.md$/i, ""));
+}
+
+export type PlanView = "overview" | "map" | "outline";
 
 /** The window that is open over a plan, and for which idea (the top level for `[]`). */
 export type PlanDialog =
-  | { kind: "epic"; path: NodePath }
   | { kind: "link"; path: NodePath }
   | { kind: "linktask"; path: NodePath }
-  | { kind: "parts"; path: NodePath }
   | { kind: "repeat"; path: NodePath }
   | { kind: "add"; path: NodePath }
+  /** The short note of a part. */
+  | { kind: "note"; path: NodePath }
   /** Make a plan of a project that is there (`folder`, or the one to choose when `null`). */
   | { kind: "import"; folder: string | null }
-  | { kind: "finish" };
+  | { kind: "finish" }
+  /** Delete an archived plan (and, if ticked, what was made from it). */
+  | { kind: "delete" };
 
 export interface PlanSummary {
   path: string;
@@ -70,9 +84,10 @@ const VIEW_KEY = "nexmio.planView";
 
 function readView(): PlanView {
   try {
-    return localStorage.getItem(VIEW_KEY) === "map" ? "map" : "outline";
+    const v = localStorage.getItem(VIEW_KEY);
+    return v === "outline" || v === "overview" ? v : "map";
   } catch {
-    return "outline";
+    return "map";
   }
 }
 
@@ -103,6 +118,9 @@ interface PlanState {
   setAdding: (p: NodePath | null) => void;
   setView: (v: PlanView) => void;
   select: (p: NodePath | null) => void;
+  /** The part whose note is being written in the right panel (asked for from the map's menu). */
+  noteAt: NodePath | null;
+  setNoteAt: (p: NodePath | null) => void;
   /** Reads the list of plans. */
   load: () => Promise<void>;
   /** Opens a plan in the middle. */
@@ -121,6 +139,11 @@ interface PlanState {
   ) => Promise<string | null>;
   /** Marks the open plan finished, or open again. */
   setFinished: (finished: boolean) => Promise<void>;
+  /**
+   * Deletes the open plan's page and the files in `also` (its epic, pages made from it). Each is
+   * saved in History first, so it can be brought back with "Recover deleted".
+   */
+  remove: (also: readonly string[]) => Promise<boolean>;
 }
 
 export const usePlanStore = create<PlanState>((set, get) => {
@@ -166,6 +189,10 @@ export const usePlanStore = create<PlanState>((set, get) => {
     },
     select: (selected) => {
       set({ selected });
+    },
+    noteAt: null,
+    setNoteAt: (noteAt) => {
+      set({ noteAt });
     },
     load: async () => {
       try {
@@ -246,7 +273,9 @@ export const usePlanStore = create<PlanState>((set, get) => {
         const taken = new Set(useVaultStore.getState().files);
         let path = `${folder}/${name}.md`;
         for (let i = 2; taken.has(path); i++) path = `${folder}/${name} ${String(i)}.md`;
-        const head = [`---`, `tags: [${PLAN_TAG}]`, `---`, `# ${title.trim()}`, ``, ``];
+        const tag = planTag(path, title.trim());
+        const tags = tag === PLAN_TAG ? PLAN_TAG : `${PLAN_TAG}, ${tag}`;
+        const head = [`---`, `tags: [${tags}]`, `---`, `# ${title.trim()}`, ``, ``];
         await api.writeNote(path, serializePlan({ head, nodes, tail: [""] }));
         await useVaultStore.getState().refreshTree();
         await get().load();
@@ -269,6 +298,17 @@ export const usePlanStore = create<PlanState>((set, get) => {
       } catch (e) {
         fail(e);
       }
+    },
+    remove: async (also) => {
+      const path = get().path;
+      if (path === null) return false;
+      const vault = useVaultStore.getState();
+      for (const p of [path, ...also]) {
+        if (!(await vault.deletePath(p))) return false;
+      }
+      set({ path: null, title: "", nodes: [], selected: null, finished: false, dialog: null });
+      await get().load();
+      return true;
     },
   };
 });

@@ -109,6 +109,8 @@ interface TaskState {
   setMeta: (t: Task, patch: MetaPatch) => Promise<void>;
   /** Writes a line in the task's history (what Nexmio Work did: a status, what it waits for). */
   addHistory: (t: Task, text: string) => Promise<void>;
+  /** Pins a task to the start page, or takes it off. */
+  setPinned: (t: Task, on: boolean) => Promise<void>;
   /** Changes the status and writes it in the task's history. */
   setStatus: (t: Task, status: string | null) => Promise<void>;
   /** Writes who or what a waiting task waits for (`null` removes it) and notes it in the log. */
@@ -447,6 +449,9 @@ export const useTaskStore = create<TaskState>((set, get) => {
     },
     addStep: async (t, text) => {
       await mutate(t.path, () => api.taskAddStep(t.path, t.line, t.key, text));
+    },
+    setPinned: async (t, on) => {
+      await mutate(t.path, () => api.taskSetPinned(t.path, t.title, on));
     },
     addHistory: async (t, text) => {
       await mutate(t.path, () => api.taskHistoryAdd(t.path, t.title, todayIso(), text));

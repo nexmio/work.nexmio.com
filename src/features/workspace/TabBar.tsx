@@ -1,3 +1,4 @@
+import { PinMenuItem } from "@/components/PinMenuItem";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -188,6 +189,7 @@ export function TabBar({ paneId }: Props) {
                     : "Move to main view"
                   : "Open in split view"}
               </ContextMenuItem>
+              <PinMenuItem path={path} kind="context" />
               <ContextMenuItem
                 onSelect={() => {
                   api.revealInFileManager(path).catch(reportError);

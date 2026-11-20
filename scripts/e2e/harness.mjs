@@ -23,7 +23,7 @@ const NOW = "2026-10-30T09:15:00";
 const DEMO = new URL("../../src-tauri/demo-vault/", import.meta.url);
 
 /** Fills in `{{today}}`, `{{tomorrow}}` and `{{days_ago:N}}`, as `vault/demo.rs` does. */
-function fillDates(text) {
+export function fillDates(text) {
   const today = new Date(NOW.slice(0, 10) + "T12:00:00Z");
   const iso = (days) => new Date(today.getTime() + days * 86400000).toISOString().slice(0, 10);
   return text.replace(/\{\{(today|tomorrow|days_ago:(\d+))\}\}/g, (_, w, n) =>
@@ -86,6 +86,7 @@ export async function launch({
   height = 1080,
   notes = loadDemoNotes(),
   welcome = false,
+  projects = [],
   executablePath,
 } = {}) {
   const browser = await chromium.launch(executablePath ? { executablePath } : {});
@@ -98,7 +99,7 @@ export async function launch({
   page.on("pageerror", (e) => log.push("ERR " + e.message));
   await page.exposeFunction("__log", (s) => log.push(s));
   await page.addInitScript(
-    ({ notes, theme, ideas, now, welcome, minor }) => {
+    ({ notes, theme, ideas, now, welcome, minor, projects }) => {
       const at = new Date(now).getTime() - 35 * 60000;
       try {
         localStorage.setItem("nexmio.betaNoticeSeen", "1");
@@ -160,9 +161,10 @@ export async function launch({
             return r ? r[1] : null;
           };
           const status = word("status"),
-            made = word("made"),
-            due = word("due"),
-            plan = word("plan");
+            made = word("made");
+          // Old words that nothing reads any more: kept out of the title.
+          word("due");
+          word("plan");
           const tags = [...title.matchAll(/#(\w+)/g)].map((x) => x[1]);
           title = title.replace(/#\w+/g, "");
           const link = (/\[\[([^\]]+)\]\]/.exec(title) || [])[1] || null;
@@ -185,13 +187,17 @@ export async function launch({
             title: title.trim().replace(/\s+/g, " "),
             done: m[1] === "x",
             tags,
-            due,
-            plan,
             status,
-            estMinutes: null,
             waitingFor: null,
             after: null,
-            history: [],
+            // What Nexmio Work writes when a task is ticked or gets a status: "Look back" reads it.
+            history:
+              m[1] === "x"
+                ? [{ date: now.slice(0, 8) + "29", text: "Done" }]
+                : status
+                  ? [{ date: now.slice(0, 10), text: `Status: ${status}` }]
+                  : [],
+            pinned: false,
             steps,
             log: logs,
             note: "",
@@ -318,7 +324,7 @@ export async function launch({
           tagged("epic").map((n) => ({
             path: n.path,
             title: /^# (.*)$/m.exec(n.content)?.[1] ?? n.path,
-            source: null,
+            source: front(n.content).source ?? null,
             description: "",
             tags: tagsOf(n.content).filter((t) => t !== "epic"),
           })),
@@ -326,11 +332,16 @@ export async function launch({
         task_add_log: ({ path }) => parseTasks(path, notes[path] ?? ""),
         list_ideas: () => ideas,
         backlinks: () => [],
+        // Look back: every page counts as written this week.
+        changed_pages: () =>
+          Object.keys(notes)
+            .filter((p) => p.endsWith(".md"))
+            .map((path) => ({ path, changes: 1, new: false, time: Math.floor(at / 1000) })),
         list_chats: () => [],
         list_daily_dates: () => [],
         splash_done: () => null,
         missing_vaults: () => [],
-        list_projects: () => [],
+        list_projects: () => projects,
         get_embedding_status: () => ({ enabled: false }),
       };
       let callback = 1;
@@ -355,7 +366,7 @@ export async function launch({
       };
       window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener() {} };
     },
-    { notes, theme, ideas: IDEAS, now: NOW, welcome, minor: MINOR },
+    { notes, theme, ideas: IDEAS, now: NOW, welcome, minor: MINOR, projects },
   );
   return { browser, page, log };
 }

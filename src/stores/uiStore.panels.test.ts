@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { useUiStore } from "./uiStore";
 
-describe("uiStore: the chat is a tab of the right panel", () => {
+describe("uiStore: the AI box and the right panel", () => {
   beforeEach(() => {
     useUiStore.setState({
       rightTab: "outline",
@@ -12,39 +12,47 @@ describe("uiStore: the chat is a tab of the right panel", () => {
     });
   });
 
-  it("focusChat opens the right panel on the AI tab and asks the box for the focus", () => {
+  it("focusChat opens the AI box and asks it for the focus, and changes nothing under it", () => {
     useUiStore.getState().focusChat();
     const s = useUiStore.getState();
-    expect(s.rightTab).toBe("ai");
-    expect(s.rightCollapsed).toBe(false);
     expect(s.askOpen).toBe(true);
     expect(s.focusChatNonce).toBe(1);
+    expect(s.rightTab).toBe("outline");
+    expect(s.rightCollapsed).toBe(true);
   });
 
-  it("focusChat leaves the start page for the pages", () => {
+  it("the AI box opens over the start page, which stays", () => {
     useUiStore.getState().openStart();
     useUiStore.getState().focusChat();
-    expect(useUiStore.getState().centerView).toBe("notes");
+    expect(useUiStore.getState().centerView).toBe("start");
   });
 
-  it("setAskOpen(false) goes back to the outline only when the AI tab was showing", () => {
+  it("closing the AI box leaves the right panel as it was", () => {
+    useUiStore.setState({ rightTab: "links", rightCollapsed: false });
     useUiStore.getState().setAskOpen(true);
     useUiStore.getState().setAskOpen(false);
-    expect(useUiStore.getState().rightTab).toBe("outline");
-    expect(useUiStore.getState().askOpen).toBe(false);
-    useUiStore.setState({ rightTab: "links" });
-    useUiStore.getState().setAskOpen(false);
-    expect(useUiStore.getState().rightTab).toBe("links");
+    expect(useUiStore.getState()).toMatchObject({
+      askOpen: false,
+      rightTab: "links",
+      rightCollapsed: false,
+    });
   });
 
-  it("closing and reopening the panel keeps askOpen true only for the AI tab", () => {
+  it("closing and opening the right panel or changing its tab leaves the AI box open", () => {
     useUiStore.getState().focusChat();
     useUiStore.getState().toggleRight();
-    expect(useUiStore.getState().askOpen).toBe(false);
     useUiStore.getState().toggleRight();
-    expect(useUiStore.getState().askOpen).toBe(true);
     useUiStore.getState().setRightTab("links");
-    expect(useUiStore.getState().askOpen).toBe(false);
+    expect(useUiStore.getState().askOpen).toBe(true);
+  });
+
+  it("a page tab from another area goes to the page, and an area tab stays in its area", () => {
+    useUiStore.setState({ centerView: "tasks" });
+    useUiStore.getState().setRightTab("history");
+    expect(useUiStore.getState().centerView).toBe("notes");
+    useUiStore.setState({ centerView: "tasks" });
+    useUiStore.getState().setRightTab("task");
+    expect(useUiStore.getState().centerView).toBe("tasks");
   });
 
   it("remembers the folded navigation", () => {
