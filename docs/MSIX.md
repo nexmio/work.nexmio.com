@@ -44,10 +44,10 @@ On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 ```powershell
 pnpm install
 pnpm tauri build
-./scripts/msix/Build-Msix.ps1 -Version 0.28.0 -TestSign -DisplayName "Nexmio Work"
+./scripts/msix/Build-Msix.ps1 -Version 0.29.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.28.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.28.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.29.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.29.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
 
 **Windows Sandbox** (Windows 11 Pro, feature "Windows Sandbox" turned on): edit `scripts/msix/sandbox.wsb` so that `HostFolder` is the full path of `msix-out`, and double-click it. The sandbox installs Nexmio Work; start it from the Start menu. Everything is gone when you close the sandbox.
 
@@ -72,7 +72,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 
 ## The built-in AI in the Store package
 
-Since 0.28 the Store package **has the built-in AI**, the same as the installer version (`engine::catalog::unavailable_reason` is always `None`). The engine (`llama-server`) and the models are downloaded into the package's data folder, which goes with the app when it is uninstalled. This reverses the 0.8.x decision that kept it out: the owner wants the Store and GitHub versions to be the same. Known risks: the Store's policy 10.2.2 (an app must not extend itself with downloaded code) and organisations that block a downloaded program from starting (seen on a managed laptop). If the Store refuses an update, or it is blocked, `unavailable_reason` is the one place to turn it off for the Store package again (`paths::is_packaged`).
+Since 0.29 the Store package **has the built-in AI**, the same as the installer version (`engine::catalog::unavailable_reason` is always `None`). The engine (`llama-server`) and the models are downloaded into the package's data folder, which goes with the app when it is uninstalled. This reverses the 0.8.x decision that kept it out: the owner wants the Store and GitHub versions to be the same. Known risks: the Store's policy 10.2.2 (an app must not extend itself with downloaded code) and organisations that block a downloaded program from starting (seen on a managed laptop). If the Store refuses an update, or it is blocked, `unavailable_reason` is the one place to turn it off for the Store package again (`paths::is_packaged`).
 
 ## Known risks
 

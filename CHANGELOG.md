@@ -8,7 +8,7 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
-## [0.28.0] - 2026-11-20
+## [0.29.0] - 2026-11-20
 
 ### Added
 
