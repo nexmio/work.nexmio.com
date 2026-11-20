@@ -38,7 +38,8 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 - A live-preview Markdown editor with a formatting toolbar, tabs, a split view, a table editor, Mermaid diagrams, a Markdown source view (`Ctrl/Cmd+Alt+M`), pictures with a size bar, and `[[wiki-links]]` with autocomplete and link updates when a page is renamed or moved.
 - A new page is named by its title. Names Windows cannot keep (a dot at the end, `CON`, `NUL`, `\ / : * ? " < > |`) are refused on every system, so a vault works everywhere.
 - Daily pages in a calendar at the top of the file panel, and **Trace my work**: one line a day under "Worked on" for each page and task you worked on (off by default).
-- A **start page** you build yourself from widgets (Continue, Recent, Pinned, Write it down, Search and ask, Next meeting, Working on, To sort, Areas, Changed since yesterday, Epic progress).
+- A **start page** you build yourself from widgets (Continue, Recent, Pinned, Write it down, Search and ask, Next meeting, Working on, To sort, Areas, Changed since yesterday, Epic progress, This week). **Pin** a page, an epic or a task from its right-click menu to keep it on the start page.
+- **New** at the top of the navigation makes what the area shows, and its arrow lists everything you can make (a page, a task, a project, a meeting, an idea) wherever you are.
 - Eight themes: Light, Dark, Slate, Paper, Mint, Midnight, Graphite and Ember, or follow the computer.
 - **Reading** settings: line spacing, letter spacing, font, and **Follow the line**, which dims every line but the one you are in. A choice shows at once and Cancel puts it back.
 
@@ -49,7 +50,7 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 - A task that is **Waiting** can say who or what it waits for, and which other task it waits for. That task says which tasks wait for it, and the waiting one says **Ready** when it is done.
 - The task list shows one epic at a time: the task to do now with its next step, the ones after it, the ones that wait for others, and the done ones folded away.
 - A task can point at a page with a `[[wiki-link]]` in its own line. Tasks and steps can be put in your own order.
-- **Write it down** from anywhere (`Ctrl/Cmd+Shift+N`): a quick page, a task or an idea, each in its own small box. Ideas are a list you turn into a task or a page later.
+- **Write it down** from anywhere (`Ctrl/Cmd+Shift+N`): a task or an idea, each in its own small box. Ideas are a list you turn into a task or a page later.
 - **A taskbar helper (Windows, off until you turn it on).** An icon in the taskbar and keys that work in every program: write something down, and say where you left off. You choose the keys under Settings → Pages and backup, and the settings tell you if another program uses them. Nexmio Work can stay in the taskbar when the window is closed. On other systems it is greyed out.
 
 **Meetings**
@@ -60,7 +61,7 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 
 **Tags and search**
 
-- Tags are written in a page's properties (`tags: [vpn]`) or as `#vpn` in the text, and they are the same tag. You choose your own tags; Nexmio Work has three of its own, **Meeting**, **Epic** and **Pinned**, which change what Nexmio Work does with the page and are shown apart, with what each one does. Meeting and Epic are written in the page; a pin is kept in `.vault/meta.json`.
+- Tags are written in a page's properties (`tags: [vpn]`) or as `#vpn` in the text, and they are the same tag. You choose your own tags; Nexmio Work has its own, **Meeting**, **Epic**, **Pinned** and **Plan**, which change what Nexmio Work does with the page and are shown apart, with what each one does. Meeting and Epic are written in the page; a pin is kept in `.vault/meta.json`.
 - Full-text search with `tag:` and `path:` filters, and optional search by meaning with a local embedding model. **Answer from my pages** answers a question from the pages that fit.
 
 **History and AI**
@@ -69,7 +70,9 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 - AI on selected text in a page **and in every text box** (fix spelling, rewrite, shorten, translate, explain, draw as a diagram and more), **In short** for a whole page (the main points and the things to do, and you tick which become tasks), AI commands for a whole page or folder (spelling, structure, summary, a title and tags, sort into folders), skills that Nexmio Work carries out page by page, and a chat that searches and reads your pages to answer. Nexmio Work checks every change a skill makes (links, tags, numbers, dates, code) before it is offered.
 - **Test it** under each AI in Settings → AI asks one short question, with none of your pages, and shows the answer or the error in plain words. The built-in AIs are marked Beta.
 - **Spelling help** that marks misspelt words in the language of the text and never changes anything by itself.
-- Projects: a folder with its own tree, its own AI and a page for the AI about the project.
+- **Projects and plans.** A project is a folder with its own tree, its own AI rules and its own tag; its plan is a page whose list is the parts of the work, as a map or an outline. Each project has an **Overview**: how far it has come, the task to do now, the time logged this month, what waits for others, its meetings and decisions, and its newest pages. A meeting can belong to a project, and an idea can become a part of a plan.
+- **The AI box.** **AI** in the top bar (or `Ctrl/Cmd+L`) opens the AI as a box over the right side, over anything: the chat and the queue of AI jobs. The chat knows your projects, tasks and meetings ("What should I do next?", "What am I waiting for?"), answers how-to questions from the help with a **Show me** button, and can propose tasks and parts of a plan that you accept first. Projects, Tasks, Meetings and the start page each have an AI button with what fits there, such as breaking down the chosen part or finding the decisions and actions in a meeting.
+- **Look back** (Tasks → Look back): a week from Monday in one place: what you finished and what moved on, the time logged, the meetings and their decisions, and the pages you wrote. Copy it as a status report, or let the AI write one in the queue.
 - Import from a folder (for example a OneNote export, see [docs/IMPORT-ONENOTE.md](docs/IMPORT-ONENOTE.md)) and export to HTML, Word and PDF.
 
 <table>
@@ -88,6 +91,14 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
   <tr>
     <td><img src="docs/screenshots/ideas.png" alt="Ideas: the list, and the box to write one down"></td>
     <td><img src="docs/screenshots/themes.png" alt="Settings, General: the eight themes as cards"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/projects.png" alt="A project's map with its parts as boxes, and the chosen part in the right panel"></td>
+    <td><img src="docs/screenshots/project-overview.png" alt="The overview of a project: how far it has come, the task to do now, meetings, decisions and what waits"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/look-back.png" alt="Look back: what was done, the time logged, the meetings and the pages written this week"></td>
+    <td><img src="docs/screenshots/ai-box.png" alt="The AI box over the task list, with questions to start with"></td>
   </tr>
   <tr>
     <td colspan="2"><img src="docs/screenshots/midnight.png" alt="The start page in the Midnight theme"></td>
@@ -174,7 +185,7 @@ pnpm check            # everything CI runs: format, lint, types, tests, clippy
 
 Step-by-step instructions for Linux and Windows are in [docs/START-GUIDE.md](docs/START-GUIDE.md).
 
-**Releases.** Pushing a tag (`pnpm release:tag`) makes GitHub Actions build Nexmio Work Preview at once (installers and the Microsoft Store package) and publish it as a pre-release. When a Preview is good enough, `pnpm release:stable` makes it Nexmio Work: built the same way, sent to the Store and made the latest release. The tag must match the version in `package.json`. The website is the folder `site/`, published by `.github/workflows/pages.yml`; its download buttons follow the GitHub releases by themselves. The steps are in [docs/RELEASING.md](docs/RELEASING.md).
+**Releases.** Pushing a tag (`pnpm release:tag`) makes GitHub Actions build Nexmio Work Preview at once (installers and the Microsoft Store package) and publish it as a pre-release. When a Preview is good enough, `pnpm release:stable` makes it Nexmio Work: built the same way and made the latest release. The Microsoft Store package is kept as a download of the run and is uploaded in Partner Center by hand for now. The tag must match the version in `package.json`. The website is the folder `site/`, published by `.github/workflows/pages.yml`; its download buttons follow the GitHub releases by themselves. The steps are in [docs/RELEASING.md](docs/RELEASING.md).
 
 **How the app is made.** Tauri 2 with a Rust backend and a React 19 and TypeScript frontend. [docs/AREAS.md](docs/AREAS.md) maps the app into areas and the files that belong to each; every change starts from a brief, has a change plan and ends with a change report (`pnpm areas report`).
 
@@ -183,13 +194,13 @@ Step-by-step instructions for Linux and Windows are in [docs/START-GUIDE.md](doc
 - [docs/START-GUIDE.md](docs/START-GUIDE.md): getting started
 - [docs/UX-GUIDE.md](docs/UX-GUIDE.md): how every screen looks and works
 - [docs/MANUAL_TESTS.md](docs/MANUAL_TESTS.md): the manual test checklist
-- [docs/DECISIONS.md](docs/DECISIONS.md): design decisions
+- [docs/DECISIONS.md](docs/DECISIONS.md): the design decisions that hold now, by area; [docs/history/DECISIONS-2026.md](docs/history/DECISIONS-2026.md): the full history
 - [docs/IMPORT-ONENOTE.md](docs/IMPORT-ONENOTE.md): moving pages from OneNote
 - [docs/MSIX.md](docs/MSIX.md) and [docs/STORE-LISTING.md](docs/STORE-LISTING.md): the Microsoft Store package
 - [docs/shared-facts.json](docs/shared-facts.json): the sentences the website and this page say in the same words
 - [PRIVACY.md](PRIVACY.md): what Nexmio Work does with your data (nothing leaves your computer unless you choose it)
 - [CHANGELOG.md](CHANGELOG.md): what changed in each version
-- [CLAUDE.md](CLAUDE.md): how the app is built and changed; [docs/history/SPEC-v1.md](docs/history/SPEC-v1.md): the original v1 specification, with later changes in DECISIONS.md
+- [CLAUDE.md](CLAUDE.md): how the app is built and changed; [docs/history/SPEC-v1.md](docs/history/SPEC-v1.md): the original v1 specification, with later changes in docs/history/DECISIONS-2026.md
 
 ## Licence and your own version
 
