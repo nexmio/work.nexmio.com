@@ -3,7 +3,7 @@ name: Build an edition
 # Called by release.yml, once for Preview and once for Stable. Builds the installers (Windows and
 # Linux), adds them to the draft release, and on Windows builds the Microsoft Store package and keeps
 # it as a download of the run (see docs/MSIX.md). Nothing is sent to the Store: the package is
-# uploaded in Partner Center by hand for now (scripts/store/Submit-Store.ps1 is kept for later).
+# uploaded in Partner Center by hand for now.
 on:
   workflow_call:
     inputs:

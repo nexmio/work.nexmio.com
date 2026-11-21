@@ -39,7 +39,7 @@ A bug found in **Preview** while you work on a feature is fixed on `main` like a
 
 - `release.yml` (a tag): `prepare` checks the tag and whether it is on `main` (a tag on a hotfix branch builds nothing: it waits for Release Stable), makes the texts (`scripts/release/notes.mjs`: the GitHub text, the Store's "What's new" and the Store listing from `docs/STORE-LISTING.md`) and a draft release; `preview` builds (`.github/workflows/build.yml`, edition `preview`) and adds the files; `publish-preview` publishes the pre-release.
 - `release-stable.yml` (by hand): the same for edition `stable`, on a tag that already has a Preview release, then `publish-stable`. It makes the GitHub release itself when a fix for Stable has none.
-- `build.yml`: builds the installers for Windows and Linux (Preview is its own app, "Nexmio Work Preview", so both can be installed), the Store package, and keeps it as a download of the run. Nothing is sent to the Store: the step that did it is removed for now (`scripts/store/Submit-Store.ps1` is kept, and `docs/MSIX.md` says how it was connected). A failure in the Store steps never stops the installers; it shows as a failed step.
+- `build.yml`: builds the installers for Windows and Linux (Preview is its own app, "Nexmio Work Preview", so both can be installed), the Store package, and keeps it as a download of the run. Nothing is sent to the Store: the step that did it is removed for now (`docs/MSIX.md` says how the Store was connected; the old submit script is in the git history). A failure in the Store steps never stops the installers; it shows as a failed step.
 
 ## What follows by itself
 

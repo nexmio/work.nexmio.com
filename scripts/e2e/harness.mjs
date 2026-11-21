@@ -1,5 +1,3 @@
-// DRAFT, not wired into any command yet (see docs/plans/review-2026-11.md, task 8).
-//
 // Runs Nexmio Work's real frontend in a headless Chromium with a pretend backend, so screens can be
 // checked and photographed without the desktop app and without anybody's own notes. The frontend
 // is served by `pnpm dev` (http://localhost:1420); every Tauri command the frontend calls is

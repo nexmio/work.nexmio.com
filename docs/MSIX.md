@@ -2,7 +2,7 @@
 
 Microsoft signs an MSIX package itself when it is published in the Microsoft Store, so there is no certificate to buy and Windows does not show the "unknown publisher" warning. This page is how to build the package, try it, and send it in.
 
-The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and keeps each as a workflow artifact. **Nothing is sent to the Store for now:** the release workflows have no step that does it, so the package is uploaded in Partner Center by hand (`scripts/store/Submit-Store.ps1` and "Connect the Store" below are kept for when it is switched on again). The artifacts are (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`). The package is the same build as the installer, with the AI engine inside; there is no separate test copy.
+The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release workflow (`docs/RELEASING.md`) builds it twice for every release: **Nexmio Work Preview** at once and **Nexmio Work** after the owner approves, and keeps each as a workflow artifact. **Nothing is sent to the Store for now:** the release workflows have no step that does it, so the package is uploaded in Partner Center by hand ("Connect the Store" below says how it was connected; the old submit script was removed in 0.30 and is in the git history). The artifacts are (`nexmio-work-preview-msix`, `nexmio-work-stable-msix`). The package is the same build as the installer, with the AI engine inside; there is no separate test copy.
 
 ## 1. Reserve the name and read the identity (once)
 
@@ -46,11 +46,9 @@ pnpm tauri build
 ./scripts/msix/Build-Msix.ps1 -Version 0.30.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.30.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.30.0.0_x64_test.msix` (signed with a test certificate), `nexmio-work-test.cer` and `Install-TestMsix.ps1`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.30.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.30.0.0_x64_test.msix` (signed with a test certificate) and `nexmio-work-test.cer`.
 
-**Windows Sandbox** (Windows 11 Pro, feature "Windows Sandbox" turned on): edit `scripts/msix/sandbox.wsb` so that `HostFolder` is the full path of `msix-out`, and double-click it. The sandbox installs Nexmio Work; start it from the Start menu. Everything is gone when you close the sandbox.
-
-**A virtual machine** (or any test computer): copy `msix-out` over, open PowerShell **as administrator** in that folder and run `.\Install-TestMsix.ps1`. Remove it with `.\Install-TestMsix.ps1 -Remove`. Do not do this on your everyday or work computer: the script makes Windows trust the test certificate.
+To try it on a test Windows (a virtual machine or Windows Sandbox, never your everyday or work computer), copy the test `.msix` and the `.cer` over. In PowerShell **as administrator** run `Import-Certificate -FilePath .\nexmio-work-test.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`, then `Add-AppxPackage .\NexmioWork_0.30.0.0_x64_test.msix`. Remove it with `Get-AppxPackage *Nexmio* | Remove-AppxPackage`. The certificate makes Windows trust the test copy, which is why it must not be done on a computer you use for real.
 
 If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 

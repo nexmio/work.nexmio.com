@@ -5,6 +5,5 @@ src/bindings
 pnpm-lock.yaml
 CHANGELOG.md
 docs/history/SPEC-v1.md
-brand
 site
 scripts/foundry-native-fetch/target
