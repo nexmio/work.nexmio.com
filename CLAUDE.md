@@ -9,17 +9,14 @@ Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript front
 - `docs/UX-GUIDE.md` and `docs/design-system/`: how every screen looks and works.
 - `docs/DECISIONS.md`: the rules that hold now and why, by area (read the sections of your areas). Record every new decision there, in its section, as one line. `docs/history/DECISIONS-2026.md` is the history: search it, do not read it whole.
 - `docs/RELEASING.md`: how a release is made (Preview, Stable, a fix for Stable, the Microsoft Store). Read it before any release or tag.
-- `brand/LAYOUT.md`: the layout every Nexmio site and app follows.
-- `brand/preview/site/work.html`: a working reference page for this product.
-- `project.md` (if present): private handover pages from the Nexmio control repo. Never commit it to the public repo.
+- `project.md` (if present): private handover notes. Never commit it to the public repo.
 
 ## Rules
 
-- `brand/` is a generated copy of the shared brand kit. **Do not edit files in `brand/`.** Changes to the brand are made in the Nexmio control repo and exported again.
 - Everything committed to git is written in English (docs, comments, commit messages).
 - The logo is the N mark image plus the text "exmio" and a small "Work" tag in purple. Never bake the product name into an image.
 - The website is in English only.
-- This project is a standalone public repo. Do not add secrets, and do not reference the private control repo in committed files.
+- This project is a standalone public repo. Do not add secrets, and do not refer to private repos or notes in committed files.
 
 ## How a change is made
 

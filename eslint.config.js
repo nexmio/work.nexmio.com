@@ -5,16 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist",
-      "src-tauri",
-      "src/bindings",
-      "node_modules",
-      "scripts",
-      "spikes",
-      "brand",
-      "site",
-    ],
+    ignores: ["dist", "src-tauri", "src/bindings", "node_modules", "scripts", "spikes", "site"],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,

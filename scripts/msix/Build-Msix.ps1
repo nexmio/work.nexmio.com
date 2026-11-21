@@ -10,7 +10,8 @@
 
   Without -TestSign the package is UNSIGNED, which is what Partner Center wants: the Store signs it.
   With -TestSign a self-signed test certificate is made and the package is signed with it, so it can
-  be installed on a test computer (see Install-TestMsix.ps1). The Store never accepts that copy.
+  be installed on a test computer (trust nexmio-work-test.cer, then Add-AppxPackage). The Store never
+  accepts that copy.
 
   Name and Publisher must be the values Partner Center shows under "Product identity" once the app
   name is reserved. The defaults are placeholders that are fine for test packages.
@@ -97,8 +98,6 @@ if (Test-Path $msix) { Remove-Item $msix -Force }
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed ($LASTEXITCODE)" }
 Write-Host "Built $msix (unsigned: for the Microsoft Store)"
 
-Copy-Item (Join-Path $here "Install-TestMsix.ps1") $OutDir -Force
-
 if ($TestSign) {
   $signtool = Find-SdkTool "signtool.exe"
   $cert = New-SelfSignedCertificate -Type Custom -Subject $Publisher -KeyUsage DigitalSignature `
@@ -115,5 +114,5 @@ if ($TestSign) {
   if ($LASTEXITCODE -ne 0) { throw "signtool failed ($LASTEXITCODE)" }
   Remove-Item $pfx -Force
   Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force
-  Write-Host "Built $testMsix (signed with a test certificate: install with Install-TestMsix.ps1)"
+  Write-Host "Built $testMsix (signed with a test certificate)"
 }
