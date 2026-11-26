@@ -127,8 +127,9 @@ See `src/features/capture/CLAUDE.md`. Beyond it:
 - The chosen part is shown in the right panel (Part tab); moves are words (Earlier, Later, Under the one before, One level up).
 - Repeat puts the names under the repeated part, each with the steps and a task.
 - An archived plan can be deleted: the plan page always, the rest only when ticked.
+- Moving to the folder structure (`migrate.ts`, `FOLDERS_VERSION`) is asked for, never automatic: pages linked from parts, inside the project, not epics, meetings or plans; ticked from the start only in the project's own folder, `Notes` or `Pages`. `vault::ops::move_pages` checks every move first and makes one version; an emptied `Notes` or `Pages` folder is removed.
 - The Overview of a project is read, never stored (`overview.ts`); its pages are those in the folder or with the project's tag.
-- A new page of a part is offered a folder per part under the project's `Notes` (`partFolder`), and the folder can be changed; pages that exist are not moved.
+- A new page of a part is `<part>_page.md`, offered in the project's `Pages` with a folder per part above it (`partFolder`), and the folder can be changed. The `_page` keeps it apart from the folder of the parts under it. Pages that exist, also in an older `Notes` folder, are not moved.
 
 ## Meetings
 

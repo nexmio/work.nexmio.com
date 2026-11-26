@@ -5,8 +5,8 @@ use crate::error::{AppError, AppResult};
 use crate::git::{history, CommitKind, CommitReason};
 use crate::links::{resolve::LinkResolver, rewrite};
 use crate::projects;
-use serde::Serialize;
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use ts_rs::TS;
 
 #[derive(Debug, Clone, Serialize, TS)]
@@ -22,6 +22,15 @@ pub struct RenameResult {
 pub struct RenamePreview {
     pub link_count: u32,
     pub note_count: u32,
+}
+
+/// One page to move: where it is and where it goes.
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PageMove {
+    pub from: String,
+    pub to: String,
 }
 
 /// Writes a note to disk (no commit) and updates the index.
@@ -209,6 +218,101 @@ pub fn rename_path(
         Some(&commit_paths),
     )?;
     Ok(result)
+}
+
+/// Moves several pages at once, with links updated: every move is checked before the first one is
+/// made, then one snapshot and one `Rename` commit. A `Notes` or `Pages` folder that is left
+/// empty is removed. If a move fails half way, what was moved is committed and the error returned.
+pub fn move_pages(v: &OpenVault, moves: &[PageMove]) -> AppResult<RenameResult> {
+    let files = v.file_list();
+    let existing: HashSet<String> = files.iter().map(|f| f.to_lowercase()).collect();
+    let mut sources = HashSet::new();
+    let mut targets = HashSet::new();
+    for m in moves {
+        paths::resolve(&v.root, &m.from, None)?;
+        let target = paths::resolve(&v.root, &m.to, None)?;
+        if !tree::is_markdown(&m.from) || !tree::is_markdown(&m.to) {
+            return Err(AppError::InvalidPath(
+                "Only pages can be moved this way".into(),
+            ));
+        }
+        if !files.contains(&m.from) || !sources.insert(m.from.clone()) {
+            return Err(AppError::NotFound(format!("{} does not exist", m.from)));
+        }
+        let key = m.to.to_lowercase();
+        if existing.contains(&key) || target.exists() || !targets.insert(key) {
+            return Err(AppError::AlreadyExists(format!("{} already exists", m.to)));
+        }
+    }
+    if moves.is_empty() {
+        return Ok(RenameResult {
+            changed_files: Vec::new(),
+        });
+    }
+    v.commit(
+        CommitReason::new(
+            CommitKind::SnapshotBeforeRename,
+            Some("moving pages".into()),
+        ),
+        None,
+    )?;
+    let mut changed = Vec::new();
+    let mut commit_paths = Vec::new();
+    let mut moved = 0;
+    let mut failed = None;
+    for m in moves {
+        match rename_no_commit(v, &m.from, &m.to, true) {
+            Ok((result, paths)) => {
+                moved += 1;
+                changed.extend(result.changed_files);
+                commit_paths.extend(paths);
+                remove_emptied_folders(v, &m.from);
+            }
+            Err(e) => {
+                failed = Some(e);
+                break;
+            }
+        }
+    }
+    v.refresh_files();
+    commit_paths.sort();
+    commit_paths.dedup();
+    if moved > 0 {
+        let what = if moved == 1 { "page" } else { "pages" };
+        v.commit(
+            CommitReason::new(
+                CommitKind::Rename,
+                Some(format!("{moved} {what} into folders")),
+            ),
+            Some(&commit_paths),
+        )?;
+    }
+    if let Some(e) = failed {
+        return Err(e);
+    }
+    changed.sort();
+    changed.dedup();
+    Ok(RenameResult {
+        changed_files: changed,
+    })
+}
+
+/// Removes the folders above `moved_from` that are empty now, as far up as they are a `Notes` or
+/// `Pages` folder or inside one. `remove_dir` never removes a folder that has anything in it.
+fn remove_emptied_folders(v: &OpenVault, moved_from: &str) {
+    let mut path = moved_from;
+    while let Some((dir, _)) = path.rsplit_once('/') {
+        if !dir.split('/').any(|s| s == "Notes" || s == "Pages") {
+            return;
+        }
+        let Ok(abs) = paths::resolve(&v.root, dir, None) else {
+            return;
+        };
+        if std::fs::remove_dir(abs).is_err() {
+            return;
+        }
+        path = dir;
+    }
 }
 
 /// Renames a note within its folder without making a commit. Used when a new note is named
@@ -628,6 +732,77 @@ mod tests {
                 .collect())
         })
         .unwrap()
+    }
+
+    #[test]
+    fn pages_are_moved_together_with_links_and_one_version_and_can_be_moved_back() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        write_note(&v, "Move/Plan.md", "- test [[Move/Notes/test]] [[dummy]]\n").unwrap();
+        write_note(&v, "Move/Notes/test.md", "![p](../files/p.png)\n").unwrap();
+        write_note(&v, "Move/dummy.md", "# dummy\n").unwrap();
+        v.refresh_files();
+        let moves = vec![
+            PageMove {
+                from: "Move/Notes/test.md".into(),
+                to: "Move/Pages/test_page.md".into(),
+            },
+            PageMove {
+                from: "Move/dummy.md".into(),
+                to: "Move/Pages/test/dummy_page.md".into(),
+            },
+        ];
+        let before = log_messages(&v).len();
+        move_pages(&v, &moves).unwrap();
+        let read = |p: &str| fs_ops::read_note(&v.root, p).unwrap().content;
+        assert!(read("Move/Plan.md").contains("test_page"));
+        assert!(read("Move/Plan.md").contains("dummy_page"));
+        assert_eq!(read("Move/Pages/test_page.md"), "![p](../files/p.png)\n");
+        assert!(!v.root.join("Move/Notes").exists());
+        let log = log_messages(&v);
+        assert_eq!(log[0], "Rename 2 pages into folders");
+        assert!(log.len() <= before + 2);
+
+        let back: Vec<PageMove> = moves
+            .iter()
+            .map(|m| PageMove {
+                from: m.to.clone(),
+                to: m.from.clone(),
+            })
+            .collect();
+        move_pages(&v, &back).unwrap();
+        assert_eq!(read("Move/dummy.md"), "# dummy\n");
+        assert!(v.root.join("Move/Notes/test.md").exists());
+        assert!(!v.root.join("Move/Pages").exists());
+    }
+
+    #[test]
+    fn nothing_is_moved_when_one_move_cannot_be_made() {
+        let d = tempfile::tempdir().unwrap();
+        let v = open_for_test(d.path());
+        write_note(&v, "A.md", "a").unwrap();
+        write_note(&v, "B.md", "b").unwrap();
+        write_note(&v, "Pages/b_page.md", "taken").unwrap();
+        v.refresh_files();
+        let page = |from: &str, to: &str| PageMove {
+            from: from.into(),
+            to: to.into(),
+        };
+        for moves in [
+            vec![
+                page("A.md", "Pages/a_page.md"),
+                page("B.md", "Pages/B_page.md"),
+            ],
+            vec![page("A.md", "Pages/x.md"), page("B.md", "Pages/X.md")],
+            vec![
+                page("A.md", "Pages/a_page.md"),
+                page("Gone.md", "Pages/g.md"),
+            ],
+        ] {
+            assert!(move_pages(&v, &moves).is_err());
+            assert!(v.root.join("A.md").exists());
+            assert!(!v.root.join("Pages/a_page.md").exists());
+        }
     }
 
     #[test]

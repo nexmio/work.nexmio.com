@@ -1,6 +1,5 @@
 import type { Task } from "@/bindings/Task";
 import { api } from "@/lib/api";
-import { fileNameFrom } from "@/lib/noteTitle";
 import {
   addChild,
   indentAt,
@@ -21,6 +20,7 @@ import { reportError, useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { planHome, planTag, usePlanStore } from "@/stores/planStore";
 import { linkTarget, taskTarget } from "./nodeInfo";
+import { partPagePath } from "./partFolder";
 import { suggestParts } from "./suggestParts";
 
 /** The words of the idea at `path` in the open plan. */
@@ -100,18 +100,13 @@ export async function linkTaskTo(path: NodePath, task: Task): Promise<void> {
   });
 }
 
-/** Makes a page named after the part, in `folder`, and links the part to it. */
+/** Makes `<part>_page.md` in `folder`, and links the part to it. */
 export async function makeNote(path: NodePath, folder: string): Promise<void> {
   const plan = usePlanStore.getState();
   const text = plainAt(path);
   if (plan.path === null || text === "") return;
   try {
-    const taken = new Set(useVaultStore.getState().files);
-    const name = fileNameFrom(text);
-    let note = `${folder === "" ? "" : `${folder}/`}${name}.md`;
-    for (let i = 2; taken.has(note); i++) {
-      note = `${folder === "" ? "" : `${folder}/`}${name} ${String(i)}.md`;
-    }
+    const note = partPagePath(folder, text, useVaultStore.getState().files);
     const tag = planTag(plan.path, plan.title);
     await api.writeNote(
       note,

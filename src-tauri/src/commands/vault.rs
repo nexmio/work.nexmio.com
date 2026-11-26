@@ -1,7 +1,7 @@
 use crate::error::AppError;
 use crate::state::AppState;
 use crate::vault::fs_ops::{self, NoteContent};
-use crate::vault::ops::{self, RenamePreview, RenameResult};
+use crate::vault::ops::{self, PageMove, RenamePreview, RenameResult};
 use crate::vault::session;
 use crate::vault::tree::{self, TreeNode};
 use crate::vault::{demo, paths, watcher, VaultInfo};
@@ -186,6 +186,15 @@ pub async fn rename_path(
 ) -> Result<RenameResult, AppError> {
     let v = state.current_vault()?;
     ops::rename_path(&v, &from, &to, update_links)
+}
+
+#[tauri::command]
+pub async fn move_pages(
+    state: State<'_, AppState>,
+    moves: Vec<PageMove>,
+) -> Result<RenameResult, AppError> {
+    let v = state.current_vault()?;
+    ops::move_pages(&v, &moves)
 }
 
 /// Renames a note inside its folder without commits (a new note taking the name of its title).

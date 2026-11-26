@@ -23,11 +23,11 @@ describe("making a page for a part", () => {
     });
   });
 
-  it("offers a folder named after the part, and makes the page there", async () => {
+  it("offers the folder of the part above, and makes the page there", async () => {
     render(<NewPartPageDialog path={[0, 0]} />);
-    expect(screen.getByRole("combobox")).toHaveValue("Move/Network/Switches");
+    expect(screen.getByRole("combobox")).toHaveValue("Move/Network");
     await userEvent.click(screen.getByRole("button", { name: "Make the page" }));
-    expect(makeNote).toHaveBeenCalledWith([0, 0], "Move/Network/Switches");
+    expect(makeNote).toHaveBeenCalledWith([0, 0], "Move/Network");
   });
 
   it("makes it in another folder when one is chosen", async () => {

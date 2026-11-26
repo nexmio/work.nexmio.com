@@ -23,16 +23,16 @@ export const FINISHED_TAG = "plan-finished";
 /** The folder new plans are made in. */
 export const PLANS_FOLDER = "Plans";
 
-/** The folders inside a project where its epics and its notes are kept. */
+/** The folders inside a project where its epics and its pages are kept. */
 export const EPICS_SUBFOLDER = "Epics";
-export const NOTES_SUBFOLDER = "Notes";
+export const PAGES_SUBFOLDER = "Pages";
 
 /** Where a new plan is kept: in `Plans/`, in a project made for it, or in a folder that is there. */
 export type PlanPlace = "plans" | "project" | { folder: string };
 
 /**
  * Where what is made from a plan is kept. A plan in a project keeps its epics in the project's
- * `Epics` folder and its notes in `Notes`; any other plan keeps epics in `Tasks/` and notes next
+ * `Epics` folder and its pages in `Pages`; any other plan keeps epics in `Tasks/` and pages next
  * to itself.
  */
 export function planHome(planPath: string): { epics: string | undefined; notes: string } {
@@ -40,7 +40,7 @@ export function planHome(planPath: string): { epics: string | undefined; notes: 
   if (project) {
     return {
       epics: `${project.folder}/${EPICS_SUBFOLDER}`,
-      notes: `${project.folder}/${NOTES_SUBFOLDER}`,
+      notes: `${project.folder}/${PAGES_SUBFOLDER}`,
     };
   }
   return { epics: undefined, notes: dirname(planPath) };
@@ -72,6 +72,8 @@ export type PlanDialog =
   /** Make a plan of a project that is there (`folder`, or the one to choose when `null`). */
   | { kind: "import"; folder: string | null }
   | { kind: "finish" }
+  /** Move the pages of the parts into the folder structure. */
+  | { kind: "migrate" }
   /** Delete an archived plan (and, if ticked, what was made from it). */
   | { kind: "delete" };
 

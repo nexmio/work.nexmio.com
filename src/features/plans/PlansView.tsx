@@ -22,6 +22,8 @@ import { firstStep } from "./nodeInfo";
 import { PlanDialogs } from "./PlanDialogs";
 import { PlanMap } from "./PlanMap";
 import { ProjectOverview } from "./ProjectOverview";
+import { MigrateNotice } from "./MigrateNotice";
+import { FOLDERS_VERSION } from "./migrate";
 import { usePartSlot } from "./PartSlot";
 import { PlanOutline } from "./PlanOutline";
 import { PlanProjectNotice } from "./PlanProjectNotice";
@@ -238,6 +240,13 @@ export function PlansView() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={() => {
+                usePlanStore.getState().setDialog({ kind: "migrate" });
+              }}
+            >
+              Move to the new folder structure ({FOLDERS_VERSION})…
+            </DropdownMenuItem>
             {finished ? (
               <>
                 <DropdownMenuItem
@@ -269,6 +278,7 @@ export function PlansView() {
         </DropdownMenu>
       </ViewHeader>
       <PlanProjectNotice planPath={path} />
+      <MigrateNotice />
       <div className="min-h-0 flex-1 overflow-auto">
         {finished && (
           <p className="mx-7 mt-4 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">

@@ -10,7 +10,7 @@ import { makeNote, plainAt } from "./planActions";
 import { Shell, close } from "./PlanDialogShell";
 import { trailOf } from "./suggestParts";
 
-/** Makes a page for a part: in a folder named after the part, or in another one you choose. */
+/** Makes a page for a part: in the folder of the parts above it, or in another one you choose. */
 export function NewPartPageDialog({ path }: { path: NodePath }) {
   const plan = usePlanStore((s) => s.path);
   const nodes = usePlanStore((s) => s.nodes);
