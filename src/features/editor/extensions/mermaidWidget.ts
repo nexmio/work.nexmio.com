@@ -54,8 +54,15 @@ export class MermaidWidget extends WidgetType {
       view.dispatch({ selection: { anchor: pos } });
       view.focus();
     });
-    void draw(box, this.source);
-    return box;
+    // The space around the box is part of the widget, so CodeMirror measures it.
+    const wrap = document.createElement("div");
+    wrap.className = "cm-mermaid-wrap";
+    wrap.append(box);
+    // The drawing changes the height, so the lines below are measured again.
+    void draw(box, this.source).then(() => {
+      view.requestMeasure();
+    });
+    return wrap;
   }
 
   ignoreEvent(): boolean {

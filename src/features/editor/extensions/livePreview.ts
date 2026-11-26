@@ -122,12 +122,16 @@ class PropertiesWidget extends WidgetType {
     keys.className = "cm-properties-keys";
     keys.textContent = this.keys.join(" · ");
     el.append(title, keys);
+    // The space under the box is part of the widget, so CodeMirror measures it.
+    const wrap = document.createElement("div");
+    wrap.className = "cm-properties-wrap";
+    wrap.append(el);
     el.addEventListener("mousedown", (e) => {
       e.preventDefault();
       view.dispatch({ selection: { anchor: Math.min(4, view.state.doc.length) } });
       view.focus();
     });
-    return el;
+    return wrap;
   }
   override ignoreEvent(): boolean {
     return true;

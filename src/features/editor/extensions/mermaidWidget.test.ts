@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 const render = vi.hoisted(() => vi.fn());
 vi.mock("mermaid", () => ({ default: { initialize: vi.fn(), render } }));
 
-import { draw, mermaidSource } from "./mermaidWidget";
+import { EditorView } from "@codemirror/view";
+import { draw, mermaidSource, MermaidWidget } from "./mermaidWidget";
 import { buildDecorations } from "./livePreview";
 
 const DOC = "# Title\n\n```mermaid\nflowchart LR\n  A --> B\n```\n\nText after.\n";
@@ -55,5 +56,17 @@ describe("Mermaid diagrams in live preview", () => {
       "This diagram cannot be drawn: Parse error on line 2",
     );
     expect(box.querySelector("pre")?.textContent).toBe("flowchart LR\n A -->");
+  });
+
+  it("measures the page again when the diagram is drawn", async () => {
+    render.mockResolvedValueOnce({ svg: "<svg></svg>" });
+    const view = new EditorView();
+    const measure = vi.spyOn(view, "requestMeasure");
+    const dom = new MermaidWidget("flowchart LR\n A --> B").toDOM(view);
+    expect(dom.querySelector(".cm-mermaid")).not.toBeNull();
+    await vi.waitFor(() => {
+      expect(measure).toHaveBeenCalled();
+    });
+    view.destroy();
   });
 });
