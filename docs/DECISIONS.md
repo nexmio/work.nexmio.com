@@ -188,6 +188,7 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 
 - Versions: `package.json` is the source; a test keeps the other places equal; builds show `+<commit>` and `.dirty`.
 - Two lines: `main` is Preview (`.0` versions); Stable is a Preview the owner makes Stable; a fix for Stable is a `hotfix/X.Y.Z` branch from the Stable tag, cherry-picked to `main` and never merged (`docs/RELEASING.md`).
+- Store changes waiting to be entered by hand are listed in `docs/STORE-CHANGES.md`, and the owner is told at every release, so Partner Center does not fall behind the app (Store policy 10.1.1: metadata must be accurate).
 - The Store texts and "What's new" are made from `docs/STORE-LISTING.md` and `CHANGELOG.md`; the Store package is a full-trust MSIX built by `scripts/msix/Build-Msix.ps1`. It is kept as a download of the release run and uploaded in Partner Center by hand: the workflows no longer send it to the Store (switched off 0.29; the old submit script was removed in 0.30, it is in the git history).
 - No macOS build for now.
 - Licence: Apache-2.0 with the Commons Clause and `NOTICE` (from 0.25.0).

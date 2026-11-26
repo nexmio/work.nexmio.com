@@ -13,24 +13,31 @@
 <body data-nav="Nexmio Work|Nexmio Work|index.html">
 <div class="wrap prose">
 <h1>Nexmio Work privacy policy</h1>
-<p><em>Last updated: 15 November 2026. Nexmio Work is made by Jesper Ahasverusen Kielsgaard (<a href="https://github.com/nexmio/work.nexmio.com">https://github.com/nexmio/work.nexmio.com</a>).</em></p>
-<p>Nexmio Work is a notes app that runs on your own computer. This page says what it does with your data.</p>
+<p><em>Last updated: 26 November 2026. Nexmio Work is made by Jesper Ahasverusen Kielsgaard (<a href="https://github.com/nexmio/work.nexmio.com">https://github.com/nexmio/work.nexmio.com</a>).</em></p>
+<p>Nexmio Work is a pages app that runs on your own computer. This page says what it does with your data.</p>
 <h2>What Nexmio Work collects</h2>
 <p><strong>Nothing.</strong> Nexmio Work has no account, no analytics, no telemetry, no advertising and no automatic update check. The author does not receive any data from the app. <strong>Help → Check for new version…</strong> only opens the releases page in your web browser.</p>
 <h2>Where your data is</h2>
 <ul>
-<li>Your <strong>notes</strong> are ordinary Markdown files in folders you choose, and each folder is also a local Git repository. They stay on your computer.</li>
-<li>Your <strong>settings</strong> and chat history are files on your computer (the app's data folder, and <code>.vault</code> inside your notes folder).</li>
-<li><strong>API keys</strong> you enter (for a local AI server that asks for one) are stored in the Windows Credential Manager (or the keychain of your system), never in a file.</li>
+<li>Your <strong>pages</strong> are ordinary Markdown files in folders you choose, and each folder is also a local Git repository. They stay on your computer.</li>
+<li>Your <strong>settings</strong> and chat history are files on your computer (the app's data folder, and <code>.vault</code> inside your pages folder).</li>
+<li><strong>API keys</strong> you enter (for an AI server that asks for one) are stored in the Windows Credential Manager (or the keychain of your system), never in a file. A key is sent only to the server it belongs to.</li>
+<li><strong>Log files</strong> about how the app runs are kept on your computer. Nexmio Work never sends them.</li>
 </ul>
 <h2>When data leaves your computer</h2>
 <p>Only when you choose it:</p>
 <ul>
-<li><strong>The AI</strong> runs on your own computer by default: the built-in AI, LM Studio or another local server. The AI reads your notes only on your own machine. A cloud AI is possible, but only after you say yes, and never in a project you lock to local. You turn it on yourself in Settings → AI, in a window that says what is sent (the open note and the text you select, the notes the chat searches and reads, your questions and the chat history) and that it is your responsibility; it is used only after you tick "I understand". The status bar shows <strong>Cloud AI</strong> while it is on, and what the cloud company does with the text is governed by its own terms.</li>
-<li><strong>The built-in AI download</strong> (when you press Download) fetches, for llama.cpp, the engine from <code>github.com</code> and the model from <code>huggingface.co</code>. Those sites see your internet address, as for any download.</li>
-<li><strong>A backup</strong> (Settings → Vault → Backup) copies your notes and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.</li>
+<li><strong>The AI</strong> runs on your own computer by default: the built-in AI, LM Studio or another local server. The AI reads your pages only on your own machine. A cloud AI is possible, but only after you say yes, and never in a project you lock to local. You turn it on yourself in Settings → AI, in a window that says what is sent (the open page and the text you select, the pages the chat searches and reads, your questions and the chat history) and that it is your responsibility; it is used only after you tick "I understand". The status bar shows <strong>Cloud AI</strong> while it is on, and what the cloud company does with the text is governed by its own terms.</li>
+<li><strong>The built-in AI download</strong> (when you press Download) fetches one thing, the model, from <code>huggingface.co</code>. The AI engine is part of Nexmio Work. Hugging Face and its download servers see your internet address, as for any download.</li>
+<li><strong>A backup</strong> (Settings → Vault → Backup) copies your pages and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.</li>
 <li><strong>Export and import</strong> write and read files on your computer only.</li>
-<li><strong>Links</strong> you click in Nexmio Work (for example <strong>Report a bug…</strong>) open in your web browser; Nexmio Work itself sends nothing.</li>
+<li><strong>Links</strong> you click in Nexmio Work (for example <strong>Report a bug…</strong> or <strong>Report inappropriate AI content…</strong>) open in your web browser; Nexmio Work itself sends nothing. A report you send on GitHub is public and is handled under GitHub's terms.</li>
+</ul>
+<h2>Your choices</h2>
+<ul>
+<li><strong>See and delete your data:</strong> your pages, history and chats are files in folders on your computer. You can open, copy and delete them yourself.</li>
+<li><strong>Stop using a cloud AI:</strong> choose an AI on your computer in Settings → AI. Your agreement is then removed, and you are asked again if you turn a cloud AI on later. What a cloud company already received is handled under its terms.</li>
+<li><strong>Remove the app:</strong> uninstall it in Windows settings. Your pages stay in your folders. A saved API key can be removed in the Windows Credential Manager.</li>
 </ul>
 <h2>Children</h2>
 <p>Nexmio Work does not collect any data, from anyone.</p>

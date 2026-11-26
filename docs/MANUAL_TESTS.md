@@ -27,7 +27,7 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] The Microsoft Store package (when there is one, `nexmio-work-preview-msix` from the workflow, once the Store has signed it): install it, start it, open a vault; Settings → AI offers the built-in AI, and it downloads a model, loads and answers, with the engine from the package (on a managed laptop too, if you have one); LM Studio works if it is running.
 - [ ] Close Nexmio Work with a page just changed; start it again: the change is there, and History has it.
 - [ ] The website (https://work.nexmio.com/) shows the new version in its top line, and the README's pictures load.
-- [ ] `PRIVACY.md` and `docs/STORE-LISTING.md` still say what the app does (a cloud AI only after consent, no automatic update check).
+- [ ] `PRIVACY.md`, `site/privacy.html`, `docs/STORE-LISTING.md` and `docs/store/store-fields.json` still say what the app does (a cloud AI only after consent, no automatic update check, only the model is downloaded); `docs/STORE-CHANGES.md` lists what is not yet entered in Partner Center.
 
 ## Full list
 
