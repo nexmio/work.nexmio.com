@@ -51,8 +51,10 @@ An area's own `CLAUDE.md` holds its working rules; they are not repeated here.
 
 ## Editor
 
+- In a table, backslashes right before a `|` in a cell are written doubled, others as typed; an even number (older files) is still read as before.
 - Live preview is a CodeMirror `StateField`; markers on the cursor line show only when the editor has focus. Images replace their Markdown in place; checkboxes are widgets on every line.
 - Tables are widgets outside the cursor with a toolbar above; Tab on a raw table does not format it.
+- A block widget (properties, table, diagram) has no vertical margin; its space is padding on the outer element, because CodeMirror does not measure margins and the lines below would be hit wrong (`editorTheme.test.ts`).
 - Tab/Shift+Tab move any line (list items by their marker, others by two spaces); Enter on an empty nested item goes out one level.
 - Nexmio Work's own tags (`meeting`, `epic`, `pinned`, `plan`) do nothing as `#tag` in the text: the `#` suggestions leave them out, and one written there gets a button in the tags line that puts the real tag in the properties (the text is not changed).
 - Mermaid (exact version, loaded on first diagram, `securityLevel: "strict"`); a block with no language that starts like a diagram is drawn as one; an AI diagram is drawn before it is added.
@@ -87,6 +89,7 @@ An area's own `CLAUDE.md` holds its working rules; they are not repeated here.
 - Commit messages follow the commit kinds (`git::CommitKind`); a rename makes a snapshot first only when something is unsaved.
 - Backup is a bare Git repository `<folder>/<vault>.git`, pushed with `git2`, never forced; a backup with another history is refused.
 - `changed_pages` lists the pages changed in a span (Look back).
+- Everything accepted from the AI is between two versions (`Snapshot before AI`, `AI`); for a ticked list `aiJobStore` does it for every kind of list, so an area's `add` only writes.
 
 ## Tasks
 
@@ -124,7 +127,8 @@ See `src/features/capture/CLAUDE.md`. Beyond it:
 - The chosen part is shown in the right panel (Part tab); moves are words (Earlier, Later, Under the one before, One level up).
 - Repeat puts the names under the repeated part, each with the steps and a task.
 - An archived plan can be deleted: the plan page always, the rest only when ticked.
-- The Overview of a project is read, never stored (`overview.ts`).
+- The Overview of a project is read, never stored (`overview.ts`); its pages are those in the folder or with the project's tag.
+- A new page of a part is offered a folder per part under the project's `Notes` (`partFolder`), and the folder can be changed; pages that exist are not moved.
 
 ## Meetings
 
@@ -146,6 +150,7 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 
 - **Where pages may go**: a provider is local only at a loopback address (recomputed, never trusted from the file). A cloud AI is OpenAI-compatible only and used only after `ai.cloudConsent` (provider, address, time); never for a project marked Local AI only, which uses the Local AI (`ai.localProviderId`). `ai::router::select_notes` is the only path; embeddings stay local.
 - The AI is fixed commands where you work, plus the chat in the right panel; no prompts to write. Every AI button is disabled with the reason without an AI (`useAiBlocked`).
+- An accepted change to an open page is made in the editor (`changeOpenPage`), so Ctrl+Z takes it back.
 - Every AI job runs in the queue (`aiJobStore`): `EditJob` for text in a page, `PickJob` for a list to tick or a text (`AiPickSpec.text`); the queue opens by itself and every job has Go to.
 - The plain chat reads pages, tasks, projects, meetings and the help (`ai/assistant.rs`) and may propose only tasks and parts; page edits stay with the fixed commands and skills. How-to answers come from the help (`search_help`); Show me opens a fixed list of places.
 - Skills: Nexmio Work carries out the job and the model writes one step; built-ins are in code (`skills::builtins`); the skill is resolved in the backend by id; runs are bounded (50 rewrite, 300 sort, 30 create) and long runs start with three pages.

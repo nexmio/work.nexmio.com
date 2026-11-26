@@ -6,7 +6,7 @@ A big thing is hard to start. Writing it down as parts, and the parts as smaller
 
 **Projects** in the navigation lists your projects. A project is a folder with its own AI rules and its own tag, and its **plan** is the map of it: the parts it is made of. Each project in the list shows how far its plan has come (tasks done of all); a project without a plan has **Make the plan**. Plans that are in no project yet are listed apart.
 
-A project opens on its **Map**. **Overview** shows the whole project on one page: how far it has come and the task to do **Now**, the time logged on it this month, what waits for others, its meetings (the next one and the last ones) and their decisions, and its newest pages. Each line opens its thing. Everything is read from where it is kept, so nothing has to be kept up to date by hand.
+A project opens on its **Map**. **Overview** shows the whole project on one page: how far it has come and the task to do **Now**, the time logged on it this month, what waits for others, its meetings (the next one and the last ones) and their decisions, and its newest pages (those in the project's folder or with its tag). Each line opens its thing. Everything is read from where it is kept, so nothing has to be kept up to date by hand.
 
 A meeting belongs to a project when you choose the project in its window (**Project**): it gets the project's tag and shows in the Overview. In the meeting, **Move the actions to the project** puts its tasks into the plan's epic. An idea becomes a part of a plan with **To plan…** on its card.
 
@@ -40,7 +40,7 @@ Press **···** on a part:
 - **Add a part** writes smaller parts under it: write one and press **Enter** or **Add**, and the field stays for the next. **Close** when you are done.
 - **Write a note…** keeps a few words about what the part is for, without making a page for it. On the map it is the **Note** group in the right panel, and the box shows **Note**.
 - **Link or make a task…** links a task that is already there, or makes a new one in the epic of the plan (an epic with the plan's name, made if it is not there). The part shows **Task**.
-- **Link or make a page…** links a page, or makes a new one with a link back to the plan. The part shows **Page · name**.
+- **Link or make a page…** links a page, or makes a new one with a link back to the plan (**Make a new page…**). A new page is offered a folder for each part, for example `Notes/Network/Switches`, and you can choose another under **Save it in**. The part shows **Page · name**.
 - **Repeat these steps for…** is for things you do the same way more than once, such as asking several suppliers the same questions. Write the steps as parts of a part ("Ask a supplier" with "Get a price" and "Ask about delivery" under it), then give the names. The window draws what will happen, with your words: the part stays as the heading, each name becomes a part under it with the steps, and each name gets a task in the epic of the plan with the steps as its steps. The steps move into the names, so they are not there twice; if one of the steps is tied to a page, a task or an epic, the steps stay and the names come after them.
 
 Nothing is copied: there is still one epic, one task and one page, and the plan only points at them.

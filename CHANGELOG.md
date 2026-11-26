@@ -8,6 +8,20 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+### Changed
+
+- **You choose where a new page of a part goes.** **Link or make a page… → Make a new page…** offers a folder for each part (for example `Notes/Network/Switches`), and you can choose another.
+- **Newest pages in a project's Overview** also shows pages with the project's tag, so a page you move out of the project's folder is still there.
+
+### Fixed
+
+- **A version is saved for everything you accept from the AI.** Ticked parts, steps, tasks and meeting items are in History at once, with the version from before them.
+- **Ctrl/Cmd+Z takes back an AI change** that you accepted in the queue for a page that is open.
+- **The comparison in History follows the page** when a new version is saved.
+- **A table cell with a backslash before a `|`** is written so that other Markdown editors read it right.
+- The chat's suggested question says "How do I make a project?".
+- **The cursor lands on the line you choose.** On a page with properties, a table or a diagram, a click or the arrow keys could hit the line below, or skip a line, from there and down.
+
 ## [0.30.0] - 2026-11-20
 
 ### Changed
