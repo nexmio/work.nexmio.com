@@ -21,6 +21,8 @@ export interface OverviewInput {
   meetings: readonly MeetingNote[];
   /** Every page with when it was last changed (ms). */
   files: ReadonlyMap<string, number>;
+  /** The pages that have the project's tag, wherever they are. */
+  tagged: ReadonlySet<string>;
   /** `YYYY-MM-DD`. */
   today: string;
 }
@@ -42,7 +44,10 @@ export interface ProjectOverview {
   past: MeetingNote[];
   /** The decisions of the project's meetings, the newest first. */
   decisions: Decision[];
-  /** The newest pages in the project's folder (at most five), the plan and meetings left out. */
+  /**
+   * The newest pages of the project (at most five): those in its folder or with its tag, the plan
+   * and meetings left out.
+   */
   pages: { path: string; modified: number }[];
 }
 
@@ -80,20 +85,16 @@ export function projectOverview(i: OverviewInput): ProjectOverview {
     .sort((a, b) => (b.meeting.date ?? "").localeCompare(a.meeting.date ?? ""))
     .flatMap((m) => decisionsOf(m.content).map((text) => ({ text, meeting: m })));
   const meetingPaths = new Set(i.meetings.map((m) => m.path));
-  const pages =
-    i.folder === null
-      ? []
-      : [...i.files.entries()]
-          .filter(
-            ([p]) =>
-              isInside(p, i.folder ?? "") &&
-              p.toLowerCase().endsWith(".md") &&
-              p !== i.planPath &&
-              !meetingPaths.has(p),
-          )
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([path, modified]) => ({ path, modified }));
+  const ofProject = (p: string): boolean =>
+    i.tagged.has(p) || (i.folder !== null && isInside(p, i.folder));
+  const pages = [...i.files.entries()]
+    .filter(
+      ([p]) =>
+        ofProject(p) && p.toLowerCase().endsWith(".md") && p !== i.planPath && !meetingPaths.has(p),
+    )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([path, modified]) => ({ path, modified }));
   return {
     done,
     total,

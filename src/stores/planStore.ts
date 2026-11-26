@@ -62,6 +62,8 @@ export type PlanView = "overview" | "map" | "outline";
 /** The window that is open over a plan, and for which idea (the top level for `[]`). */
 export type PlanDialog =
   | { kind: "link"; path: NodePath }
+  /** Make a new page for a part, in a folder to choose. */
+  | { kind: "newpage"; path: NodePath }
   | { kind: "linktask"; path: NodePath }
   | { kind: "repeat"; path: NodePath }
   | { kind: "add"; path: NodePath }

@@ -100,13 +100,12 @@ export async function linkTaskTo(path: NodePath, task: Task): Promise<void> {
   });
 }
 
-/** Makes a note named after the idea, next to the plan, and links the idea to it. */
-export async function makeNote(path: NodePath): Promise<void> {
+/** Makes a page named after the part, in `folder`, and links the part to it. */
+export async function makeNote(path: NodePath, folder: string): Promise<void> {
   const plan = usePlanStore.getState();
   const text = plainAt(path);
   if (plan.path === null || text === "") return;
   try {
-    const folder = planHome(plan.path).notes;
     const taken = new Set(useVaultStore.getState().files);
     const name = fileNameFrom(text);
     let note = `${folder === "" ? "" : `${folder}/`}${name}.md`;

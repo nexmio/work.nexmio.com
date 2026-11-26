@@ -8,6 +8,7 @@ import { ImportProject } from "./ImportProject";
 import { AddIdeas } from "./AddIdeas";
 import { DeletePlan } from "./DeletePlan";
 import { NoteDialog } from "./NoteDialog";
+import { NewPartPageDialog } from "./NewPartPageDialog";
 
 /** The window over the open plan, if one is asked for, and the window that makes a plan. */
 export function PlanDialogs() {
@@ -16,6 +17,7 @@ export function PlanDialogs() {
   return (
     <>
       {dialog?.kind === "link" && <LinkNote path={dialog.path} />}
+      {dialog?.kind === "newpage" && <NewPartPageDialog path={dialog.path} />}
       {dialog?.kind === "linktask" && <LinkTask path={dialog.path} />}
       {dialog?.kind === "repeat" && <Repeat path={dialog.path} />}
       {dialog?.kind === "add" && <AddIdeas path={dialog.path} />}
