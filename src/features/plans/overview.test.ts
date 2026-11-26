@@ -23,6 +23,7 @@ const base: OverviewInput = {
   resolve: (t) => (t === "Server/Server move" ? "Server/Server move.md" : null),
   meetings: [],
   files: new Map(),
+  tagged: new Set(),
   today: "2026-11-20",
 };
 
@@ -93,6 +94,23 @@ describe("the Overview of a project", () => {
     expect(o.pages.map((p) => p.path)).toEqual([
       "Server/Notes/Rack layout.md",
       "Server/Notes/IP plan.md",
+    ]);
+  });
+
+  it("lists the pages in the folder, and tagged pages that were moved away from it", () => {
+    const o = projectOverview({
+      ...base,
+      files: new Map([
+        ["Server/Notes/Network/Switches.md", 2],
+        ["Archive/Racks.md", 3],
+        ["Other/Page.md", 4],
+        ["Server/Server move.md", 5],
+      ]),
+      tagged: new Set(["Archive/Racks.md", "Server/Server move.md"]),
+    });
+    expect(o.pages.map((p) => p.path)).toEqual([
+      "Archive/Racks.md",
+      "Server/Notes/Network/Switches.md",
     ]);
   });
 });

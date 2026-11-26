@@ -48,7 +48,7 @@ export function revealInTree(path: string): void {
   useUiStore.getState().setLeftTab("files");
   requestAnimationFrame(() => {
     document
-      .querySelector(`[data-tree-path="${path.replace(/"/g, '\\"')}"]`)
+      .querySelector(`[data-tree-path="${CSS.escape(path)}"]`)
       ?.scrollIntoView({ block: "nearest" });
   });
 }

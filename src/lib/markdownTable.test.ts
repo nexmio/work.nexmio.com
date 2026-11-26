@@ -31,6 +31,20 @@ describe("parseTable", () => {
   it("keeps escaped pipes inside cells", () => {
     expect(parseTable("| a \\| b | c |\n| --- | --- |")?.header).toEqual(["a | b", "c"]);
   });
+  it.each(["a|b", "a\\|b", "a\\\\|b", "C:\\temp\\new", "ends with \\", "\\* not a list"])(
+    "gives back the cell %s unchanged, also after saving again",
+    (text) => {
+      const table = { header: [text, "x"], align: [null, null], rows: [[text, "y"]] };
+      const once = serializeTable(table);
+      const read = must(parseTable(once));
+      expect(read.header).toEqual([text, "x"]);
+      expect(read.rows).toEqual([[text, "y"]]);
+      expect(serializeTable(read)).toBe(once);
+    },
+  );
+  it("reads two backslashes before a pipe as older versions wrote them", () => {
+    expect(splitRow("| a\\\\|b |")).toEqual(["a\\|b"]);
+  });
   it("pads or cuts ragged rows to the header width", () => {
     const t = parseTable("| a | b |\n| - | - |\n| 1 |\n| 1 | 2 | 3 |");
     expect(t?.rows).toEqual([

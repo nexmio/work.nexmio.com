@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { useSeen } from "@/stores/seenStore";
 import { isManagedNote } from "@/features/fileTree/treeUtils";
 import type { StandardKind } from "@/bindings/StandardKind";
+import type { PageMove } from "@/bindings/PageMove";
 import type { Project } from "@/bindings/Project";
 import type { TreeNode } from "@/bindings/TreeNode";
 import type { VaultConfig } from "@/bindings/VaultConfig";
@@ -54,6 +55,8 @@ export interface VaultState {
   createFolder: (parent: string, name: string) => Promise<string | null>;
   /** `updateLinks` set skips the question (used when several items are moved at once). */
   renamePath: (from: string, to: string, updateLinks?: boolean) => Promise<boolean>;
+  /** Moves several pages at once, with links updated, as one version. */
+  movePages: (moves: PageMove[]) => Promise<boolean>;
   deletePath: (path: string) => Promise<boolean>;
   createNoteFromTemplate: (
     folder: string,
@@ -293,6 +296,30 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     } catch (e) {
       reportError(e);
       return false;
+    }
+  },
+
+  movePages: async (moves) => {
+    try {
+      await flushPendingWrites();
+      await api.movePages(moves);
+      return true;
+    } catch (e) {
+      reportError(e);
+      return false;
+    } finally {
+      // Also after a failure: some pages may have been moved before it.
+      await get().refreshTree();
+      const files = new Set(get().files);
+      for (const { from, to } of moves) {
+        if (!files.has(to)) continue;
+        useTitleFollow.getState().onRenamed(from, to, false);
+        useRecent.getState().rename(from, to);
+        useWorkspaceStore.getState().renamePaths(from, to);
+        useTreeStore.getState().orderRenamed(from, to);
+        if (get().selectedPath === from) set({ selectedPath: to });
+      }
+      set((st) => ({ reloadNonce: st.reloadNonce + 1 }));
     }
   },
 

@@ -152,6 +152,7 @@ pub fn run() {
             commands::vault::preview_rename,
             commands::vault::rename_path,
             commands::vault::rename_note_quietly,
+            commands::vault::move_pages,
             commands::vault::delete_path,
             commands::vault::save_attachment,
             commands::vault::reveal_in_file_manager,

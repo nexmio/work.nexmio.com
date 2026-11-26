@@ -19,6 +19,7 @@ import type { HelperStatus } from "@/bindings/HelperStatus";
 import type { KeyStatus } from "@/bindings/KeyStatus";
 import type { MigrationCount } from "@/bindings/MigrationCount";
 import type { ProviderTestResult } from "@/bindings/ProviderTestResult";
+import type { PageMove } from "@/bindings/PageMove";
 import type { RenamePreview } from "@/bindings/RenamePreview";
 import type { RenameResult } from "@/bindings/RenameResult";
 import type { SearchHit } from "@/bindings/SearchHit";
@@ -139,6 +140,7 @@ export const api = {
   previewRename: (from: string, to: string) => call<RenamePreview>("preview_rename", { from, to }),
   renamePath: (from: string, to: string, updateLinks: boolean) =>
     call<RenameResult>("rename_path", { from, to, updateLinks }),
+  movePages: (moves: PageMove[]) => call<RenameResult>("move_pages", { moves }),
   deletePath: (path: string) => call<undefined>("delete_path", { path }),
   renameNoteQuietly: (from: string, to: string) =>
     call<undefined>("rename_note_quietly", { from, to }),

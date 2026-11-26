@@ -197,6 +197,27 @@ describe("jobs with a list to tick", () => {
     expect(useAiJobStore.getState().jobs).toHaveLength(0);
   });
 
+  it("saves a version before and after adding, also when adding stops half way", async () => {
+    const steps: string[] = [];
+    apiMock.commitNow.mockReset();
+    apiMock.commitNow.mockImplementation((r: { kind: string }) => {
+      steps.push(r.kind);
+      return Promise.resolve(null);
+    });
+    const add = vi.fn().mockImplementation(() => {
+      steps.push("add");
+      return Promise.reject(new Error("stopped"));
+    });
+    const id = useAiJobStore.getState().addPick(pickSpec({ add }));
+    await settle();
+    pending.get("parts-text")?.({ type: "textDelta", text: "- Disks" });
+    pending.get("parts-text")?.({ type: "done" });
+    await settle();
+    await useAiJobStore.getState().acceptPicks(id, ["Disks"]);
+    expect(steps).toEqual(["snapshotBeforeAi", "add", "ai"]);
+    expect(useAiJobStore.getState().jobs).toHaveLength(1);
+  });
+
   it("goes back to where it was asked", () => {
     const goTo = vi.fn();
     const id = useAiJobStore.getState().addPick(pickSpec({ goTo }));

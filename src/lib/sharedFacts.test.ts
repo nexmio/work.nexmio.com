@@ -10,17 +10,20 @@ const read = (file: string): string => readFileSync(path.join(root, file), "utf8
  * style, entities decoded, one space between words.
  */
 function siteText(html: string): string {
-  return html
-    .replace(/<span data-l="da">[\s\S]*?<\/span>/g, " ")
-    .replace(/<(script|style)[\s\S]*?<\/\1>/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ");
+  return (
+    html
+      .replace(/<span data-l="da">[\s\S]*?<\/span>/g, " ")
+      .replace(/<(script|style)[\s\S]*?<\/\1>/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      // Last, so that "&amp;lt;" stays the text "&lt;".
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+  );
 }
 
 /** Plain text of the README: no emphasis marks or code ticks, one space between words. */

@@ -1,7 +1,14 @@
 import { EditorView } from "@codemirror/view";
 
-/** Styling for the editor and the live-preview classes. Uses the app's CSS variables. */
-export const editorTheme = EditorView.theme({
+/**
+ * The styles of the editor. Exported for tests.
+ *
+ * A widget that stands as a block of its own (properties, table, diagram) must not have a vertical
+ * margin: CodeMirror measures the height of a block without its margins, so every line below it
+ * would be clicked and reached in the wrong place. Give the space as padding on the widget's outer
+ * element instead.
+ */
+export const editorStyles = {
   "&": {
     height: "100%",
     backgroundColor: "var(--background)",
@@ -119,12 +126,12 @@ export const editorTheme = EditorView.theme({
     backgroundColor: "var(--muted)",
     padding: "0 12px",
   },
+  ".cm-properties-wrap": { paddingBottom: "0.68em" },
   ".cm-properties": {
     display: "flex",
     gap: "12px",
     alignItems: "baseline",
     padding: "6px 12px",
-    margin: "0 0 0.8em",
     border: "1px solid var(--border)",
     borderRadius: "6px",
     backgroundColor: "var(--muted)",
@@ -138,9 +145,9 @@ export const editorTheme = EditorView.theme({
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  ".cm-table-widget": { margin: "0.6em 0", position: "relative" },
+  ".cm-table-widget": { padding: "0.6em 0", position: "relative" },
+  ".cm-mermaid-wrap": { padding: "0.6em 0" },
   ".cm-mermaid": {
-    margin: "0.6em 0",
     padding: "12px",
     textAlign: "center",
     border: "1px solid var(--border)",
@@ -163,7 +170,8 @@ export const editorTheme = EditorView.theme({
   ".cm-table-toolbar": {
     position: "absolute",
     left: "0",
-    bottom: "100%",
+    // Just above the table itself, not above the space over it.
+    bottom: "calc(100% - 0.6em)",
     zIndex: "2",
     display: "flex",
     flexWrap: "wrap",
@@ -212,7 +220,10 @@ export const editorTheme = EditorView.theme({
   },
   ".cm-panels": { backgroundColor: "var(--card)", color: "var(--foreground)" },
   ".cm-searchMatch": { backgroundColor: "color-mix(in oklab, var(--warning) 40%, transparent)" },
-});
+};
+
+/** Styling for the editor and the live-preview classes. Uses the app's CSS variables. */
+export const editorTheme = EditorView.theme(editorStyles);
 
 /**
  * Markdown source view: the text exactly as it is stored (`# `, `**`, `[[...]]` and all), in a

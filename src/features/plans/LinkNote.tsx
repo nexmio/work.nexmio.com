@@ -6,7 +6,7 @@ import { type NodePath } from "@/lib/planTree";
 import { basename } from "@/lib/utils";
 import { usePlanStore } from "@/stores/planStore";
 import { useVaultStore } from "@/stores/vaultStore";
-import { linkNoteTo, makeNote, plainAt } from "./planActions";
+import { linkNoteTo, plainAt } from "./planActions";
 import { Shell, close } from "./PlanDialogShell";
 
 // --- Link a note ------------------------------------------------------------------------------
@@ -32,10 +32,10 @@ export function LinkNote({ path }: { path: NodePath }) {
           <Button
             variant="outline"
             onClick={() => {
-              void makeNote(path).then(close);
+              usePlanStore.getState().setDialog({ kind: "newpage", path });
             }}
           >
-            Make a new page
+            Make a new page…
           </Button>
         </>
       }

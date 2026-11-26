@@ -4,7 +4,7 @@
 
 ## Nothing is lost
 
-Every vault keeps a **version history** (a Git repository inside the folder). Nexmio Work saves a version when you save, when you switch pages, now and then while you work, and when you close the app. Before Nexmio Work changes or deletes anything on its own, it saves a snapshot first.
+Every vault keeps a **version history** (a Git repository inside the folder). Nexmio Work saves a version when you save, when you switch pages, now and then while you work, and when you close the app. Before Nexmio Work changes or deletes anything on its own, it saves a snapshot first. Everything you accept from the AI is saved as a version at once, with a version from just before it.
 
 ## Look at an older version
 

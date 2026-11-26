@@ -1,9 +1,10 @@
 import { CirclePause, Diamond } from "lucide-react";
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { TreeNode } from "@/bindings/TreeNode";
 import { Button } from "@/components/ui/button";
 import { PlainButton } from "@/components/ui/plain-button";
 import { openFile } from "@/lib/actions";
+import { api } from "@/lib/api";
 import { whenLabel } from "@/lib/meetingList";
 import { noteName, shortDate, todayIso } from "@/lib/taskLogic";
 import { formatDuration } from "@/lib/timeLog";
@@ -11,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useMeetingStore } from "@/stores/meetingStore";
 import { planTag } from "@/stores/planStore";
 import { useTaskStore } from "@/stores/taskStore";
+import { reportError } from "@/stores/uiStore";
 import { projectForPath, useVaultStore } from "@/stores/vaultStore";
 import { projectOverview } from "./overview";
 
@@ -69,20 +71,36 @@ export function ProjectOverview({ planPath }: { planPath: string }) {
   }, []);
   const project = projectForPath(projects, planPath);
   const today = todayIso();
+  const tag = planTag(planPath);
+  const [tagged, setTagged] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    const run = { cancelled: false };
+    api
+      .taggedNotes(tag)
+      .then((notes) => {
+        if (!run.cancelled) setTagged(new Set(notes.map((n) => n.path)));
+      })
+      .catch(reportError);
+    return () => {
+      run.cancelled = true;
+    };
+    // `tree`: a page that was made, moved or changed is looked up again.
+  }, [tag, tree]);
   const o = useMemo(
     () =>
       projectOverview({
         planPath,
         folder: project?.folder ?? null,
-        tag: planTag(planPath),
+        tag,
         tasks,
         epics,
         resolve: (t) => resolver.resolve(t),
         meetings,
         files: changedByPath(tree),
+        tagged,
         today,
       }),
-    [planPath, project, tasks, epics, resolver, meetings, tree, today],
+    [planPath, project, tag, tasks, epics, resolver, meetings, tree, tagged, today],
   );
   const share = o.total === 0 ? 0 : (o.done / o.total) * 100;
 
@@ -220,8 +238,8 @@ export function ProjectOverview({ planPath }: { planPath: string }) {
         {o.pages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {project === null
-              ? "This plan is in no project, so it has no pages of its own."
-              : "The pages in the project's folder show here."}
+              ? "Pages with the plan's tag show here."
+              : "Pages in the project's folder or with its tag show here."}
           </p>
         ) : (
           <ul>

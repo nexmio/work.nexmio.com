@@ -79,7 +79,8 @@ export function HistoryPanel() {
     return () => {
       run.cancelled = true;
     };
-  }, [selected, activePath]);
+    // `nonce`: a saved version means the page may have changed, so the comparison is read again.
+  }, [selected, activePath, nonce]);
 
   const restore = async (): Promise<void> => {
     if (!selected || activePath === null) return;

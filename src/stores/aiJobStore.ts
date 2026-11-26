@@ -4,6 +4,7 @@ import type { InlineRequest } from "@/bindings/InlineRequest";
 import { api, toApiError } from "@/lib/api";
 import { looksLikeDiagram, withDiagram } from "@/lib/diagram";
 import { stripCodeFence } from "@/lib/fence";
+import { changeOpenPage } from "@/lib/editorViews";
 import { flushPendingWrites } from "@/lib/flush";
 import { wakeIfNeeded } from "@/lib/wake";
 import { reportError, useUiStore } from "./uiStore";
@@ -127,6 +128,41 @@ interface JobState {
 }
 
 let counter = 1;
+
+/**
+ * Runs what the person accepted between two saved versions: one of everything as it was, and one
+ * with the change. The second is saved also when the change stops half way.
+ */
+async function betweenVersions(detail: string, change: () => Promise<void>): Promise<void> {
+  await flushPendingWrites();
+  await api.commitNow({ kind: "snapshotBeforeAi", detail });
+  try {
+    await change();
+  } finally {
+    await flushPendingWrites();
+    await api.commitNow({ kind: "ai", detail });
+  }
+}
+
+/**
+ * Writes `next` in the page. Where the page is open it is changed there, as if typed, so Ctrl+Z
+ * takes it back; otherwise (or if that did not reach the file) the file is written.
+ * Returns whether the editor made the change.
+ */
+async function writeAccepted(
+  path: string,
+  before: string,
+  spot: { from: number; to: number },
+  replacement: string,
+  next: string,
+): Promise<boolean> {
+  if (changeOpenPage(path, before, spot.from, spot.to, replacement)) {
+    await flushPendingWrites();
+    if ((await api.readNote(path)).content === next) return true;
+  }
+  await api.writeNote(path, next);
+  return false;
+}
 
 /** Finds the text in the note: where it was, or the only place it is. Null when it cannot be told. */
 export function findSpot(
@@ -308,7 +344,12 @@ export const useAiJobStore = create<JobState>((set, get) => {
       const job = find(id);
       if (job?.kind !== "pick" || job.status !== "ready") return;
       try {
-        if (chosen.length > 0 && job.picks !== null) await job.spec.add(chosen, job.picks);
+        const picks = job.picks;
+        if (chosen.length > 0 && picks !== null) {
+          await betweenVersions(`${job.spec.label} in ${job.spec.notePath}`, () =>
+            job.spec.add(chosen, picks),
+          );
+        }
         get().remove(id);
       } catch (e) {
         reportError(e);
@@ -333,12 +374,13 @@ export const useAiJobStore = create<JobState>((set, get) => {
         await api.commitNow({ kind: "snapshotBeforeAi", detail: `${job.label} in ${path}` }, [
           path,
         ]);
-        await api.writeNote(path, next);
+        const typed = await writeAccepted(path, note.content, spot, replacement, next);
         await api.commitNow({ kind: "ai", detail: `${job.label} in ${path}` }, [path]);
         get().remove(id);
         const vault = useVaultStore.getState();
         if (vault.activePath === path) {
-          useVaultStore.setState((s) => ({ reloadNonce: s.reloadNonce + 1 }));
+          // A reload would empty the editor's undo history, so only when the editor is behind.
+          if (!typed) useVaultStore.setState((s) => ({ reloadNonce: s.reloadNonce + 1 }));
         } else {
           await vault.openNote(path);
         }
