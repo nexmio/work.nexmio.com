@@ -9,7 +9,11 @@ export interface Table {
   rows: string[][];
 }
 
-/** Splits one table line into trimmed cells. `\|` stays a literal pipe inside a cell. */
+/**
+ * Splits one table line into trimmed cells. `\|` stays a literal pipe inside a cell. Backslashes
+ * right before such a pipe are written doubled (see `escapeCell`); an even number of them, which
+ * older versions wrote, is read as it was then.
+ */
 export function splitRow(line: string): string[] {
   let text = line.trim();
   if (text.startsWith("|")) text = text.slice(1);
@@ -18,9 +22,18 @@ export function splitRow(line: string): string[] {
   let current = "";
   for (let i = 0; i < text.length; i++) {
     const ch = text[i] ?? "";
-    if (ch === "\\" && text[i + 1] === "|") {
-      current += "|";
-      i++;
+    if (ch === "\\") {
+      let end = i;
+      while (text[end] === "\\") end++;
+      const count = end - i;
+      if (text[end] === "|") {
+        const literal = count % 2 === 1 ? (count - 1) / 2 : count - 1;
+        current += `${"\\".repeat(literal)}|`;
+        i = end;
+      } else {
+        current += "\\".repeat(count);
+        i = end - 1;
+      }
     } else if (ch === "|") {
       cells.push(current.trim());
       current = "";
@@ -32,11 +45,14 @@ export function splitRow(line: string): string[] {
   return cells;
 }
 
-/** Makes cell text safe for one table line: no newlines, pipes escaped. */
+/**
+ * Makes cell text safe for one table line: no newlines, pipes escaped, and the backslashes right
+ * before a pipe doubled. Other backslashes are left as they are written.
+ */
 export function escapeCell(text: string): string {
   return text
     .replace(/\r?\n|\r/g, " ")
-    .replace(/\|/g, "\\|")
+    .replace(/(\\*)\|/g, (_, before: string) => `${before}${before}\\|`)
     .trim();
 }
 
