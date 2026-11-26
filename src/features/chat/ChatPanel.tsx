@@ -32,7 +32,7 @@ import { Checkbox } from "@/components/ui/checkbox";
  * its review here. A built-in AI that is not loaded is loaded when you send.
  */
 /** Questions an empty chat offers, so a new person sees what the assistant can do. */
-const STARTERS = ["What should I do next?", "What am I waiting for?", "How do I make a plan?"];
+const STARTERS = ["What should I do next?", "What am I waiting for?", "How do I make a project?"];
 
 export function ChatPanel({ onClose }: { onClose?: () => void } = {}) {
   const aiOff = useAiBlocked();
