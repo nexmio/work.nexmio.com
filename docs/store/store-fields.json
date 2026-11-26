@@ -18,7 +18,8 @@
   ],
   "minimumHardware": [],
   "recommendedHardware": [
-    "Windows 11 24H2 or later for the built-in AI",
-    "A neural processing unit (NPU) for faster built-in AI"
+    "12 GB of memory or more for the recommended built-in AI model",
+    "3 to 15 GB of free disk space for a built-in AI model",
+    "A graphics card with Vulkan support for a faster built-in AI"
   ]
 }

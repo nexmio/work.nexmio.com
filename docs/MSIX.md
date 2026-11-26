@@ -19,7 +19,7 @@ The package is built by `scripts/msix/Build-Msix.ps1` on Windows. The release wo
 
 1. **Reserve both names** in Partner Center: **Nexmio Work** and **Nexmio Work Preview**. Each is its own product with its own identity.
    - **Preview is private:** under **Pricing and availability → Visibility** choose to hide it from Store search and give it only to people who have its direct link (or make a private audience). Only you know the link, and you can install it from the Store on any Windows computer.
-   - **The first package comes from the first Preview release** (the artifact `nexmio-work-preview-msix` of the run). Upload it by hand in a first submission of the Preview product and fill in the listing once. After that the workflow sends every new version by itself. Nexmio Work needs no package until you make a version Stable.
+   - **The first package comes from the first Preview release** (the artifact `nexmio-work-preview-msix` of the run). Upload it by hand in a first submission of the Preview product and fill in the listing once. Every later version is uploaded by hand too, for now. Nexmio Work needs no package until you make a version Stable.
 2. **Variables per environment** (GitHub → Settings → Environments → `preview` and `stable` → Environment variables). The same three names in both, with the values of that product from the **Product identity** page in Partner Center:
    - `MSIX_IDENTITY_NAME`: **Package/Identity/Name**
    - `MSIX_DISPLAY_NAME`: the name you reserved (`Nexmio Work` in `stable`, `Nexmio Work Preview` in `preview`)
@@ -63,7 +63,7 @@ If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 1. In Partner Center open the app's **Submission**. Upload the **unsigned** `NexmioWork_<version>_x64.msix` from the workflow artifact or from step 2 (not the `_test` file).
 2. Fill in the **Store listing**: description, at least one screenshot (the pictures in `docs/screenshots/` can be used; the Store text is in `docs/STORE-LISTING.md`), the icon, and the category (Productivity).
 3. **Privacy policy URL**: `https://work.nexmio.com/privacy.html`.
-4. **Properties → Age rating** questionnaire, and the **notes for certification**: say that the source code is public, that it needs no account, that the AI runs on the user's own computer by default (a cloud AI is only used if the user turns it on, after a warning), and how to try it (open any folder as a vault).
+4. **Properties → Age rating** questionnaire, and the **notes for certification**: paste the text from [STORE-LISTING.md](STORE-LISTING.md), "Notes for certification".
 5. Under **Pricing and availability** choose **Free**. To keep it out of the public search, choose **Hide this product … available by direct link only** (Markets and visibility).
 6. Submit. Certification usually takes some days. Microsoft may ask questions or reject the app: read the message, fix, and send a new package.
 

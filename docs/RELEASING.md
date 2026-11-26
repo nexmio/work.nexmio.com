@@ -14,6 +14,7 @@ Make as many Preview releases as you like. They are how you test on a Windows co
 1. **Finish the changelog.** Rename `[Unreleased]` to `## [X.Y.Z] - <date>` in `CHANGELOG.md`. The top-level bullets under Added and Changed are the "What's new" in the app, on GitHub and in the Store. Write them for a person, not a developer.
 2. **Change the version:** `pnpm release:bump X.Y.Z` (it changes `package.json`, `Cargo.toml`, `Cargo.lock`, `CLAUDE.md` and `docs/MSIX.md`, and stops if the changelog has no section). Commit it on a branch and merge it to `main`.
 3. **Tag and push:** `pnpm release:tag`. It stops on uncommitted changes, when you are not on `main`, or when the tag exists.
+4. **The Store changes.** Before the tag, compare `docs/STORE-LISTING.md`, `docs/store/`, `PRIVACY.md` and the MSIX manifest with the last tag, and check that they still say what the app does. Add every field that changed to [STORE-CHANGES.md](STORE-CHANGES.md). After the release, tell the owner which fields in Partner Center to update ("What's new" and the package are always uploaded), or that only those two are needed. Remove an item when the owner says it is entered. The same holds when a Preview is made Stable.
 
 GitHub builds Preview at once: Windows installer, Linux packages and the Store package "Nexmio Work Preview". The Store package is **not** sent to the Store for now: it is kept as a download of the run (**Actions → the run → Artifacts → `nexmio-work-preview-msix`**) and you upload it in Partner Center by hand. The Store texts (description, search terms and "What's new") are in the artifact `release-texts` of the same run. The release is published as a pre-release. The run ends; nothing waits.
 
@@ -45,7 +46,7 @@ A bug found in **Preview** while you work on a feature is fixed on `main` like a
 
 - **The website** (`site/downloads.js`) asks GitHub for the releases when it is opened: the main download is the newest release that is not a pre-release, the Preview card the newest release with Preview files. Nothing on the site changes for a release. The Store button for Nexmio Work appears when `site/config.js` has its address. Preview is not public in the Store, so the site has no button for it.
 - **The app** shows its edition (`NEXMIO_EDITION`, set by the workflow) next to the version. Help → Report a bug… sends the version and the edition.
-- **Descriptions, search terms and "What's new" in the Store** come from `docs/STORE-LISTING.md` and `CHANGELOG.md` at every release. Screenshots, the icon, the age rating and the privacy URL are set once in Partner Center.
+- **Descriptions, search terms and "What's new" for the Store** are made from `docs/STORE-LISTING.md` and `CHANGELOG.md` at every release and entered in Partner Center by hand; [STORE-CHANGES.md](STORE-CHANGES.md) says what is waiting. Screenshots, the icon, the age rating and the privacy URL stay in Partner Center until you change them.
 
 ## One-time set-up
 

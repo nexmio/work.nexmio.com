@@ -4,7 +4,7 @@ Use this together with [docs/MSIX.md](MSIX.md). Everything below is in English, 
 
 ## What the release makes for the Store
 
-Nothing is sent to the Store for now: the package and the texts are uploaded in Partner Center by hand. Every release makes these fields for both Store products (the artifact `release-texts` of the release run has them as files): the description, short description and search terms below; "What's new" from `CHANGELOG.md`; the notes for certification and the runFullTrust reason below; and the fixed fields in `docs/store/store-fields.json` (copyright and trademark, developed by, website, privacy policy, support contact, features, hardware). Change the text here or in that file and the next release has it. The pictures below (ten screenshots, the icon and the box art) are sent with every release and replace the Store's pictures of those types. Price, markets, visibility, category and age rating are **not** touched: they stay as they were set in Partner Center. A Preview product that is not hidden is never updated (the script stops).
+Nothing is sent to the Store for now: the package and the texts are uploaded in Partner Center by hand. What has changed since the last upload is listed in [STORE-CHANGES.md](STORE-CHANGES.md). Every release makes these fields for both Store products (the artifact `release-texts` of the release run has them as files): the description, short description and search terms below; "What's new" from `CHANGELOG.md`; the notes for certification and the runFullTrust reason below; and the fixed fields in `docs/store/store-fields.json` (copyright and trademark, developed by, website, privacy policy, support contact, features, hardware). Change the text here or in that file and the next release has it. The pictures (ten screenshots, the icon and the box art) are uploaded by hand too. Price, markets, visibility, category and age rating are kept in Partner Center from the last submission.
 
 ## Files
 
@@ -17,14 +17,16 @@ Nothing is sent to the Store for now: the package and the texts are uploaded in 
 
 ## Product identity and name
 
-- **Name:** Nexmio Work (reserved). A second product, **Nexmio Work Preview** (reserved), has the same texts with one sentence added at the top of the description. The release workflow sends the description, the search terms and "What's new" to both at every release (see `docs/RELEASING.md`); the rest is set once in Partner Center.
-- **Category:** Productivity (sub-category: Pages, if offered)
+- **Name:** Nexmio Work (reserved). A second product, **Nexmio Work Preview** (reserved), has the same texts with one sentence added at the top of the description. The description, the search terms and "What's new" are entered by hand for both when they change (see `docs/RELEASING.md`).
+- **Category:** Productivity
 
 ## Short description
 
 Markdown pages with an AI assistant that runs on your own computer. Plain files, a Git history of every change, and an AI that only proposes.
 
 ## Description
+
+Requires 64-bit Windows 10 (version 1809 or later) or Windows 11, with the Microsoft Edge WebView2 runtime (part of Windows 11). The AI is optional: the built-in AI needs a model download of about 3 to 15 GB and 6 to 24 GB of memory, depending on the model.
 
 Nexmio Work is a pages app for people who want to own their pages. Your pages are ordinary Markdown files in ordinary folders, so they work in any other editor too. Every change is saved in a built-in version history, so nothing is ever lost.
 
@@ -36,7 +38,7 @@ Nexmio Work is a pages app for people who want to own their pages. Your pages ar
 - An ideas list, a timer beside the page that writes the time on a task in its log, and an overview of the time per tag and task.
 - The Inbox keeps Meetings, Tasks and pages made from ideas together, with a mark on new pages and a button to move them where they belong.
 - Daily pages in a calendar at the top of the file panel. Wiki-links, tags (typing # suggests the ones you already use), images and index pages.
-- Full-text search, and search by meaning with a local embedding model.
+- Full-text search. Search by meaning is optional and needs an embedding model in an AI server of your own on your computer (for example LM Studio); the built-in AI cannot do it.
 - Export to HTML, Word and PDF. Import from a folder of Markdown files, for example a OneNote export.
 
 **AI where you work, and only if you want it**
@@ -46,7 +48,7 @@ Nexmio Work is a pages app for people who want to own their pages. Your pages ar
 - An AI box over the right side of the window, wherever you are. Ask what to do next or what you are waiting for: it reads your tasks, projects and meetings, answers how-to questions from the help, and can suggest tasks and parts of a plan for you to accept. Point at pages or folders with /.
 - Look back on your week: what you finished, the time you logged, your meetings and the pages you wrote, as a status report you can copy or let the AI write.
 - Skills: ready-made jobs such as fixing spelling, tidying the structure or sorting a folder. Nexmio Work checks every change (links, tags, numbers and dates).
-- Your pages are sent to an AI that runs on your own computer (LM Studio or another local AI). A cloud AI can be turned on, after a warning that your pages are then sent to it.
+- The AI runs on your own computer: the built-in AI (llama.cpp comes with the app, and you download a Gemma 4 model once in Settings) or an AI server of your own, such as LM Studio. A cloud AI can be turned on, after a warning that your pages are then sent to it.
 - Everything else works the same without any AI.
 
 **Safe by design**
@@ -55,17 +57,17 @@ Nexmio Work is a pages app for people who want to own their pages. Your pages ar
 - No account, no telemetry, no ads.
 - Free to use and change (Apache-2.0 with the Commons Clause): https://github.com/nexmio/work.nexmio.com
 
-**Live generative AI.** Nexmio Work shows answers that an AI model writes in response to what you type. The model runs on your own computer. You can report inappropriate AI content from inside the app: Help → Report inappropriate AI content.
+**Live generative AI.** Nexmio Work shows answers that an AI model writes in response to what you type. By default the model runs on your own computer; it is a cloud AI only if you turn one on. You can report inappropriate AI content from inside the app: Help → Report inappropriate AI content (it opens a report on the developer's GitHub page).
 
 Nexmio Work is a beta version. The app is in English; the assistant answers in the language you write in.
 
 ## What's new in this version
 
-Nexmio Work 0.26: plans and projects belong together. A plan always lives in a project, a project without a plan is offered one, and each project says whether it has a plan. A trail above a task or epic shows where it belongs. Settings show a Main AI and a Local AI side by side. The Dark theme has calmer colours, opening a task from anywhere brings the Tasks list to the left, and a Debug mode (off by default) is in Settings.
+Made from the `CHANGELOG.md` section of the version at every release (`store-notes.txt` in the artifact `release-texts`). Nothing to write here.
 
 ## Search terms (up to seven)
 
-markdown, pages, page taking, local ai, git history, wiki links, knowledge base
+markdown, markdown editor, tasks, local ai, git history, wiki links, knowledge base
 
 ## Links and contact
 
@@ -84,32 +86,26 @@ markdown, pages, page taking, local ai, git history, wiki links, knowledge base
 
 - **Category:** Productivity.
 - **System requirements:** Windows 10 version 1809 or later (Windows 11 recommended: it includes the WebView2 runtime that Nexmio Work uses). 64-bit.
-- **Age rating:** answer the questionnaire honestly. Nexmio Work has no violent, sexual or gambling content of its own. Note that it lets the user chat with an AI model that the user chooses, so the "user-generated content / online interaction" questions may apply: the chat is private and goes only to the AI on the user's own computer.
+- **Age rating:** answer the questionnaire honestly. Nexmio Work has no violent, sexual or gambling content of its own. It lets the user chat with an AI model: by default one on the user's own computer, and a cloud AI if the user turns one on. Answer the questions about AI content and online interaction with both in mind. Nothing a user writes is shown to other users.
 
 ## Notes for certification (paste into "Notes for certification")
 
 ```
-Nexmio Work is a desktop pages app with open source code (Tauri, Rust and a WebView2 front end), packaged as a full-trust desktop app.
+Nexmio Work is a desktop pages app (Tauri: Rust and a WebView2 front end), packaged as a full-trust desktop app. Source code: https://github.com/nexmio/work.nexmio.com
 
-How to try it: start the app, choose "Open folder as vault" and pick or create any empty folder. Create a page with Ctrl+N. No account or sign-in is needed.
+To try it: start the app, choose "Open folder as vault" and pick any empty folder. Ctrl+N makes a page. No account is needed.
 
-The AI features use an AI on the user's own computer. The app offers a built-in AI: only when the user presses Download in Settings > AI, it downloads the open-source llama.cpp server (llama-server, MIT licence, from github.com/ggml-org/llama.cpp releases) and a model file (from huggingface.co), checks them, keeps them in the app's own data folder and runs the server as a local process on 127.0.0.1 with a random key. This is the described functionality of the AI feature; nothing is downloaded without the user asking. The user can also use an AI server of their own (for example LM Studio) instead. Without an AI, the app is a normal Markdown editor with version history. No data is sent anywhere unless the user turns on a cloud AI and agrees to the warning.
+Built-in AI (optional): the llama.cpp server (llama-server, MIT licence) is part of the package. Only when the user presses Download in Settings > AI, the app downloads a model file (Gemma 4, about 3 to 15 GB; data, not code) from huggingface.co, checks it, and runs llama-server on 127.0.0.1 with a random key. The user can instead use an AI server of their own. A cloud AI is off until the user turns it on and agrees to a warning. No API key is needed; one is optional for a server that asks for it. Without AI the app is a Markdown editor with version history.
 
-The app shows AI-generated answers (live generative AI). The model is one the user connects themselves. To report inappropriate AI content, use Help > "Report inappropriate AI content…": it opens a pre-filled issue on the developer's GitHub page, and reports are read and acted on.
+Live generative AI: report inappropriate content with Help > "Report inappropriate AI content…". It opens a pre-filled issue on the developer's GitHub page; reports are read and acted on.
 
-The app does not collect any data. Privacy policy: https://work.nexmio.com/privacy.html
+The developer collects no data. Privacy policy: https://work.nexmio.com/privacy.html
 ```
 
 ## Why the app needs "runFullTrust" (if asked)
 
 ```
-Nexmio Work is a classic desktop application (Tauri/Rust with a WebView2 front end), packaged with the desktop bridge. It needs full trust for these things, which a sandboxed UWP app cannot do:
-
-1. It reads and writes the Markdown files and the Git repositories (the version history) in folders that the user opens anywhere on their disk, for example Documents or a synced folder, and it watches those folders for changes made by other programs.
-2. It can make a backup copy of a vault in another folder the user chooses, for example on an external disk.
-3. It talks to an AI server on the user's own computer: the built-in one (llama-server, which it downloads when the user asks and starts as a local process) or one the user runs (for example LM Studio on localhost).
-
-The app has no account, no telemetry and no background service, and it sends nothing from the user's pages anywhere. The source code is public: https://github.com/nexmio/work.nexmio.com
+A classic desktop app that: (1) reads, writes and watches Markdown files and Git repositories in folders the user opens anywhere on disk; (2) backs a vault up to a folder the user chooses; (3) starts the included llama-server as a local process, or talks to an AI server on the same computer. No account, telemetry or background service. Page text leaves the computer only if the user turns on a cloud AI.
 ```
 
 ## Required for apps with AI content (Store policy 11.16, "Live Generative AI Content")
@@ -117,12 +113,12 @@ The app has no account, no telemetry and no background service, and it sends not
 Microsoft's policy says a product that contains content that a generative AI model creates in response to user input must do four things. Nexmio Work does:
 
 1. **Disclose it in the metadata**: the paragraph "Live generative AI." in the description above. Keep it.
-2. **Page it in Partner Center** during the submission: tick the box or answer the question that says the product uses live generative AI.
-3. **Follow the other Store policies**: the user chooses the model, and every change the AI proposes is shown for review before anything is written.
+2. **Declare it in Partner Center** during the submission: tick the box or answer the question that says the product uses live generative AI.
+3. **Follow the other Store policies**: the AI is chosen by the user, and every change the AI proposes is shown for review before anything is written.
 4. **Give users a way to report inappropriate content to the developer**: **Help → Report inappropriate AI content…** opens a pre-filled issue at https://github.com/nexmio/work.nexmio.com/issues. Read the reports there and act on them. Say in the certification pages where the menu item is.
 
 ## Things Microsoft may ask about
 
-- **AI content:** see the four points above. The package contains no AI model. The user downloads one (built-in AI) or connects a local AI of their choice.
+- **AI content:** see the four points above. The package contains the AI engine but no AI model. The user downloads a model (built-in AI) or connects an AI of their choice.
 - **WebView2:** Windows 11 includes it. On Windows 10 the Edge WebView2 runtime may have to be installed.
 - If the review is rejected, read the message, fix the cause, and submit a new package: the version number must be higher each time.

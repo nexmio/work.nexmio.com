@@ -8,6 +8,10 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+### Changed
+
+- **The privacy policy and Store texts are up to date.** They say that only the AI model is downloaded, what the built-in AI needs, and how you control your data.
+
 ## [0.31.0] - 2026-11-26
 
 ### Added
