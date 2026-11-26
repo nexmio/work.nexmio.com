@@ -16,6 +16,26 @@ export function focusedView(): EditorView | null {
   return views.get(pane) ?? views.get("primary") ?? null;
 }
 
+/**
+ * Changes a page where it is shown in an editor, as if typed, so it is saved as usual and Ctrl+Z
+ * takes it back. False when no editor shows the page with exactly the text `expected`.
+ */
+export function changeOpenPage(
+  path: string,
+  expected: string,
+  from: number,
+  to: number,
+  insert: string,
+): boolean {
+  for (const pane of useWorkspaceStore.getState().layout.panes) {
+    const view = views.get(pane.id);
+    if (pane.active !== path || !view || view.state.doc.toString() !== expected) continue;
+    view.dispatch({ changes: { from, to, insert }, userEvent: "input.ai" });
+    return true;
+  }
+  return false;
+}
+
 /** Types a `#` at the cursor of the focused editor and opens the list of tags you already use. */
 export function startTag(): void {
   const view = focusedView();
