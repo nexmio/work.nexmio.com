@@ -43,12 +43,12 @@ On a Windows computer with the Windows SDK, Node, Rust and pnpm:
 pnpm install
 pnpm engine:fetch windows
 pnpm tauri build
-./scripts/msix/Build-Msix.ps1 -Version 0.30.0 -TestSign -DisplayName "Nexmio Work"
+./scripts/msix/Build-Msix.ps1 -Version 0.31.0 -TestSign -DisplayName "Nexmio Work"
 ```
 
-This makes the folder `msix-out` with, among other files, `NexmioWork_0.30.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.30.0.0_x64_test.msix` (signed with a test certificate) and `nexmio-work-test.cer`.
+This makes the folder `msix-out` with, among other files, `NexmioWork_0.31.0.0_x64.msix` (unsigned, for the Store), `NexmioWork_0.31.0.0_x64_test.msix` (signed with a test certificate) and `nexmio-work-test.cer`.
 
-To try it on a test Windows (a virtual machine or Windows Sandbox, never your everyday or work computer), copy the test `.msix` and the `.cer` over. In PowerShell **as administrator** run `Import-Certificate -FilePath .\nexmio-work-test.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`, then `Add-AppxPackage .\NexmioWork_0.30.0.0_x64_test.msix`. Remove it with `Get-AppxPackage *Nexmio* | Remove-AppxPackage`. The certificate makes Windows trust the test copy, which is why it must not be done on a computer you use for real.
+To try it on a test Windows (a virtual machine or Windows Sandbox, never your everyday or work computer), copy the test `.msix` and the `.cer` over. In PowerShell **as administrator** run `Import-Certificate -FilePath .\nexmio-work-test.cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople`, then `Add-AppxPackage .\NexmioWork_0.31.0.0_x64_test.msix`. Remove it with `Get-AppxPackage *Nexmio* | Remove-AppxPackage`. The certificate makes Windows trust the test copy, which is why it must not be done on a computer you use for real.
 
 If a Build-Msix step fails, `makeappx` says what is wrong with the manifest.
 

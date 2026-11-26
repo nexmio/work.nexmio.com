@@ -8,6 +8,8 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-11-26
+
 ### Added
 
 - **Move to the new folder structure.** A project whose pages are not in the folders of their parts shows a button. It lists what would move where, moves only the ticked pages, updates the links, saves one version and offers **Undo**. Also in the plan's **···** menu.
@@ -15,7 +17,7 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 ### Changed
 
 - **You choose where a new page of a part goes.** **Link or make a page… → Make a new page…** offers a folder for each part above it, and you can choose another. The page is named after the part with `_page` (for example `Pages/Network/Switches_page`).
-- **A project keeps new pages in `Pages`** (before: `Notes`). Pages you already have stay where they are.
+- **A project keeps new pages in `Pages`** (before: `Notes`). Pages you already have stay where they are until you move them with **Move to the new folder structure**.
 - **Newest pages in a project's Overview** also shows pages with the project's tag, so a page you move out of the project's folder is still there.
 
 ### Fixed
