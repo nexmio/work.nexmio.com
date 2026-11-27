@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { findTopic, HELP_TOPICS, searchTopics } from "./helpTopics";
+import { helpImage } from "./helpImages";
+import { findTopic, HELP_TOPICS, searchTopics, topicParts } from "./helpTopics";
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -19,6 +20,17 @@ describe("the how-to guide", () => {
       expect(t.title.length, t.id).toBeGreaterThan(2);
       expect(t.summary.length, t.id).toBeGreaterThan(5);
       expect(t.body.length, t.id).toBeGreaterThan(200);
+    }
+  });
+
+  it("starts each topic with short steps, and every picture it names is there", () => {
+    for (const t of HELP_TOPICS) {
+      const { steps, more } = topicParts(t);
+      // A topic that is one short list or table has nothing to fold away.
+      if (more !== "") expect(steps.split(/\s+/).length, t.id).toBeLessThan(140);
+      for (const m of t.body.matchAll(/!\[[^\]]*\]\((img\/[^)]+)\)/g)) {
+        expect(helpImage(m[1] ?? ""), `${t.id}: ${m[1] ?? ""}`).toBeDefined();
+      }
     }
   });
 

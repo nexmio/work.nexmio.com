@@ -1,6 +1,6 @@
 # Nexmio Work (work.nexmio.com)
 
-Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 0.32. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
+Nexmio Work is a desktop app (Tauri 2, Rust backend, React 19 + TypeScript frontend) for plain Markdown pages in ordinary folders, with a local AI, Git history of every change, tasks and epics, ideas, meetings and a start page. It is the **purple** product in the Nexmio family. Version 1.0. The person who owns it does not write code: every change is made by Claude, from a brief, and must be easy to follow and to correct.
 
 ## Read first
 
@@ -43,7 +43,7 @@ The skills `/feature` and `/release` in `.claude/skills/` walk through these ste
 - **Do not drive the owner's desktop** (mouse, keyboard) and never capture the full desktop; screenshots only of Nexmio Work, headless.
 - **English** in the app, the docs and the website (the website has no Danish version). Sentence case in buttons and labels. The owner is answered in Danish.
 - **The word is "page", not "note"**, in everything a person reads (labels, messages, help, docs, site, Store text). Kept as "note": a note on a task, an idea or a meeting (the **Notes** section of a meeting), folder names in older vaults, file formats (`## Notes`), SQL names and all code names. A bulk rename of words needs a check of formats and tests: never change a string that is read back from a file.
-- **Reading rules** (dyslexia and a short attention): small headings in sentence case, a done item dimmed with its tick and never struck through, an icon always with a word (except a checkbox), one thing to do at a time where the screen can show it (the Now card in Tasks). Settings apply at once, with Undo.
+- **Reading rules** (dyslexia and a short attention): small headings in sentence case, a done item dimmed with its tick and never struck through, an icon always with a word (except a checkbox or a task's status dot), one thing to do at a time where the screen can show it (an epic's groups in Tasks). Settings apply at once, with Undo.
 - **Tests are written with the change and are green before it is shown**: the frontend checks, `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test` (in the Rust distrobox). A flaky test is made reliable, not skipped. Look at headless pictures of a changed screen (`pnpm screenshots`, `scripts/e2e/`) before saying it looks right.
 - **Commit and push only when the owner asks.** Staging (`git add -A`) after the owner's ok is the checkpoint between phases of a big change. A pushed tag is never moved or deleted. Settings of the GitHub repository (Pages, environments, variables, secrets) are the owner's; say what to change and ask before changing one.
 - **Ask only when it is really needed.** Decide with what is written here and in `docs/DECISIONS.md`, work through the whole task, and report what was done, what was left out and why.

@@ -51,7 +51,12 @@ describe("TaskDetail (the right panel of the Tasks area)", () => {
   it("shows the title, the status, the steps with the next one marked, and what happened", () => {
     render(<TaskDetail />);
     expect(screen.getByText("Send the offer")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Doing" })).toHaveAttribute("aria-pressed", "true");
+    // "doing" is called Working on.
+    expect(screen.queryByRole("button", { name: "Doing" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Working on" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(screen.getByText("Steps · 1 of 2")).toBeInTheDocument();
     expect(screen.getByText("Next")).toBeInTheDocument();
     expect(screen.getByText("Called Acme")).toBeInTheDocument();

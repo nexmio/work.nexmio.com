@@ -1,7 +1,5 @@
 # Nexmio Work
 
-> **Beta.** Nexmio Work is under active development. It works, but expect rough edges, and keep a backup of important pages.
-
 Nexmio Work keeps your pages as plain Markdown files, with tasks, plans, meetings and an AI that runs on your own computer and only ever suggests.
 
 The short overview, with downloads, is on the website: **https://work.nexmio.com/**. This page is the longer, technical one: what Nexmio Work does, how your pages are stored, how to install it and set up the AI, and how to build it.
@@ -45,10 +43,10 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 
 **Tasks and ideas**
 
-- A task is a checklist line in any page. Nexmio Work reads them in every page and shows an outline of **epics** you can fold, each with its progress. A page is an epic when it has the tag `epic`.
-- A task has steps (indented checklist lines), a page, a status (Doing, Waiting, Dropped), a day it was made and a log of what happened. **Break it down** lets the AI propose steps you choose from. A **timer** in the right panel writes the time on a task as a line in its log, **Time** shows what each tag and task took, and tasks and epics can have the same tags as pages.
+- A task is a checklist line in any page. Nexmio Work reads them in every page and groups them in **epics**, each with its progress. A page is an epic when it has the tag `epic`.
+- A task has steps (indented checklist lines), a page, a status (To do, Working on, Waiting or Done), a day it was made and a log of what happened. **Break it down** lets the AI propose steps you choose from. A **timer** in the right panel writes the time on a task as a line in its log, **Time** shows what each tag and task took, and tasks and epics can have the same tags as pages.
 - A task that is **Waiting** can say who or what it waits for, and which other task it waits for. That task says which tasks wait for it, and the waiting one says **Ready** when it is done.
-- The task list shows one epic at a time: the task to do now with its next step, the ones after it, the ones that wait for others, and the done ones folded away.
+- The task list opens on every epic in rows (working on, next, waiting); an epic shows its tasks in those groups with a status dot, and a task opens in a quick look over the list.
 - A task can point at a page with a `[[wiki-link]]` in its own line. Tasks and steps can be put in your own order.
 - **Write it down** from anywhere (`Ctrl/Cmd+Shift+N`): a task or an idea, each in its own small box. Ideas are a list you turn into a task or a page later.
 - **A taskbar helper (Windows, off until you turn it on).** An icon in the taskbar and keys that work in every program: write something down, and say where you left off. You choose the keys under Settings → Pages and backup, and the settings tell you if another program uses them. Nexmio Work can stay in the taskbar when the window is closed. On other systems it is greyed out.
@@ -68,7 +66,7 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 
 - Version history per page: compare, restore, recover deleted pages. Every AI change is a commit and can be undone.
 - AI on selected text in a page **and in every text box** (fix spelling, rewrite, shorten, translate, explain, draw as a diagram and more), **In short** for a whole page (the main points and the things to do, and you tick which become tasks), AI commands for a whole page or folder (spelling, structure, summary, a title and tags, sort into folders), skills that Nexmio Work carries out page by page, and a chat that searches and reads your pages to answer. Nexmio Work checks every change a skill makes (links, tags, numbers, dates, code) before it is offered.
-- **Test it** under each AI in Settings → AI asks one short question, with none of your pages, and shows the answer or the error in plain words. The built-in AIs are marked Beta.
+- **Test it** under each AI in Settings → AI asks one short question, with none of your pages, and shows the answer or the error in plain words. The AI is marked Beta.
 - **Spelling help** that marks misspelt words in the language of the text and never changes anything by itself.
 - **Projects and plans.** A project is a folder with its own tree, its own AI rules and its own tag; its plan is a page whose list is the parts of the work, as a map or an outline, where a house or an arrow shows whether a linked page or task is in the project. Each project has an **Overview**: how far it has come, the task to do now, the time logged this month, what waits for others, its meetings and decisions, and its newest pages. A meeting can belong to a project, and an idea can become a part of a plan.
 - **The AI box.** **AI** in the top bar (or `Ctrl/Cmd+L`) opens the AI as a box over the right side, over anything: the chat and the queue of AI jobs. The chat knows your projects, tasks and meetings ("What should I do next?", "What am I waiting for?"), answers how-to questions from the help with a **Show me** button, and can propose tasks and parts of a plan that you accept first. Projects, Tasks, Meetings and the start page each have an AI button with what fits there, such as breaking down the chosen part or finding the decisions and actions in a meeting.
@@ -78,10 +76,10 @@ Nexmio Work never looks for updates by itself and sends nothing. Use Help → Ch
 <table>
   <tr>
     <td width="50%"><img src="docs/screenshots/note-editor.png" alt="A note with headings, a table, tags and a link, next to the file panel with the calendar"></td>
-    <td width="50%"><img src="docs/screenshots/tasks.png" alt="The task list: epics you can fold, with their tasks, steps and progress"></td>
+    <td width="50%"><img src="docs/screenshots/tasks-all.png" alt="All epics: a row for each epic with what you work on, what is next and what is waiting"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/task-page.png" alt="A task with its note, its steps, its log and a card with its status and its epic"></td>
+    <td><img src="docs/screenshots/task-page.png" alt="The quick look over the task list: a task with its status, steps and what happened"></td>
     <td><img src="docs/screenshots/timer.png" alt="The Timer tab in the right panel, beside the task list"></td>
   </tr>
   <tr>

@@ -161,7 +161,10 @@ export function isEmpty(l: LookBack): boolean {
 /** "Status: waiting" → "now waiting"; "Waiting for: Mette" → "waiting for Mette". */
 export function changeText(change: string): string {
   const status = /^Status:\s*(.+)$/i.exec(change);
-  if (status) return `now ${(status[1] ?? "").trim()}`;
+  if (status) {
+    const name = (status[1] ?? "").trim();
+    return `now ${name === "doing" ? "working on" : name}`;
+  }
   const waiting = /^Waiting for(?: the task)?:\s*(.+)$/i.exec(change);
   if (waiting) return `waiting for ${(waiting[1] ?? "").trim()}`;
   return change;

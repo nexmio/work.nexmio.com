@@ -1,3 +1,11 @@
+Windows only: keys that work in every program.
+
+1. Open **Settings → Pages and backup → Taskbar helper**.
+2. Tick **Turn on the taskbar helper**.
+3. Press **Ctrl+Alt+N** anywhere to write down a task or an idea.
+
+<!-- more -->
+
 ## The taskbar helper
 
 On **Windows**, Nexmio Work can sit in the taskbar and answer a key you press in **any program**. Two keys are made for it:

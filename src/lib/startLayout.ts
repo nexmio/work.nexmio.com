@@ -49,7 +49,7 @@ export const WIDGETS: readonly WidgetInfo[] = [
   {
     id: "workingOn",
     title: "Working on",
-    does: "Tasks with the status Doing or Waiting, across your epics.",
+    does: "The tasks you work on and the ones that wait, across your epics.",
   },
   { id: "inbox", title: "To sort", does: "Quick pages and open ideas that are not sorted yet." },
   { id: "areas", title: "Areas", does: "Tasks, Meetings, Pages and Ideas with a number on each." },

@@ -6,7 +6,7 @@ import type { TaskLog } from "@/bindings/TaskLog";
 import type { TaskStep } from "@/bindings/TaskStep";
 import { api, toApiError } from "@/lib/api";
 import { flushPendingWrites } from "@/lib/flush";
-import { taskRef, taskText, todayIso } from "@/lib/taskLogic";
+import { taskRef, taskText, todayIso, ALL_AREA } from "@/lib/taskLogic";
 import { useTagStore } from "./tagStore";
 import { reportError, useUiStore } from "./uiStore";
 import { useVaultStore } from "./vaultStore";
@@ -21,22 +21,6 @@ export interface TaskRef {
 /** The epic that quick tasks go into when no epic is chosen. */
 export const INBOX_PATH = "Tasks/Inbox.md";
 
-const AREA_KEY = "nexmio.tasksArea:";
-
-/** The key under which the chosen area is kept for the open vault. */
-function areaKey(): string {
-  return `${AREA_KEY}${useVaultStore.getState().vault?.path ?? ""}`;
-}
-
-/** The area the task list showed last in this vault (an epic's note path), or null. */
-function readArea(): string | null {
-  try {
-    return localStorage.getItem(areaKey());
-  } catch {
-    return null;
-  }
-}
-
 interface TaskState {
   tasks: Task[];
   loaded: boolean;
@@ -46,12 +30,21 @@ interface TaskState {
   epics: Epic[];
   /** The epic that is open on its page. */
   epicPath: string | null;
-  /** The area the task list shows (an epic's note path, or `LOOSE_AREA`), kept per vault. */
+  /**
+   * The area the task list shows: an epic's note path, `LOOSE_AREA`, or `ALL_AREA` (every epic in
+   * rows), which is where Tasks opens.
+   */
   chosenArea: string | null;
   /** Chooses the area the task list shows. */
   chooseArea: (path: string | null) => void;
-  /** Reads the chosen area of the open vault again (when a vault is opened). */
+  /** The vault that `chosenArea` belongs to; another vault opens on every epic again. */
+  areaVault: string | undefined;
+  /** Goes back to every epic when another vault is open than the one the area was chosen in. */
   restoreArea: () => void;
+  /** The task shown in the quick look over the list, if it is open. */
+  looking: TaskRef | null;
+  /** Opens the quick look on a task, or closes it with null. */
+  look: (ref: TaskRef | null) => void;
   /** Tasks whose steps are shown in the list (`path:line`), for this session only. */
   openTasks: Record<string, boolean>;
   toggleTaskOpen: (id: string) => void;
@@ -188,18 +181,19 @@ export const useTaskStore = create<TaskState>((set, get) => {
     selected: null,
     epics: [],
     epicPath: null,
-    chosenArea: readArea(),
+    chosenArea: ALL_AREA,
     chooseArea: (path) => {
-      set({ chosenArea: path });
-      try {
-        if (path === null) localStorage.removeItem(areaKey());
-        else localStorage.setItem(areaKey(), path);
-      } catch {
-        /* only a convenience */
-      }
+      set({ chosenArea: path, looking: null });
     },
+    areaVault: undefined,
     restoreArea: () => {
-      set({ chosenArea: readArea() });
+      const vault = useVaultStore.getState().vault?.path ?? "";
+      if (get().areaVault === vault) return;
+      set({ chosenArea: ALL_AREA, looking: null, areaVault: vault });
+    },
+    looking: null,
+    look: (ref) => {
+      set(ref === null ? { looking: null } : { looking: ref, selected: ref });
     },
     openTasks: {},
     toggleTaskOpen: (id) => {

@@ -25,6 +25,7 @@ An area's own `CLAUDE.md` holds its working rules; they are not repeated here.
 - An area's AI button is `AreaAiMenu` (jobs go to the AI queue, questions open the chat), the same look as `NoteAiMenu` above a page.
 - `InfoHint` is our own small bubble, not a tooltip library.
 - `src/components/ui/*.tsx` keep the lower-case shadcn file names.
+- The button that makes a new thing in an area stands once, at the top of its panel, with the thing's name (**+ New epic**, **+ New project**, **+ New meeting**, **+ New idea**); the middle has one only when the area is empty.
 
 ## Shared core
 
@@ -97,6 +98,9 @@ An area's own `CLAUDE.md` holds its working rules; they are not repeated here.
 
 See `src/features/tasks/CLAUDE.md` for the file format and the area. Beyond it:
 
+- Tasks opens on **All epics** (`ALL_AREA`, `EpicLanes`): a row per epic with Working on, Next (two, then "+ n more") and Waiting; a chosen epic is kept until another vault opens (`taskStore.areaVault`), not between restarts. Replaced the Now card and a working-on bar (0.33), which followed you to other epics and allowed one task only.
+- The statuses are To do, Working on (`status:doing`), Waiting and Done, chosen from a status dot at the start of a row (`StatusDot`); several tasks can be Working on. The dot takes the place of the checkbox, so like a checkbox it has no word beside it; its menu has the words.
+- A task in the list opens in a quick look over it (`QuickLook`, `taskStore.looking`, ↑/↓ and Esc), not in the right panel: in the task list the right panel shows only the Timer (`rightTabsFor`) and is not there at all without one (`AppShell`, so All epics has the width); the epic page keeps its Task tab. The Overview of a project still shows **Now**.
 - No planning: the old words `due:`, `plan:` and `est:` stay in the file and out of the title, but nothing reads them (they are not on `Task` or `MetaPatch`); `made:` is added once to tasks Nexmio Work makes.
 - A task always goes into an epic the person chose; Nexmio Work never makes an Inbox epic.
 - Tasks and steps move in the page itself (`tasks::move_item`); done tasks are shown after open ones without changing the file (`openThenDone`).
@@ -184,7 +188,8 @@ See `src/features/chat/CLAUDE.md`. Beyond it:
 - Settings have seven sections and save at once, with Undo; dangerous controls stay explicit buttons.
 - Settings → AI is one list where each row holds its own setup; "Test it" asks one short question with no pages (`ai_test`).
 - `ProviderKind::Anthropic` stays only so old settings load; it is blocked.
-- The help is Markdown in `src/features/help/topics/`; a test checks every Read more link. The assistant reads the same topics.
+- The help is Markdown in `src/features/help/topics/`; a test checks every Read more link. The assistant reads the same topics (its search leaves out the pictures).
+- A help topic is a few short steps (under 140 words, tested) with a picture, then `<!-- more -->` and the details folded under **More details** (open while searching); topics stand in groups (`HelpTopic.group`). The pictures (`src/features/help/img/`, light theme only, part of the app) are made by `pnpm help:shots` from the demo vault and are retaken when a screen they show changes.
 - Report a bug / Suggest a feature open GitHub issue forms filled with version and edition.
 
 ## Build and docs

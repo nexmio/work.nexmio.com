@@ -10,7 +10,7 @@ import { NodeChips } from "./NodeChips";
 import { PartNote } from "./PartNote";
 import type { NodeInfo } from "./nodeInfo";
 import { usePlanStore } from "@/stores/planStore";
-import type { NodeAction } from "./planActions";
+import { unlinkFrom, type NodeAction } from "./planActions";
 
 /** One way the parts of a box can stand, and whether it is in use. */
 export interface ArrangeOption {
@@ -122,7 +122,12 @@ export function ChosenPart({
       )}
       {tied ? (
         <div className="flex flex-wrap gap-1.5">
-          <NodeChips info={info} />
+          <NodeChips
+            info={info}
+            onRemove={(links, what) => {
+              void unlinkFrom(path, links, what);
+            }}
+          />
         </div>
       ) : (
         <p className="text-muted-foreground">Not linked to anything yet</p>

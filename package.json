@@ -2,7 +2,7 @@
   "name": "nexmio-work",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
-  "version": "0.32.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "check": "pnpm format:check && pnpm areas check && pnpm lint && pnpm typecheck && pnpm test && pnpm rust:format && pnpm rust:lint && pnpm rust:test",
     "e2e": "node scripts/e2e/smoke.mjs",
     "screenshots": "node scripts/e2e/screenshots.mjs",
+    "help:shots": "node scripts/e2e/help-shots.mjs",
     "engine:fetch": "node scripts/engine/fetch.mjs",
     "release:bump": "node scripts/release/bump.mjs bump",
     "release:tag": "node scripts/release/bump.mjs tag",

@@ -1,4 +1,11 @@
-## Projects and their plans: break something big down
+1. Press **+ New project** in Projects and give it a name.
+2. Write the **parts**, and smaller parts under them.
+3. Press a part to see it at the right.
+4. Link a **page** or a **task** to the part.
+
+![A project's map with one part chosen](img/project.png)
+
+<!-- more -->
 
 A big thing is hard to start. Writing it down as parts, and the parts as smaller parts, makes it smaller. A **plan** is where you do that. It is an ordinary page (with the tag `plan`, kept in the folder `Plans`) whose list of parts is a tree, so you can open it in any other editor too. There is no timer and no deadline: a plan goes on for as long as you like.
 
@@ -12,9 +19,9 @@ A meeting belongs to a project when you choose the project in its window (**Proj
 
 ### Plans and projects
 
-A **project** is a folder with its own AI rules (see Projects). A plan always lives in a project. When you make a plan you choose **In a new project** (a folder with the name of the plan, with the plan in it) or **In a project I have**. The epics and pages you make from the plan are kept inside the project, in the folders `Epics` and `Pages`, so everything about the plan is in one place. A project has a **tag** made from its name when it is made (for example `#server-move`; it is shown in the project's settings and stays the same if you rename the project). The plan page, its epic, and the tasks and pages you make from the plan get that tag, so you can find all of it with the tag (in Search, or with the tag filter in Tasks). What was there before is not changed. A project can have no plan, and you can make one of it when you have been working on it for a while (**Make a plan** under **Projects without a plan**). A plan made before this, in the folder Plans, shows **This plan is not in a project yet** above it; **Move it to a project…** moves the page into one.
+A **project** is a folder with its own AI rules (see _AI rules for a project_). A plan always lives in a project. When you make a plan you choose **In a new project** (a folder with the name of the plan, with the plan in it) or **In a project I have**. The epics and pages you make from the plan are kept inside the project, in the folders `Epics` and `Pages`, so everything about the plan is in one place. A project has a **tag** made from its name when it is made (for example `#server-move`; it is shown in the project's settings and stays the same if you rename the project). The plan page, its epic, and the tasks and pages you make from the plan get that tag, so you can find all of it with the tag (in Search, or with the tag filter in Tasks). What was there before is not changed. A project can have no plan, and you can make one of it when you have been working on it for a while (**Make a plan** under **Projects without a plan**). A plan made before this, in the folder Plans, shows **This plan is not in a project yet** above it; **Move it to a project…** moves the page into one.
 
-A project that is already there can be made a plan: press **Plan from a project…** on the page you see with no plan open, or right-click the project in Files and choose **Make a plan of this project**. Nexmio Work adds a plan page to the project's folder and can start it with the project's pages and epics as parts, linked. Nothing in the project is moved or changed, and a project never becomes a plan unless you ask.
+A project that is already there can be made a plan: press **Plan from a project…** on the page you see with no plan open, or right-click the project in Pages and choose **Make a plan of this project**. Nexmio Work adds a plan page to the project's folder and can start it with the project's pages and epics as parts, linked. Nothing in the project is moved or changed, and a project never becomes a plan unless you ask.
 
 ### Move older pages into the folders
 
@@ -31,9 +38,13 @@ On the parts of a project, a small symbol on **Page**, **Task** and **Epic** sho
 
 The folder decides, not the tag. Hold the pointer over the symbol's label to see where it is. A plan that is in no project has no symbols.
 
+### Remove a link
+
+Choose the part: in the panel on the right, a small cross after **Page**, **Task** or **Epic** removes that link. The page or task itself stays, and **Undo** in the message puts the link back. A task in the plan's epic with the same name as the part shows by itself, so it has no cross.
+
 ### Make a plan
 
-A new project is made the same way from everywhere: **New project** at the top of the navigation when Projects is open, the arrow ▾ next to the New button (it lists a page, a task, a project, a meeting and an idea, wherever you are), **+ New project** at the bottom of the projects list, **New project…** when you right-click an empty place in the projects list or the Pages panel, **File → New**, and the Pages panel's **···** menu. Press **New project**, or **New** at the top of the plans list. With no plan open, the page offers **Empty plan** and **Plan from a project**. **Break it down** takes you through three short steps, and everything is saved as you go, so you can stop and come back:
+A new project is made the same way from everywhere: **+ New project** at the top of the Projects panel, **New project** at the top of the navigation when Projects is open, the arrow ▾ next to it, **New project…** when you right-click an empty place in the projects list or the Pages panel, **File → New**, and the Pages panel's **···** menu. With no plan open, the page offers **Empty plan** and **Plan from a project**. **Break it down** takes you through three short steps, and everything is saved as you go, so you can stop and come back:
 
 1. **What is it?** Write what you want to get done.
 2. **What are the parts?** Write the parts as they come, and press **Break it down** on a part to write smaller ones under it. **Suggest parts** lets the AI propose parts; you tick the ones you want.

@@ -7,6 +7,9 @@ import {
   LOOSE_AREA,
   nextStep,
   pickArea,
+  ALL_AREA,
+  statusGroups,
+  waitingText,
   openThenDone,
   stepsFromAnswer,
   taskText,
@@ -123,7 +126,7 @@ describe("one area at a time", () => {
     expect(nextStep(task({}))).toBeNull();
   });
 
-  it("picks the chosen area, else the first epic that is not done", () => {
+  it("picks the chosen area, else every epic", () => {
     const groups = epicGroups(
       [
         task({ path: "Tasks/A.md", done: true }),
@@ -137,12 +140,12 @@ describe("one area at a time", () => {
       ],
     );
     expect(pickArea(groups, false, "Tasks/C.md")).toBe("Tasks/C.md");
-    expect(pickArea(groups, false, "Tasks/Gone.md")).toBe("Tasks/B.md");
-    expect(pickArea(groups, false, null)).toBe("Tasks/B.md");
+    expect(pickArea(groups, false, "Tasks/Gone.md")).toBe(ALL_AREA);
+    expect(pickArea(groups, false, null)).toBe(ALL_AREA);
     expect(pickArea(groups, true, LOOSE_AREA)).toBe(LOOSE_AREA);
-    expect(pickArea(groups, false, LOOSE_AREA)).toBe("Tasks/B.md");
-    expect(pickArea([], true, null)).toBe(LOOSE_AREA);
-    expect(pickArea([], false, null)).toBeNull();
+    expect(pickArea(groups, false, LOOSE_AREA)).toBe(ALL_AREA);
+    expect(pickArea([], true, null)).toBe(ALL_AREA);
+    expect(pickArea(groups, false, ALL_AREA)).toBe(ALL_AREA);
   });
 });
 
@@ -192,5 +195,34 @@ describe("tasks that wait for another task", () => {
     expect(afterTarget([first, second], second)?.title).toBe("Test");
     expect(afterTarget([second], second)).toBeNull();
     expect(afterTarget([first], first)).toBeNull();
+  });
+});
+
+describe("the groups of an epic and how long a task waits", () => {
+  it("puts the tasks you work on, the next ones, the waiting and the done ones apart", () => {
+    const a = task({ title: "A", status: "doing" });
+    const b = task({ title: "B", line: 3 });
+    const c = task({ title: "C", line: 4, status: "waiting" });
+    const d = task({ title: "D", line: 5, done: true });
+    const e = task({ title: "E", line: 6, status: "doing" });
+    const g = statusGroups([a, b, c, d, e]);
+    expect(g.working.map((t) => t.title)).toEqual(["A", "E"]);
+    expect(g.next.map((t) => t.title)).toEqual(["B"]);
+    expect(g.waiting.map((t) => t.title)).toEqual(["C"]);
+    expect(g.done.map((t) => t.title)).toEqual(["D"]);
+  });
+
+  it("says what a task waits for and since when", () => {
+    const t = task({
+      status: "waiting",
+      history: [
+        { date: "2026-11-20", text: "Status: doing" },
+        { date: "2026-11-23", text: "Status: waiting" },
+      ],
+    });
+    expect(waitingText(t, "the supplier", "2026-11-27")).toBe("the supplier · 4 days");
+    expect(waitingText(t, null, "2026-11-24")).toBe("waiting 1 day");
+    expect(waitingText(t, "Acme", "2026-11-23")).toBe("Acme · since today");
+    expect(waitingText(task({ status: "waiting" }), null)).toBe("waiting");
   });
 });

@@ -1,6 +1,12 @@
+1. Open a page.
+2. Press **Ctrl/Cmd+Shift+H** to see its history.
+3. Choose a version and press **Restore this version**.
+
+<!-- more -->
+
 ## Backup
 
-**Settings → Vault → Backup** copies your pages and their whole history to a folder you choose (an external disk, or a folder that is synced), so the history does not live only on one disk. Press **Back up now**, and tick **Back up when Nexmio Work closes** if you like. The copy is a bare Git repository, `<vault name>.git`, in that folder; Nexmio Work never overwrites a folder that holds another history. The status bar warns when the last backup is a week old or failed. To get the pages back, run `git clone` on that folder (or copy it) and open the result as a vault. The saved chats and the search index of meanings are not in the backup.
+**Settings → Pages and backup → Backup** copies your pages and their whole history to a folder you choose (an external disk, or a folder that is synced), so the history does not live only on one disk. Press **Back up now**, and tick **Back up when Nexmio Work closes** if you like. The copy is a bare Git repository, `<vault name>.git`, in that folder; Nexmio Work never overwrites a folder that holds another history. The status bar warns when the last backup is a week old or failed. To get the pages back, run `git clone` on that folder (or copy it) and open the result as a vault. The saved chats and the search index of meanings are not in the backup.
 
 ## Nothing is lost
 
@@ -18,4 +24,4 @@ Open the **History** tab of the right panel (or press **Ctrl/Cmd+Shift+H**). Pic
 
 - Names in the history tell what happened: _Save_, _Autosave_, _Snapshot before AI_, _AI: …_, _Rename …_, _Delete …_, _Import: …_.
 - The history only grows. Nexmio Work never rewrites it.
-- Your name and how often it saves while idle are in **Settings → Version history**. There you can also choose to save a version when you close a page, and every so many minutes while you write.
+- Your name and how often it saves while idle are in **Settings → Pages and backup → Version history**. There you can also choose to save a version when you close a page, and every so many minutes while you write.

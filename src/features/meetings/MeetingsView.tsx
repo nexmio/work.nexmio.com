@@ -95,16 +95,7 @@ function MeetingPage() {
   if (!m) {
     return (
       <section aria-label="Meetings" className="flex h-full min-h-0 flex-col bg-background">
-        <ViewHeader title="Meetings">
-          <Button
-            size="sm"
-            onClick={() => {
-              useUiStore.getState().setMeetingFormOpen(true);
-            }}
-          >
-            <Plus /> New meeting
-          </Button>
-        </ViewHeader>
+        <ViewHeader title="Meetings" />
         {loaded && (
           <div className="py-10 text-center text-sm text-muted-foreground">
             <p className="font-medium text-foreground">No meetings yet.</p>
@@ -112,6 +103,15 @@ function MeetingPage() {
               A meeting is a page with the tag <code>meeting</code>. Press <b>New meeting</b>, or
               give a page the tag from its <b>···</b> menu.
             </p>
+            <Button
+              className="mt-3"
+              size="sm"
+              onClick={() => {
+                useUiStore.getState().setMeetingFormOpen(true);
+              }}
+            >
+              <Plus /> New meeting
+            </Button>
           </div>
         )}
       </section>

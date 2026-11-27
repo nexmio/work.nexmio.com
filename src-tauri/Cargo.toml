@@ -1,6 +1,6 @@
 [package]
 name = "nexmio-work"
-version = "0.32.0"
+version = "1.0.0"
 description = "Markdown notes and tasks with a local AI assistant"
 authors = ["Jesper Ahasverusen Kielsgaard"]
 license-file = "../LICENSE"

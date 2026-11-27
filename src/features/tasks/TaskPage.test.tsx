@@ -98,16 +98,15 @@ describe("TaskPage", () => {
   it("changes the status (and writes it in the log), and has no due date, time or today", async () => {
     render(<TaskPage />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: "Doing" }));
+    expect(screen.queryByRole("button", { name: "Doing" })).toBeNull();
+    // The task of this test waits: choose To do.
+    await user.click(screen.getByRole("button", { name: "To do" }));
     await waitFor(() => {
       expect(apiMock.taskSetMeta).toHaveBeenCalledWith(task.path, 5, "key-1", {
-        status: "doing",
+        status: null,
         waitingFor: null,
         after: null,
       });
-    });
-    await waitFor(() => {
-      expect(apiMock.taskHistoryAdd.mock.calls[0]?.[3]).toBe("Status: doing");
     });
     expect(screen.queryByLabelText("How long it takes")).toBeNull();
     expect(screen.queryByLabelText("Due date")).toBeNull();

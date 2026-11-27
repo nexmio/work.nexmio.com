@@ -121,7 +121,7 @@ describe("The Meetings area", () => {
 
   it("opens the window for a new meeting", async () => {
     render(<MeetingsPanel />);
-    await userEvent.setup().click(await screen.findByRole("button", { name: /New/ }));
+    await userEvent.setup().click(await screen.findByRole("button", { name: "New meeting" }));
     expect(useUiStore.getState().meetingFormOpen).toBe(true);
   });
 

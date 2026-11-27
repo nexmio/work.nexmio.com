@@ -157,6 +157,73 @@ export interface AreaLists {
   done: Task[];
 }
 
+/** The area of the task list that shows every epic in rows (the overview). */
+export const ALL_AREA = "__all__";
+
+/**
+ * The statuses a person chooses between. "Working on" is written `status:doing` in the page, so
+ * older versions and other editors still read it; several tasks can be worked on at once.
+ */
+export const STATUS_CHOICES: readonly { id: string; label: string }[] = [
+  { id: "", label: "To do" },
+  { id: "doing", label: "Working on" },
+  { id: "waiting", label: "Waiting" },
+];
+
+/** The choice that is pressed for a task with this status. */
+export function chosenStatus(status: string | null): string {
+  return status ?? "";
+}
+
+/** The open tasks of an epic in the groups the list shows, each in the order of the page. */
+export interface StatusGroups {
+  working: Task[];
+  next: Task[];
+  waiting: Task[];
+  done: Task[];
+}
+
+export function statusGroups(tasks: readonly Task[]): StatusGroups {
+  const open = tasks.filter(isOpen);
+  return {
+    working: open.filter((t) => t.status === "doing"),
+    next: open.filter((t) => t.status !== "doing" && t.status !== "waiting"),
+    waiting: open.filter((t) => t.status === "waiting"),
+    done: tasks.filter((t) => !isOpen(t)),
+  };
+}
+
+/**
+ * How many days a waiting task has waited: since the last "Status: waiting" (or "Waiting for")
+ * in its history. Null when the history does not say (a status written in another editor).
+ */
+export function waitingDays(task: Task, today: string = todayIso()): number | null {
+  const line = [...task.history]
+    .reverse()
+    .find((h) => /^Status: waiting|^Waiting for/i.test(h.text));
+  if (line === undefined) return null;
+  const ms = Date.parse(`${today}T12:00:00Z`) - Date.parse(`${line.date}T12:00:00Z`);
+  return Number.isNaN(ms) ? null : Math.max(0, Math.round(ms / 86_400_000));
+}
+
+/**
+ * "the supplier · 4 days": what a waiting task waits for, and for how long. Without a reason it
+ * says "waiting 4 days" (or "waiting since today"), so the time is never a word on its own.
+ */
+export function waitingText(task: Task, waitsFor: string | null, today?: string): string {
+  const days = waitingDays(task, today);
+  const time =
+    days === null
+      ? null
+      : days === 0
+        ? "since today"
+        : days === 1
+          ? "1 day"
+          : `${String(days)} days`;
+  if (waitsFor === null || waitsFor === "") return time === null ? "waiting" : `waiting ${time}`;
+  return time === null ? waitsFor : `${waitsFor} · ${time}`;
+}
+
 export function areaLists(tasks: readonly Task[]): AreaLists {
   const open = tasks.filter(isOpen);
   const waiting = open.filter((t) => t.status === "waiting");
@@ -178,17 +245,17 @@ export function nextStep(task: Task): { index: number; text: string } | null {
 }
 
 /**
- * Which area the task list shows: the chosen one if it is still there (`LOOSE_AREA` when there
- * are loose tasks), else the first epic that is not done, else the first epic.
+ * Which area the task list shows: the chosen epic if it is still there (`LOOSE_AREA` when there
+ * are loose tasks), else every epic (`ALL_AREA`).
  */
 export function pickArea(
   groups: readonly EpicGroup[],
   hasLoose: boolean,
   chosen: string | null,
-): string | null {
+): string {
   if (chosen === LOOSE_AREA && hasLoose) return LOOSE_AREA;
   if (chosen !== null && groups.some((g) => g.path === chosen)) return chosen;
-  return (groups.find((g) => !g.allDone) ?? groups[0])?.path ?? (hasLoose ? LOOSE_AREA : null);
+  return ALL_AREA;
 }
 
 /** What a log line starts with when it says where you left off in a task. */

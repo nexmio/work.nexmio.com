@@ -8,10 +8,13 @@ describe("StatusChip", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("shows Doing, Waiting and Dropped as a label", () => {
-    const { rerender } = render(<StatusChip status="doing" />);
-    expect(screen.getByTitle("Status: doing")).toHaveTextContent("doing");
-    rerender(<StatusChip status="waiting" />);
+  it("calls the task you work on Working on", () => {
+    render(<StatusChip status="doing" />);
+    expect(screen.getByTitle("Status: doing")).toHaveTextContent("Working on");
+  });
+
+  it("shows Waiting and Dropped as a label", () => {
+    const { rerender } = render(<StatusChip status="waiting" />);
     expect(screen.getByTitle("Status: waiting")).toBeInTheDocument();
     rerender(<StatusChip status="dropped" />);
     expect(screen.getByTitle("Status: dropped")).not.toHaveClass("line-through");

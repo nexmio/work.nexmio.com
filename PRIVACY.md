@@ -1,6 +1,6 @@
 # Nexmio Work privacy policy
 
-_Last updated: 26 November 2026. Nexmio Work is made by Jesper Ahasverusen Kielsgaard (https://github.com/nexmio/work.nexmio.com)._
+_Last updated: 27 November 2026. Nexmio Work is made by Jesper Ahasverusen Kielsgaard (https://github.com/nexmio/work.nexmio.com)._
 
 Nexmio Work is a pages app that runs on your own computer. This page says what it does with your data.
 
@@ -21,7 +21,7 @@ Only when you choose it:
 
 - **The AI** runs on your own computer by default: the built-in AI, LM Studio or another local server. The AI reads your pages only on your own machine. A cloud AI is possible, but only after you say yes, and never in a project you lock to local. You turn it on yourself in Settings → AI, in a window that says what is sent (the open page and the text you select, the pages the chat searches and reads, your questions and the chat history) and that it is your responsibility; it is used only after you tick "I understand". The status bar shows **Cloud AI** while it is on, and what the cloud company does with the text is governed by its own terms.
 - **The built-in AI download** (when you press Download) fetches one thing, the model, from `huggingface.co`. The AI engine is part of Nexmio Work. Hugging Face and its download servers see your internet address, as for any download.
-- **A backup** (Settings → Vault → Backup) copies your pages and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.
+- **A backup** (Settings → Pages and backup → Backup) copies your pages and their history only to the folder you choose on your own computer or a disk or synced folder you connect; Nexmio Work sends it nowhere itself.
 - **Export and import** write and read files on your computer only.
 - **Links** you click in Nexmio Work (for example **Report a bug…** or **Report inappropriate AI content…**) open in your web browser; Nexmio Work itself sends nothing. A report you send on GitHub is public and is handled under GitHub's terms.
 

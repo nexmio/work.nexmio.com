@@ -48,7 +48,7 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="py-1 text-sm text-muted-foreground">{children}</p>;
 }
 
-/** What is on today: the next meeting, what is Doing and Waiting, and where you left off. */
+/** What is on today: the next meeting, what you work on and what waits, and where you left off. */
 export function TodayWidget() {
   const { coming, now } = useComingMeetings();
   const format = useUiStore((s) => s.timeFormat);
@@ -453,11 +453,11 @@ export function NextMeetingWidget() {
   );
 }
 
-/** Tasks with the status Doing or Waiting. */
+/** The tasks you work on and the ones that wait. */
 export function WorkingOnWidget() {
   const tasks = useTaskStore((s) => s.tasks);
   const shown = tasks.filter((t) => !t.done && (t.status === "doing" || t.status === "waiting"));
-  if (shown.length === 0) return <Empty>No task is Doing or Waiting.</Empty>;
+  if (shown.length === 0) return <Empty>You are not working on a task, and none waits.</Empty>;
   return (
     <ul>
       {shown.slice(0, 8).map((t) => (
@@ -639,7 +639,7 @@ export function EpicsWidget() {
 export function PlansWidget() {
   const plans = usePlanStore((s) => s.plans);
   const going = plans.filter((p) => !p.finished);
-  if (going.length === 0) return <Empty>No plans yet. Make one under Plans.</Empty>;
+  if (going.length === 0) return <Empty>No plans yet. Make one under Projects.</Empty>;
   return (
     <ul>
       {going.slice(0, 8).map((p) => (

@@ -78,14 +78,13 @@ export function PlansPanel() {
       <PanelHeader title={PLANS_LABEL}>
         <Button
           size="sm"
-          variant="ghost"
-          aria-label="New project"
+          variant="outline"
           title="A new project with its plan"
           onClick={() => {
             usePlanStore.getState().setGuidedOpen(true);
           }}
         >
-          <Plus /> New
+          <Plus /> New project
         </Button>
       </PanelHeader>
       <ContextMenu>
@@ -96,7 +95,7 @@ export function PlansPanel() {
             )}
             {loaded && ongoing.length === 0 && projects.length === 0 && (
               <p className="px-2 text-xs text-muted-foreground">
-                None yet. Press <b>New</b> to start a project and break it down.
+                None yet. Press <b>New project</b> to start one and break it down.
               </p>
             )}
             <ul aria-label="Projects">
@@ -146,16 +145,6 @@ export function PlansPanel() {
                 <ul>{finished.map((p) => row(p, inProject(p)?.name ?? p.title))}</ul>
               </>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="mt-2 w-full justify-start text-primary"
-              onClick={() => {
-                usePlanStore.getState().setGuidedOpen(true);
-              }}
-            >
-              <Plus /> New project
-            </Button>
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>

@@ -1,3 +1,11 @@
+1. Type `[[` in a page.
+2. Choose a page in the list.
+3. **Ctrl/Cmd+click** the link to open it.
+
+![The list of pages while you type a link](img/link.png)
+
+<!-- more -->
+
 ## Link to another page
 
 Click **Link to a page** in the toolbar, or press **Ctrl/Cmd+Shift+K**. A search opens over **all pages in the vault**, also in other folders and projects. Pick one and Nexmio Work writes the link for you.

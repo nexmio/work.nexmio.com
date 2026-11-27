@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { LinkResolver } from "@/lib/links";
 import { makeTask } from "@/test/taskFixtures";
 import { NodeChips } from "./NodeChips";
@@ -43,6 +44,37 @@ describe("where a linked thing is, on a part's chips", () => {
       resolver: new LinkResolver(["Tasks/Move.md", "Tasks/Other.md", "Move/Epics/Sub.md"]),
     });
     expect(icon(/Open the task/)).toBe(expected);
+  });
+
+  it("removes a link by its cross, and has none for a task that is there by name", async () => {
+    const onRemove = vi.fn();
+    const info = infoFor(
+      { text: "Pack [[Work/Offer]] [[Work/Offer.md]]", children: [] },
+      { ...ctx, planEpic: "Tasks/Move.md" },
+    );
+    render(<NodeChips info={info} onRemove={onRemove} />);
+    expect(screen.queryByRole("button", { name: /Remove the link to the task/ })).toBeNull();
+    expect(screen.getByTitle(/same name as the part/)).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove the link to the page Offer" }),
+    );
+    expect(onRemove).toHaveBeenCalledWith(["Work/Offer", "Work/Offer.md"], "the page “Offer”");
+  });
+
+  it("has a cross for a linked task", async () => {
+    const onRemove = vi.fn();
+    const info = infoFor(
+      { text: "Phone [[Tasks/Other#Call]]", children: [] },
+      { ...ctx, resolver: new LinkResolver(["Tasks/Other.md"]) },
+    );
+    render(<NodeChips info={info} onRemove={onRemove} />);
+    await userEvent.click(screen.getByRole("button", { name: "Remove the link to the task Call" }));
+    expect(onRemove).toHaveBeenCalledWith(["Tasks/Other#Call"], "the task “Call”");
+  });
+
+  it("shows no crosses on the map", () => {
+    show("Servers [[Work/Offer]]");
+    expect(screen.queryByRole("button", { name: /Remove the link/ })).toBeNull();
   });
 
   it("shows no mark for a plan in no project", () => {

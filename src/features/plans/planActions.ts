@@ -41,6 +41,36 @@ export async function linkNoteTo(path: NodePath, notePath: string): Promise<void
   });
 }
 
+/**
+ * Takes links out of a part's line. Only the links go: the page or task they point at stays, and
+ * the message offers to put them back.
+ */
+export async function unlinkFrom(
+  path: NodePath,
+  links: readonly string[],
+  what: string,
+): Promise<void> {
+  const plan = usePlanStore.getState().path;
+  const words = plainAt(path);
+  const change = (next: (now: string[]) => string[]) =>
+    usePlanStore.getState().edit((nodes) => {
+      const n = nodeAt(nodes, path);
+      // The part is found again by its words: nothing else is changed if it has moved.
+      if (!n || splitText(n.text).plain !== words) return nodes;
+      const { plain, links: now } = splitText(n.text);
+      return setText(nodes, path, joinText(plain, next(now)));
+    });
+  const removed = await change((now) => now.filter((l) => !links.includes(l)));
+  if (!removed) return;
+  useUiStore.getState().toast(`Removed the link to ${what}.`, "success", {
+    label: "Undo",
+    run: () => {
+      if (usePlanStore.getState().path !== plan) return;
+      void change((now) => [...now, ...links.filter((l) => !now.includes(l))]);
+    },
+  });
+}
+
 /** The tag of the open plan (its project's tag), or null when no plan is open. */
 export function openPlanTag(): string | null {
   const { path, title } = usePlanStore.getState();

@@ -21,11 +21,12 @@ import { MoveButtons, moveKey } from "@/components/MoveButtons";
 import { InlineEdit, RowActions } from "@/components/RowActions";
 import { TaskNoteChip } from "@/features/tasks/TaskNote";
 import { cn } from "@/lib/utils";
-import { afterTarget, isOpen, noteName, shortDate, waitersOf } from "@/lib/taskLogic";
+import { afterTarget, isOpen, noteName, shortDate, waitersOf, waitingText } from "@/lib/taskLogic";
 import { formatDuration, taskMinutes } from "@/lib/timeLog";
 import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { PlainButton } from "@/components/ui/plain-button";
+import { StatusDot } from "./StatusDot";
 import { InlineInput } from "@/components/ui/inline-input";
 
 /** A checkbox for a task or a step. */
@@ -48,8 +49,8 @@ function Tick({ done, label, onToggle }: { done: boolean; label: string; onToggl
 }
 
 /**
- * The status of a task as a small label at the right end of its row: Doing, Waiting or Dropped.
- * A task without a status shows nothing. The status is set on the task page, and Focus sets Doing.
+ * The status of a task as a small label at the right end of its row: Working on, Waiting or
+ * Dropped. A task to do shows nothing.
  */
 export function StatusChip({ status }: { status: string | null }) {
   if (status === null || status === "") return null;
@@ -62,9 +63,13 @@ export function StatusChip({ status }: { status: string | null }) {
   return (
     <span
       title={`Status: ${status}`}
-      className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize", tone)}
+      className={cn(
+        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold first-letter:uppercase",
+        tone,
+        "inline-block",
+      )}
     >
-      {status}
+      {status === "doing" ? "Working on" : status}
     </span>
   );
 }
@@ -85,6 +90,8 @@ export function TaskRow({
   canMove,
   calm = false,
   narrow = false,
+  dot = false,
+  onOpen,
 }: {
   task: Task;
   /** Show the name of the note under the title. */
@@ -101,6 +108,10 @@ export function TaskRow({
    * (steps, made) stand under it instead of beside it.
    */
   narrow?: boolean;
+  /** A status dot (To do, Working on, Waiting, Done) in place of the tick box. */
+  dot?: boolean;
+  /** What pressing the title does, in place of the default (the quick look in Tasks). */
+  onOpen?: (task: Task) => void;
 }) {
   const { setDone, open, addStep } = useTaskStore.getState();
   const id = `${task.path}:${String(task.line)}`;
@@ -170,13 +181,17 @@ export function TaskRow({
             ) : narrow ? null : (
               <span className="w-5 shrink-0" aria-hidden />
             )}
-            <Tick
-              done={task.done}
-              label={task.title}
-              onToggle={() => {
-                void setDone(task.path, task.line, task.key, !task.done);
-              }}
-            />
+            {dot ? (
+              <StatusDot task={task} />
+            ) : (
+              <Tick
+                done={task.done}
+                label={task.title}
+                onToggle={() => {
+                  void setDone(task.path, task.line, task.key, !task.done);
+                }}
+              />
+            )}
             {editing === "title" ? (
               <InlineEdit
                 value={task.title}
@@ -202,7 +217,8 @@ export function TaskRow({
                       dim && "font-normal text-muted-foreground",
                     )}
                     onClick={() => {
-                      if (calm) {
+                      if (onOpen) onOpen(task);
+                      else if (calm) {
                         useTaskStore
                           .getState()
                           .select({ path: task.path, line: task.line, title: task.title });
@@ -227,7 +243,7 @@ export function TaskRow({
               <>
                 <CirclePause className="size-4 shrink-0 text-warning" aria-hidden />
                 <span className="min-w-0 max-w-[16rem] truncate text-sm text-muted-foreground">
-                  {waitText !== null ? `waiting for ${waitText}` : "waiting"}
+                  {waitingText(task, waitText)}
                 </span>
               </>
             )}
