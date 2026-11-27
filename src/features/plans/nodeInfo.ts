@@ -2,6 +2,7 @@ import type { Task } from "@/bindings/Task";
 import type { LinkResolver } from "@/lib/links";
 import { splitText, type PlanNode } from "@/lib/planTree";
 import type { EpicGroup } from "@/lib/taskLogic";
+import { isInside } from "@/lib/utils";
 
 /** What the rest of Nexmio Work says about an idea: the epic and notes it points at, and its task. */
 export interface NodeInfo {
@@ -12,6 +13,11 @@ export interface NodeInfo {
   notes: string[];
   /** The task of the plan's own epic that has the idea's words as its title. */
   task: Task | null;
+  /**
+   * The paths of what the idea is tied to that are outside the plan's project (a page, or the epic
+   * note a task is in). Null for a plan in no project, where there is no inside or outside.
+   */
+  outside: ReadonlySet<string> | null;
 }
 
 /** What `infoFor` needs to know about the rest of the vault. */
@@ -21,6 +27,8 @@ export interface InfoContext {
   /** The epic made for the plan (`epicFor`), when there is one. */
   planEpic: string | null;
   tasks: readonly Task[];
+  /** The folder of the plan's project, or null for a plan in no project. */
+  projectFolder: string | null;
 }
 
 /** The target of a link to the note at `path`: the path without `.md`. */
@@ -60,7 +68,15 @@ export function infoFor(node: PlanNode, ctx: InfoContext): NodeInfo {
     (ctx.planEpic === null
       ? null
       : (ctx.tasks.find((t) => t.path === ctx.planEpic && t.title === plain) ?? null));
-  return { plain, epic, notes, task };
+  const folder = ctx.projectFolder;
+  let outside: Set<string> | null = null;
+  if (folder !== null) {
+    // The folder decides, not the tag. The plan's own epic belongs to it wherever it is.
+    const away = (path: string): boolean => path !== ctx.planEpic && !isInside(path, folder);
+    const tied = [...notes, epic?.path, task?.path].filter((p) => p !== undefined);
+    outside = new Set(tied.filter(away));
+  }
+  return { plain, epic, notes, task, outside };
 }
 
 /**
