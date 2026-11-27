@@ -4,13 +4,14 @@ The Store texts are uploaded by hand, so a change in this repository reaches the
 
 The new texts are in the artifact `release-texts` of the release run, and in [STORE-LISTING.md](STORE-LISTING.md).
 
-| What to update in Partner Center                                                      | Where the text is                                     | Preview | Stable |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------- | ------ |
-| Description (requirements first, built-in AI, search by meaning, AI disclosure)       | STORE-LISTING.md, "Description"                       | [ ]     | [ ]    |
-| Search terms                                                                          | STORE-LISTING.md, "Search terms"                      | [ ]     | [ ]    |
-| System requirements / recommended hardware (remove the NPU and Windows 11 24H2 lines) | store/store-fields.json, `recommendedHardware`        | [ ]     | [ ]    |
-| Notes for certification                                                               | STORE-LISTING.md                                      | [ ]     | [ ]    |
-| runFullTrust reason                                                                   | STORE-LISTING.md                                      | [ ]     | [ ]    |
-| Check the age rating answers (a cloud AI is possible too)                             | STORE-LISTING.md, "Properties and age rating"         | [ ]     | [ ]    |
-| Check that live generative AI is marked                                               | STORE-LISTING.md, "Required for apps with AI content" | [ ]     | [ ]    |
-| Check the privacy policy URL (the page itself updates when `site/` is on `main`)      | `https://work.nexmio.com/privacy.html`                | [ ]     | [ ]    |
+| What to update in Partner Center                                                      | Where the text is                                       | Preview | Stable |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------- | ------ |
+| Description (requirements first, built-in AI, search by meaning, AI disclosure)       | STORE-LISTING.md, "Description"                         | [ ]     | [ ]    |
+| Search terms                                                                          | STORE-LISTING.md, "Search terms"                        | [ ]     | [ ]    |
+| System requirements / recommended hardware (remove the NPU and Windows 11 24H2 lines) | store/store-fields.json, `recommendedHardware`          | [ ]     | [ ]    |
+| Notes for certification                                                               | STORE-LISTING.md                                        | [ ]     | [ ]    |
+| runFullTrust reason                                                                   | STORE-LISTING.md                                        | [ ]     | [ ]    |
+| Check the age rating answers (a cloud AI is possible too)                             | STORE-LISTING.md, "Properties and age rating"           | [ ]     | [ ]    |
+| Check that live generative AI is marked                                               | STORE-LISTING.md, "Required for apps with AI content"   | [ ]     | [ ]    |
+| Check the privacy policy URL (the page itself updates when `site/` is on `main`)      | `https://work.nexmio.com/privacy.html`                  | [ ]     | [ ]    |
+| Screenshots, new in 0.32 (tables look different, project boxes are wider)             | `docs/screenshots/`, order in STORE-LISTING.md, "Files" | [ ]     | [ ]    |

@@ -54,6 +54,8 @@ An area's own `CLAUDE.md` holds its working rules; they are not repeated here.
 - In a table, backslashes right before a `|` in a cell are written doubled, others as typed; an even number (older files) is still read as before.
 - Live preview is a CodeMirror `StateField`; markers on the cursor line show only when the editor has focus. Images replace their Markdown in place; checkboxes are widgets on every line.
 - Tables are widgets outside the cursor with a toolbar above; Tab on a raw table does not format it.
+- A new line in a cell is written as `<br>` (a table row is one line); lines starting with `-` or `*` are shown as a list, and exports turn `<br>` into a new line. A cell shows formatted text, and its source only while it is edited; cells are built as nodes, never as HTML.
+- Column widths are not in the page: `.vault/meta.json` keeps them by page path and header words (`tables`), they follow a rename, and a version of Nexmio Work from before 0.32 drops them when it writes the file.
 - A block widget (properties, table, diagram) has no vertical margin; its space is padding on the outer element, because CodeMirror does not measure margins and the lines below would be hit wrong (`editorTheme.test.ts`).
 - Tab/Shift+Tab move any line (list items by their marker, others by two spaces); Enter on an empty nested item goes out one level.
 - Nexmio Work's own tags (`meeting`, `epic`, `pinned`, `plan`) do nothing as `#tag` in the text: the `#` suggestions leave them out, and one written there gets a button in the tags line that puts the real tag in the properties (the text is not changed).
@@ -128,6 +130,7 @@ See `src/features/capture/CLAUDE.md`. Beyond it:
 - Repeat puts the names under the repeated part, each with the steps and a task.
 - An archived plan can be deleted: the plan page always, the rest only when ticked.
 - Moving to the folder structure (`migrate.ts`, `FOLDERS_VERSION`) is asked for, never automatic: pages linked from parts, inside the project, not epics, meetings or plans; ticked from the start only in the project's own folder, `Notes` or `Pages`. `vault::ops::move_pages` checks every move first and makes one version; an emptied `Notes` or `Pages` folder is removed.
+- A chip on a part shows a house (in the project's folder, or the plan's own epic) or an arrow pointing out (outside); the folder decides, not the tag, and the word stays on the chip. The symbols are explained in the help (Projects), not on the screen.
 - The Overview of a project is read, never stored (`overview.ts`); its pages are those in the folder or with the project's tag.
 - A new page of a part is `<part>_page.md`, offered in the project's `Pages` with a folder per part above it (`partFolder`), and the folder can be changed. The `_page` keeps it apart from the folder of the parts under it. Pages that exist, also in an older `Notes` folder, are not moved.
 
