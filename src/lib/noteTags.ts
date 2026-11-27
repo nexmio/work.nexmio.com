@@ -34,13 +34,13 @@ export const NOTE_TAGS: readonly NoteTag[] = [
   {
     tag: "plan",
     label: "Plan",
-    does: "Its list is the ideas of a plan, shown as an outline or a map under Plans.",
+    does: "Its list is the ideas of a plan, shown as an outline or a map under Projects.",
     makeIt: "Make this page a plan",
   },
   {
     tag: "plan-finished",
     label: "Plan finished",
-    does: "The plan is listed under Finished in Plans.",
+    does: "The plan is listed under Archived in Projects.",
     makeIt: "Mark the plan as archived",
   },
 ];

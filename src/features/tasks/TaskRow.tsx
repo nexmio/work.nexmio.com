@@ -63,7 +63,11 @@ export function StatusChip({ status }: { status: string | null }) {
   return (
     <span
       title={`Status: ${status}`}
-      className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize", tone)}
+      className={cn(
+        "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold first-letter:uppercase",
+        tone,
+        "inline-block",
+      )}
     >
       {status === "doing" ? "Working on" : status}
     </span>

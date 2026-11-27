@@ -639,7 +639,7 @@ export function EpicsWidget() {
 export function PlansWidget() {
   const plans = usePlanStore((s) => s.plans);
   const going = plans.filter((p) => !p.finished);
-  if (going.length === 0) return <Empty>No plans yet. Make one under Plans.</Empty>;
+  if (going.length === 0) return <Empty>No plans yet. Make one under Projects.</Empty>;
   return (
     <ul>
       {going.slice(0, 8).map((p) => (
