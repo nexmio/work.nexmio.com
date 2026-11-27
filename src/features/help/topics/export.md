@@ -1,3 +1,9 @@
+1. Right-click a page or a folder.
+2. Choose **Export…**.
+3. Choose HTML, Word or PDF.
+
+<!-- more -->
+
 ## Share a page
 
 Choose **File → Export…** (or right-click a page or folder and choose **Export…**).

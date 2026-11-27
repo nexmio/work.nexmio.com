@@ -18,6 +18,12 @@ export interface NodeInfo {
    * note a task is in). Null for a plan in no project, where there is no inside or outside.
    */
   outside: ReadonlySet<string> | null;
+  /**
+   * The links written in the idea's line that put each chip there, so a chip can be removed:
+   * by the path of a page or an epic, and for the task. A task that shows only because it has the
+   * idea's words has no link.
+   */
+  written: { paths: ReadonlyMap<string, readonly string[]>; task: readonly string[] };
 }
 
 /** What `infoFor` needs to know about the rest of the vault. */
@@ -46,6 +52,8 @@ export function infoFor(node: PlanNode, ctx: InfoContext): NodeInfo {
   let epic: NodeInfo["epic"] = null;
   let linked: Task | null = null;
   const notes: string[] = [];
+  const paths = new Map<string, string[]>();
+  const taskLinks: string[] = [];
   for (const target of links) {
     const hash = target.indexOf("#");
     if (hash > 0) {
@@ -53,11 +61,21 @@ export function infoFor(node: PlanNode, ctx: InfoContext): NodeInfo {
       const path = ctx.resolver.resolve(target.slice(0, hash));
       const title = target.slice(hash + 1);
       const hit = ctx.tasks.find((t) => t.path === path && t.title === title);
-      if (hit) linked ??= hit;
+      if (hit) {
+        linked ??= hit;
+        if (hit === linked) taskLinks.push(target);
+      }
       continue;
     }
     const path = ctx.resolver.resolve(target);
     if (path === null) continue;
+    const same = paths.get(path);
+    if (same) {
+      // The same page linked twice is one chip, and removing it takes both links out.
+      same.push(target);
+      continue;
+    }
+    paths.set(path, [target]);
     const group = ctx.groups.find((g) => g.path === path);
     if (group && epic === null) {
       epic = { path, title: group.title, done: group.done, total: group.total };
@@ -76,7 +94,7 @@ export function infoFor(node: PlanNode, ctx: InfoContext): NodeInfo {
     const tied = [...notes, epic?.path, task?.path].filter((p) => p !== undefined);
     outside = new Set(tied.filter(away));
   }
-  return { plain, epic, notes, task, outside };
+  return { plain, epic, notes, task, outside, written: { paths, task: taskLinks } };
 }
 
 /**

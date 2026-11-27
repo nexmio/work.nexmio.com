@@ -4,7 +4,7 @@ On Mac, use **Cmd** instead of **Ctrl**.
 
 | Shortcut                   | What it does                                       |
 | -------------------------- | -------------------------------------------------- |
-| **Ctrl+1 … 6**             | Start, Pages, Tasks, Plans, Meetings, Ideas        |
+| **Ctrl+1 … 6**             | Start, Pages, Tasks, Projects, Meetings, Ideas     |
 | **Ctrl+N**                 | new page                                           |
 | **Ctrl+S**                 | save and commit the open page                      |
 | **Ctrl+P**                 | quick open                                         |
@@ -16,7 +16,7 @@ On Mac, use **Cmd** instead of **Ctrl**.
 | **Ctrl+Shift+P**           | command palette: pages, AI, actions                |
 | **Ctrl+Shift+D**           | today's daily page                                 |
 | **Ctrl+Shift+T**           | the task list                                      |
-| **Ctrl+Shift+N**           | write down: T task, I idea, N page                 |
+| **Ctrl+Shift+N**           | write down: T task, I idea                         |
 | **Ctrl+Alt+N / P**         | any program, Windows helper: write down / left off |
 | **Ctrl+Shift+H**           | history of the open page                           |
 | **Ctrl+W**                 | close the tab                                      |

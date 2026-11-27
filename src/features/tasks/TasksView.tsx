@@ -1,4 +1,4 @@
-import { MoreHorizontal, Play, Plus } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PromptDialog } from "@/components/PromptDialog";
@@ -18,7 +18,9 @@ import { InlineInput } from "@/components/ui/inline-input";
 import { PlainButton } from "@/components/ui/plain-button";
 import { openFile } from "@/lib/actions";
 import {
-  areaLists,
+  ALL_AREA,
+  groupHasTag,
+  statusGroups,
   tasksWithTag,
   epicGroups,
   LOOSE_AREA,
@@ -32,9 +34,11 @@ import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { EpicProgress } from "./EpicProgress";
-import { useTimerStore } from "@/stores/timerStore";
+import type { Task } from "@/bindings/Task";
 import { EpicTags } from "./TaskTags";
-import { NowCard } from "./NowCard";
+import { NewEpicDialog } from "./NewEpicDialog";
+import { EpicLanes, lanesOf, lanesOrder } from "./EpicLanes";
+import { QuickLook } from "./QuickLook";
 import { PlanOfEpic } from "./PlanOfEpic";
 import { TaskRow } from "./TaskRow";
 
@@ -89,9 +93,10 @@ function Fold({ label, children }: { label: string; children: React.ReactNode })
 }
 
 /**
- * The task list, one area at a time: the chosen epic with the task to do Now, the ones After
- * that, the ones that wait for others, and the done ones folded away. Everything else about
- * an area (new, rename, delete, order, the note, the AI finder) is in its "⋯" menu.
+ * The task list. It opens on every epic in rows (`EpicLanes`); an epic shows its tasks as quiet
+ * lines with a status dot, in the groups Working on, Next and Waiting, with the done ones folded
+ * away. A task opens in the quick look over the list (`QuickLook`). Everything else about an
+ * epic (new, rename, delete, order, its page) is in its "More" menu.
  */
 export function TasksView() {
   const tasks = useTaskStore((s) => s.tasks);
@@ -121,7 +126,23 @@ export function TasksView() {
   const current = pickArea(groups, loose.length > 0, chosen);
   const group = groups.find((g) => g.path === current) ?? null;
   const isLoose = current === LOOSE_AREA;
-  const nowTask = group === null ? null : areaLists(tasksWithTag(group, epics, tagFilter)).now;
+  const isAll = current === ALL_AREA;
+  const shown = group === null ? null : statusGroups(tasksWithTag(group, epics, tagFilter));
+  /** What "break down" in the AI menu is about: the first task you work on, else the next. */
+  const aiTask = shown === null ? null : (shown.working[0] ?? shown.next[0] ?? null);
+  const lanes = lanesOf(
+    groups.filter((g) => groupHasTag(g, epics, tagFilter)),
+    loose.length === 0 ? null : { area: LOOSE_AREA, tasks: loose.flatMap((g) => g.tasks) },
+    (g) => tasksWithTag(g, epics, tagFilter),
+  );
+  /** The tasks in the order the list shows them, for ↑ and ↓ in the quick look. */
+  const order: Task[] = isAll
+    ? lanesOrder(lanes)
+    : shown !== null
+      ? [...shown.working, ...shown.next, ...shown.waiting]
+      : isLoose
+        ? loose.flatMap((g) => g.tasks.filter((t) => !t.done))
+        : [];
   const movable = groups.filter((g) => !g.allDone && g.path !== INBOX_PATH).map((g) => g.path);
   const at = group === null ? -1 : movable.indexOf(group.path);
 
@@ -219,56 +240,55 @@ export function TasksView() {
     </DropdownMenu>
   );
 
+  const row = (t: Task, canMove?: { up: boolean; down: boolean }) => (
+    <TaskRow
+      key={`${t.path}:${String(t.line)}`}
+      task={t}
+      calm
+      dot
+      showNote={false}
+      canMove={canMove}
+      onOpen={(task) => {
+        useTaskStore.getState().look({ path: task.path, line: task.line, title: task.title });
+      }}
+    />
+  );
+
+  const part = (label: string, list: readonly Task[], movable = false) =>
+    list.length > 0 && (
+      <section aria-label={label} className="flex flex-col gap-1">
+        <h3 className="section-label px-1">{label}</h3>
+        <ul className="rounded-xl border bg-card p-1">
+          {list.map((t, i, a) =>
+            row(t, movable ? { up: i > 0, down: i < a.length - 1 } : undefined),
+          )}
+        </ul>
+      </section>
+    );
+
   const body = (g: EpicGroup) => {
-    const lists = areaLists(tasksWithTag(g, epics, tagFilter));
+    const lists = statusGroups(tasksWithTag(g, epics, tagFilter));
+    const open = lists.working.length + lists.next.length + lists.waiting.length;
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
         <PlanOfEpic from={g.source === null ? null : resolver.resolve(g.source)} />
-        {lists.now !== null && <NowCard task={lists.now} others={lists.after} />}
-        {lists.now === null && g.tasks.length > 0 && lists.waiting.length === 0 && (
+        {open === 0 && g.tasks.length > 0 && (
           <p className="rounded-xl border bg-card p-4 text-base">
             Everything in this epic is done.
           </p>
         )}
-        {lists.after.length > 0 && (
-          <section aria-label="After that" className="flex flex-col gap-1">
-            <h3 className="section-label px-1">After that</h3>
-            <ul className="rounded-xl border bg-card p-1">
-              {lists.after.map((t, i, a) => (
-                <TaskRow
-                  key={`${t.path}:${String(t.line)}`}
-                  task={t}
-                  calm
-                  showNote={false}
-                  canMove={{ up: i > 0, down: i < a.length - 1 }}
-                />
-              ))}
-            </ul>
-          </section>
-        )}
-        {lists.waiting.length > 0 && (
-          <section aria-label="Waiting for others" className="flex flex-col gap-1">
-            <h3 className="section-label px-1">Waiting for others</h3>
-            <ul className="rounded-xl border bg-card p-1">
-              {lists.waiting.map((t) => (
-                <TaskRow key={`${t.path}:${String(t.line)}`} task={t} calm showNote={false} />
-              ))}
-            </ul>
-          </section>
-        )}
-        {lists.done.length > 0 && (
-          <Fold label={`Done · ${String(lists.done.length)}`}>
-            <ul className="rounded-xl border bg-card p-1">
-              {lists.done.map((t) => (
-                <TaskRow key={`${t.path}:${String(t.line)}`} task={t} calm showNote={false} />
-              ))}
-            </ul>
-          </Fold>
-        )}
+        {part("Working on", lists.working)}
+        {part("Next", lists.next, true)}
         {g.tasks.length === 0 && (
           <p className="text-sm text-muted-foreground">No tasks yet. Write the first one below.</p>
         )}
         <AddTask group={g} />
+        {part("Waiting", lists.waiting)}
+        {lists.done.length > 0 && (
+          <Fold label={`Done · ${String(lists.done.length)}`}>
+            <ul className="rounded-xl border bg-card p-1">{lists.done.map((t) => row(t))}</ul>
+          </Fold>
+        )}
       </div>
     );
   };
@@ -276,21 +296,10 @@ export function TasksView() {
   return (
     <section aria-label="Tasks" className="flex h-full min-h-0 flex-col bg-background">
       <ViewHeader
-        title={group?.title ?? (isLoose ? "Loose tasks" : "Tasks")}
+        title={group?.title ?? (isLoose ? "Loose tasks" : "All epics")}
         afterTitle={group?.adopted ? <EpicTags path={group.path} inline /> : undefined}
       >
         {group !== null && <EpicProgress group={group} />}
-        {nowTask !== null && (
-          <Button
-            size="sm"
-            aria-label={`Start the timer on ${nowTask.title}`}
-            onClick={() => {
-              void useTimerStore.getState().start(nowTask);
-            }}
-          >
-            <Play /> Start timer
-          </Button>
-        )}
         {group !== null && (
           <AreaAiMenu
             label="AI for this epic"
@@ -299,11 +308,11 @@ export function TasksView() {
                 label: "Do",
                 entries: [
                   {
-                    label: "Break down the Now task",
-                    hint: nowTask === null ? "" : `Steps for “${nowTask.title}”`,
-                    off: nowTask === null ? "There is no task to do now" : undefined,
+                    label: "Break down a task",
+                    hint: aiTask === null ? "" : `Steps for “${aiTask.title}”`,
+                    off: aiTask === null ? "There is no task to do" : undefined,
                     run: () => {
-                      if (nowTask !== null) breakDownTask(nowTask);
+                      if (aiTask !== null) breakDownTask(aiTask);
                     },
                   },
                   {
@@ -333,16 +342,31 @@ export function TasksView() {
             ]}
           />
         )}
-        {menu}
+        {!isAll && menu}
       </ViewHeader>
       <div className="min-h-0 flex-1 overflow-auto px-5 py-5">
         {!loaded && <p className="py-6 text-sm text-muted-foreground">Reading your pages…</p>}
-        {loaded && group === null && !isLoose && (
+        {loaded && isAll && groups.length > 0 && (
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
+            <EpicLanes
+              lanes={lanes}
+              tasks={tasks}
+              onChoose={(area) => {
+                useTaskStore.getState().chooseArea(area);
+              }}
+            />
+            <p className="px-1 text-sm text-muted-foreground">
+              Press a task to look at it, or its dot to change what it is. Press an epic's name to
+              see all of it.
+            </p>
+          </div>
+        )}
+        {loaded && isAll && groups.length === 0 && (
           <div className="py-10 text-center text-sm text-muted-foreground">
             <p className="font-medium text-foreground">No epics yet.</p>
             <p>
-              An epic is a page with tasks. Press <b>New epic</b> in the menu. Tasks you write in
-              other pages are kept under <b>Loose tasks</b> until you make that page an epic.
+              An epic is a page with tasks. Press <b>New epic</b>. Tasks you write in other pages
+              are kept under <b>Loose tasks</b> until you make that page an epic.
             </p>
             <Button
               className="mt-3"
@@ -377,16 +401,13 @@ export function TasksView() {
                     Make an epic
                   </Button>
                 </div>
-                <ul className="rounded-xl border bg-card p-1">
-                  {g.tasks.map((t) => (
-                    <TaskRow key={`${t.path}:${String(t.line)}`} task={t} calm showNote={false} />
-                  ))}
-                </ul>
+                <ul className="rounded-xl border bg-card p-1">{g.tasks.map((t) => row(t))}</ul>
               </section>
             ))}
           </div>
         )}
       </div>
+      <QuickLook order={order} />
       <ConfirmDialog
         open={deleting !== null}
         title={`Delete the epic “${deleting?.title ?? ""}”?`}
@@ -406,24 +427,10 @@ export function TasksView() {
             .then(() => useTaskStore.getState().load());
         }}
       />
-      <PromptDialog
+      <NewEpicDialog
         open={naming}
-        title="New epic"
-        label="Name"
-        confirmLabel="Make it"
-        initialValue=""
-        validate={(v) => (v.trim() === "" ? "Enter a name" : null)}
-        onCancel={() => {
+        onClose={() => {
           setNaming(false);
-        }}
-        onSubmit={(name) => {
-          setNaming(false);
-          void useTaskStore
-            .getState()
-            .createEpic(name, false)
-            .then((path) => {
-              if (path !== null) useTaskStore.getState().chooseArea(path);
-            });
         }}
       />
       <PromptDialog

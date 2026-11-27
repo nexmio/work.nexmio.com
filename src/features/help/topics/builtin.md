@@ -1,6 +1,14 @@
+1. Open **Settings → AI**.
+2. Choose a model and press **Download**.
+3. Use any AI button. The model loads by itself.
+
+![The AI settings](img/settings-ai.png)
+
+<!-- more -->
+
 ## The built-in AI
 
-Nexmio Work can run its own AI **on this computer**, so you do not need LM Studio. Your pages never leave the computer. The built-in AI is what Nexmio Work uses from the start. You can choose LM Studio instead under **Settings → AI → Nexmio Work's provider**.
+Nexmio Work can run its own AI **on this computer**, so you do not need LM Studio. Your pages never leave the computer. The built-in AI is what Nexmio Work uses from the start. You can choose LM Studio instead under **Settings → AI**.
 
 ## Set it up
 

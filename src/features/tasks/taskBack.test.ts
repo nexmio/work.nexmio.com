@@ -42,8 +42,8 @@ describe("a task page remembers where it was opened from", () => {
     expect(taskBackLabel(null, "x")).toBe("Tasks");
   });
 
-  it("the Task tab of the panel is only there for the list and an epic, not for the full page", () => {
-    expect(rightTabsFor("tasks")[0]).toBe("task");
+  it("the Task tab of the panel is only there for an epic page, not the list or the full page", () => {
+    expect(rightTabsFor("tasks")).not.toContain("task");
     expect(rightTabsFor("epic")[0]).toBe("task");
     expect(rightTabsFor("task")).not.toContain("task");
   });

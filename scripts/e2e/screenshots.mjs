@@ -132,7 +132,10 @@ try {
     await shot("tags");
     await page.keyboard.press("Escape");
     await rail(page, "Tasks");
-    // One epic at a time: choose the VPN rollout.
+    // Tasks opens on every epic in rows.
+    await page.getByRole("table", { name: "All epics" }).waitFor();
+    await shot("tasks-all");
+    // Then one epic: the VPN rollout.
     await page
       .getByRole("button", { name: /^VPN rollout/ })
       .first()
@@ -147,9 +150,16 @@ try {
     await page.getByRole("tab", { name: "Timer" }).waitFor();
     await shot("timer");
     await page.getByRole("button", { name: "Stop", exact: true }).click();
-    await rail(page, "Tasks");
-    await page.getByText("Send the offer to Acme").first().click();
+    // Still in Tasks (the rail would fold the panel): choose the epic at the left.
+    await page
+      .getByRole("button", { name: /^VPN rollout/ })
+      .first()
+      .click();
+    await page.getByRole("button", { name: "Send the offer to Acme", exact: true }).first().click();
+    // A task in the list opens in the quick look over it.
+    await page.getByRole("dialog").waitFor();
     await shot("task-page");
+    await page.keyboard.press("Escape");
     await rail(page, "Meetings");
     await page.getByRole("button", { name: /Start meeting/ }).click();
     await shot("meeting");

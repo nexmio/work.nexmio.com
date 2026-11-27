@@ -82,7 +82,7 @@ try {
 
   await check("time list is not see-through", async (page) => {
     await rail(page, "Meetings");
-    await page.getByRole("button", { name: /^New$/ }).first().click();
+    await page.getByRole("button", { name: "New meeting", exact: true }).first().click();
     await page.getByLabel("Time", { exact: true }).click();
     const alpha = await page.getByRole("listbox").evaluate((el) => {
       const c = getComputedStyle(el).backgroundColor;
@@ -95,7 +95,7 @@ try {
 
   await check("new meeting stays open", async (page) => {
     await rail(page, "Meetings");
-    await page.getByRole("button", { name: /^New$/ }).first().click();
+    await page.getByRole("button", { name: "New meeting", exact: true }).first().click();
     for (const name of ["Agenda", "Decisions", "Actions", "Agenda", "Decisions", "Actions"]) {
       await page.getByRole("checkbox", { name }).click();
       await page.waitForTimeout(250);

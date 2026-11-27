@@ -14,4 +14,7 @@ The new texts are in the artifact `release-texts` of the release run, and in [ST
 | Check the age rating answers (a cloud AI is possible too)                             | STORE-LISTING.md, "Properties and age rating"           | [ ]     | [ ]    |
 | Check that live generative AI is marked                                               | STORE-LISTING.md, "Required for apps with AI content"   | [ ]     | [ ]    |
 | Check the privacy policy URL (the page itself updates when `site/` is on `main`)      | `https://work.nexmio.com/privacy.html`                  | [ ]     | [ ]    |
-| Screenshots, new in 0.32 (tables look different, project boxes are wider)             | `docs/screenshots/`, order in STORE-LISTING.md, "Files" | [ ]     | [ ]    |
+| Screenshots, all new in 1.0.0 (ten, in the order in STORE-LISTING.md)                 | `docs/screenshots/`, order in STORE-LISTING.md, "Files" | [ ]     | [ ]    |
+| Product features (the Focus view is gone)                                             | store/store-fields.json, `features`                     | [ ]     | [ ]    |
+| Description again, 1.0.0 (new tasks, only the AI is beta)                             | STORE-LISTING.md, "Description"                         | [ ]     | [ ]    |
+| What's new and the package 1.0.0                                                      | the release run (`release-texts`, the msix download)    | [ ]     | [ ]    |

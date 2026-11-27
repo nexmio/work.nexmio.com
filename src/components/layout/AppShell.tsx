@@ -53,9 +53,9 @@ export function rightTabsFor(view: CenterView, timerRunning = false): RightTab[]
   if (view === "notes" || view === "start") {
     return ["outline", "links", "history", "images", ...always];
   }
-  // The Task tab is the quick view of a task in the list. A task opened as a full page is only
-  // there, so the panel does not show it a second time.
-  if (view === "tasks" || view === "epic") return ["task", ...always];
+  // The Task tab is the quick view of a task on the epic page. The task list has its own quick
+  // look over the list, and a task opened as a full page is only there.
+  if (view === "epic") return ["task", ...always];
   if (view === "plans") return ["part", ...always];
   return always;
 }
@@ -74,8 +74,9 @@ export function AppShell() {
   const ui = useUiStore();
   const timerRunning = useTimerStore((s) => s.running !== null);
   const tabs = rightTabsFor(ui.centerView, timerRunning);
-  // A tab that does not belong to the area in the middle falls back to the first one.
-  const rightTab: RightTab = tabs.includes(ui.rightTab) ? ui.rightTab : (tabs[0] ?? "outline");
+  // A tab that does not belong to the area in the middle falls back to the first one; with no
+  // tab at all, no panel is shown (not the last page's outline).
+  const rightTab: RightTab | null = tabs.includes(ui.rightTab) ? ui.rightTab : (tabs[0] ?? null);
   const activePath = useVaultStore((s) => s.activePath);
   const left = useRef<ImperativePanelHandle>(null);
   const right = useRef<ImperativePanelHandle>(null);
@@ -90,7 +91,10 @@ export function AppShell() {
   // back as they were). With no note open they stay.
   const startOnly = ui.centerView === "start";
   usePanelCollapse(left, ui.leftCollapsed || startOnly);
-  usePanelCollapse(right, ui.rightCollapsed || startOnly);
+  // The task list has nothing for the right panel until a timer runs: then it is not there at
+  // all, and the list has the room.
+  const hasRight = !(ui.centerView === "tasks" && tabs.length === 0);
+  usePanelCollapse(right, ui.rightCollapsed || startOnly, hasRight);
 
   return (
     <div className="flex h-full flex-col">
@@ -172,57 +176,61 @@ export function AppShell() {
               {showNoteList && <NotesPage />}
             </main>
           </Panel>
-          <PanelResizeHandle className="w-px bg-border transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
-          <Panel
-            ref={right}
-            id="right"
-            order={3}
-            defaultSize={26}
-            minSize={16}
-            maxSize={50}
-            collapsible
-            collapsedSize={0}
-            onCollapse={() => {
-              if (
-                useUiStore.getState().centerView !== "start" &&
-                !useUiStore.getState().rightCollapsed
-              )
-                useUiStore.setState({ rightCollapsed: true });
-            }}
-            onExpand={() => {
-              if (
-                useUiStore.getState().centerView !== "start" &&
-                useUiStore.getState().rightCollapsed
-              )
-                useUiStore.setState({ rightCollapsed: false });
-            }}
-            className="bg-sidebar"
-          >
-            <div className="flex h-full min-h-0 flex-col">
-              <RightTabs tabs={tabs} current={rightTab} />
-              {/* The name of the page, over the tabs that are about it (never over Task or Part). */}
-              {(rightTab === "outline" || rightTab === "links" || rightTab === "history") &&
-                activePath !== null && (
-                  <p className="truncate border-b px-3 py-1 text-xs text-muted-foreground">
-                    {RIGHT_LABELS[rightTab]} · {activeTitle(activePath)}
-                  </p>
-                )}
-              <div className="min-h-0 flex-1">
-                {rightTab === "task" && <TaskDetail />}
-                {rightTab === "timer" && <TimerPanel />}
-                {rightTab === "part" && <PartSlot />}
-                {rightTab === "outline" && <OutlinePanel />}
-                {rightTab === "links" && <LinksPanel />}
-                {rightTab === "images" && <ImagesPanel />}
-                {rightTab === "history" && <HistoryPanel />}
-                {tabs.length === 0 && (
-                  <p className="p-4 text-sm text-muted-foreground">
-                    Nothing here for this area. The AI opens with AI in the top bar.
-                  </p>
-                )}
-              </div>
-            </div>
-          </Panel>
+          {hasRight && (
+            <>
+              <PanelResizeHandle className="w-px bg-border transition-colors hover:bg-primary data-[resize-handle-active]:bg-primary" />
+              <Panel
+                ref={right}
+                id="right"
+                order={3}
+                defaultSize={26}
+                minSize={16}
+                maxSize={50}
+                collapsible
+                collapsedSize={0}
+                onCollapse={() => {
+                  if (
+                    useUiStore.getState().centerView !== "start" &&
+                    !useUiStore.getState().rightCollapsed
+                  )
+                    useUiStore.setState({ rightCollapsed: true });
+                }}
+                onExpand={() => {
+                  if (
+                    useUiStore.getState().centerView !== "start" &&
+                    useUiStore.getState().rightCollapsed
+                  )
+                    useUiStore.setState({ rightCollapsed: false });
+                }}
+                className="bg-sidebar"
+              >
+                <div className="flex h-full min-h-0 flex-col">
+                  {rightTab !== null && <RightTabs tabs={tabs} current={rightTab} />}
+                  {/* The name of the page, over the tabs that are about it (never over Task or Part). */}
+                  {(rightTab === "outline" || rightTab === "links" || rightTab === "history") &&
+                    activePath !== null && (
+                      <p className="truncate border-b px-3 py-1 text-xs text-muted-foreground">
+                        {RIGHT_LABELS[rightTab]} · {activeTitle(activePath)}
+                      </p>
+                    )}
+                  <div className="min-h-0 flex-1">
+                    {rightTab === "task" && <TaskDetail />}
+                    {rightTab === "timer" && <TimerPanel />}
+                    {rightTab === "part" && <PartSlot />}
+                    {rightTab === "outline" && <OutlinePanel />}
+                    {rightTab === "links" && <LinksPanel />}
+                    {rightTab === "images" && <ImagesPanel />}
+                    {rightTab === "history" && <HistoryPanel />}
+                    {tabs.length === 0 && (
+                      <p className="p-4 text-sm text-muted-foreground">
+                        Nothing here for this area. The AI opens with AI in the top bar.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Panel>
+            </>
+          )}
         </PanelGroup>
         <AiBox />
       </div>

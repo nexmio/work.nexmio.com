@@ -104,7 +104,7 @@ export function MeetingsPanel() {
             useUiStore.getState().setMeetingFormOpen(true);
           }}
         >
-          <Plus /> New
+          <Plus /> New meeting
         </Button>
       </PanelHeader>
       <div className="min-h-0 flex-1 overflow-auto pb-3 pt-2">

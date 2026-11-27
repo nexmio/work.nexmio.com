@@ -8,6 +8,23 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-27
+
+### Added
+
+- **Nexmio Work 1.0.** The first Stable version: pages as plain Markdown files, tasks, projects and meetings, a history of every change, and an AI on your own computer that only suggests (the AI is still in beta).
+- **A guide that is easier to read.** How to use Nexmio Work has its topics in groups. Topics start with a few short steps, most with a picture; the rest is under **More details**. The names of menus and areas are corrected.
+- **All epics on one screen.** Tasks opens on a row for each epic, with what you are working on, what is next and what is waiting.
+- **A status dot on each task.** Press it to choose To do, Working on, Waiting or Done. You can work on several tasks at once.
+- **A quick look.** Press a task to see its steps, write what happened or start a timer, over the list. Use the arrow keys to go to the next task.
+- **Remove a link from a part.** In the panel of a part, each linked page, task and epic has a small cross. Only the link goes (the page or task stays), and **Undo** puts it back. The panel now shows all of a part's pages.
+
+### Changed
+
+- **An epic shows its tasks in three groups:** Working on, Next and Waiting. A waiting task says for how many days it has waited.
+- **New epic**, **New project** and **New meeting** are the same kind of button, at the top of their panel. The second button in the middle or under the list is gone.
+- **No task is chosen for you in Tasks.** The **Now** card is gone.
+
 ## [0.32.0] - 2026-11-27
 
 ### Added

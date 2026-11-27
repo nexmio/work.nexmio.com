@@ -38,6 +38,27 @@ describe("HelpDialog", () => {
     expect(article).toHaveTextContent("Ctrl+Shift+K");
   });
 
+  it("shows the short steps first, with a picture, and folds the details away", async () => {
+    useUiStore.getState().openHelp("tasks");
+    render(<HelpDialog />);
+    const article = screen.getByRole("article", { name: "Tasks" });
+    expect(article).toHaveTextContent("Press the dot");
+    expect(screen.getByAltText("All epics, one row each")).toHaveAttribute(
+      "src",
+      expect.stringContaining("tasks-all"),
+    );
+    expect(article).not.toHaveTextContent("How it looks in the file");
+    await userEvent.setup().click(screen.getByRole("button", { name: "More details" }));
+    expect(article).toHaveTextContent("How it looks in the file");
+  });
+
+  it("puts the topics under group headings", () => {
+    useUiStore.getState().openHelp();
+    render(<HelpDialog />);
+    const nav = screen.getByRole("navigation", { name: "Topics" });
+    for (const g of new Set(HELP_TOPICS.map((t) => t.group))) expect(nav).toHaveTextContent(g);
+  });
+
   it("the search narrows the list and says when nothing matches", async () => {
     useUiStore.getState().openHelp();
     render(<HelpDialog />);

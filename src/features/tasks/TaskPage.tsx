@@ -2,7 +2,15 @@ import { ArrowLeft, Check, FileText, Layers, Play, Sparkles } from "lucide-react
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { latestLeftOff, noteName, shortDate, todayIso, waitersOf } from "@/lib/taskLogic";
+import {
+  latestLeftOff,
+  noteName,
+  shortDate,
+  todayIso,
+  waitersOf,
+  chosenStatus,
+  STATUS_CHOICES,
+} from "@/lib/taskLogic";
 import { cn } from "@/lib/utils";
 import { findTask, useTaskStore } from "@/stores/taskStore";
 import { useTimerStore } from "@/stores/timerStore";
@@ -31,12 +39,6 @@ import { momentsOf, statusFacts } from "./taskMoments";
 import { MarkdownOfTask } from "./MarkdownOfTask";
 import { HistoryItem } from "./HistoryItem";
 import { LogItem } from "./LogItem";
-
-const STATUSES: { id: string; label: string }[] = [
-  { id: "", label: "To do" },
-  { id: "doing", label: "Doing" },
-  { id: "waiting", label: "Waiting" },
-];
 
 const STATUS_INSTRUCTION =
   "You write a status update for a colleague about one task. Use ONLY the facts below: the title, the status, the page, the steps and the dated log lines. Write one or two short sentences, in the language of the log: what has been done and what it waits for. Do not invent anything and do not repeat the log line by line. Answer with the sentences only.";
@@ -78,7 +80,7 @@ export function TaskPage() {
   const stepsDone = task.steps.filter((s) => s.done).length;
   const leftOff = latestLeftOff(task);
   const waiters = waitersOf(tasks, task);
-  const status = task.status ?? "";
+  const status = chosenStatus(task.status);
   const toEpic = (): void => {
     useTaskStore.getState().openEpic(task.path);
   };
@@ -477,7 +479,7 @@ export function TaskPage() {
                 aria-label="Status"
                 className="grid grid-cols-3 overflow-hidden rounded-md border bg-background text-sm"
               >
-                {STATUSES.map((s, i) => (
+                {STATUS_CHOICES.map((s, i) => (
                   <PlainButton
                     key={s.id}
                     type="button"

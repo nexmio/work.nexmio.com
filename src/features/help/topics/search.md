@@ -1,3 +1,11 @@
+1. Press **Ctrl/Cmd+P** and type part of a page's name.
+2. Press **Enter** to open it.
+3. To search inside all pages, press **Ctrl/Cmd+Shift+F**.
+
+![Search or jump to a page](img/quick-open.png)
+
+<!-- more -->
+
 ## Find a page
 
 - **Quick open** (**Ctrl/Cmd+P**): type part of a page's name and press Enter.

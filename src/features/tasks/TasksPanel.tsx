@@ -1,4 +1,13 @@
-import { ChevronDown, ChevronRight, FileText, FolderKanban, History, Timer } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  FolderKanban,
+  History,
+  LayoutList,
+  Plus,
+  Timer,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PanelHeader } from "@/components/PanelHeader";
 import { PinMenuItem } from "@/components/PinMenuItem";
@@ -8,8 +17,10 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Button } from "@/components/ui/button";
 import { PlainButton } from "@/components/ui/plain-button";
 import {
+  ALL_AREA,
   epicGroups,
   groupHasTag,
   LOOSE_AREA,
@@ -22,6 +33,7 @@ import { useTaskStore } from "@/stores/taskStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useVaultStore } from "@/stores/vaultStore";
 import { byProject } from "./byProject";
+import { NewEpicDialog } from "./NewEpicDialog";
 
 /** A thin bar: how far an epic has come. */
 function Bar({ done, total }: { done: number; total: number }) {
@@ -52,6 +64,7 @@ export function TasksPanel() {
   const vaultPath = useVaultStore((s) => s.vault?.path ?? null);
   const projects = useVaultStore((s) => s.projects);
   const [showDone, setShowDone] = useState(false);
+  const [naming, setNaming] = useState(false);
 
   useEffect(() => {
     void useTaskStore.getState().load();
@@ -99,6 +112,11 @@ export function TasksPanel() {
               </span>
             </span>
             <Bar done={g.done} total={g.total} />
+            {g.tasks.some((t) => !t.done && t.status === "doing") && (
+              <span className="text-xs text-muted-foreground">
+                {g.tasks.filter((t) => !t.done && t.status === "doing").length} working on
+              </span>
+            )}
           </PlainButton>
         </ContextMenuTrigger>
         <ContextMenuContent>
@@ -117,7 +135,23 @@ export function TasksPanel() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <PanelHeader title="Tasks" />
+      <PanelHeader title="Tasks">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setNaming(true);
+          }}
+        >
+          <Plus /> New epic
+        </Button>
+      </PanelHeader>
+      <NewEpicDialog
+        open={naming}
+        onClose={() => {
+          setNaming(false);
+        }}
+      />
       <div className="flex min-h-0 flex-1 flex-col overflow-auto px-2 py-2">
         {tags.length > 0 && (
           <div className="flex flex-col gap-1 px-2 pb-3">
@@ -145,10 +179,23 @@ export function TasksPanel() {
             </ul>
           </div>
         )}
+        <PlainButton
+          type="button"
+          aria-current={on(ALL_AREA)}
+          className={cn(
+            "mb-2 flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm font-medium hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+            on(ALL_AREA) && "bg-accent text-accent-foreground",
+          )}
+          onClick={() => {
+            choose(ALL_AREA);
+          }}
+        >
+          <LayoutList className="size-4" aria-hidden /> All epics
+        </PlainButton>
         <h3 className="section-label px-2 pb-1">Choose an epic</h3>
         {loaded && open.length === 0 && loose.length === 0 && (
           <p className="px-2 text-xs text-muted-foreground">
-            None yet. Make one with <b>New epic</b> in the middle.
+            None yet. Make one with <b>New epic</b> above.
           </p>
         )}
         {byProject(open, projects).map((section) => (
@@ -229,7 +276,7 @@ export function TasksPanel() {
           <History className="size-4" aria-hidden /> Look back
         </PlainButton>
         <p className="mt-auto px-2 pt-4 text-xs leading-relaxed text-muted-foreground">
-          You see one epic at a time. The rest is put away, not gone.
+          All epics shows every epic in a row. Press one to see only that.
         </p>
       </div>
     </div>

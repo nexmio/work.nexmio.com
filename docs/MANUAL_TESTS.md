@@ -13,10 +13,10 @@ Run these on the build that is going to be released (the installer or the AppIma
 - [ ] **Try the demo vault** (empty folder): pages, epics with tasks and two meetings are there.
 - [ ] Write in a page and watch the status bar: **Saved**. Rename the page and make a link `[[…]]` to it: the link follows.
 - [ ] **···** → **Tags…**: add a tag of your own by typing in the box and pressing Enter; tick **Epic**; the chips above the page change. Search shows the tag in **Your tags**.
-- [ ] Tasks: add a task in the write-it-down box, tick a step, start a timer on it in the **Timer** tab of the right panel and stop it.
-- [ ] Meetings: **New** → pick a time from the list, tick **Agenda** and **Actions**, **Create and start**; type in the pages, add a decision and an action; **Esc** leaves; the meeting page shows what you wrote.
+- [ ] Tasks: add a task in the write-it-down box, tick a step, press it, **Start timer** in the quick look, and stop it in the **Timer** tab of the right panel; give a task the status **Working on** with its dot and see it under **All epics**.
+- [ ] Meetings: **New meeting** → pick a time from the list, tick **Agenda** and **Actions**, **Create and start**; type in the pages, add a decision and an action; **Esc** leaves; the meeting page shows what you wrote.
 - [ ] Press **Ctrl+S** or wait: History of the page lists the change; restore the earlier version and then undo it.
-- [ ] Settings → Vault → Backup: choose a folder, **Back up now**: "Backed up today …".
+- [ ] Settings → Pages and backup → Backup: choose a folder, **Back up now**: "Backed up today …".
 - [ ] Settings → Appearance → Theme: pick Midnight; it applies at once (no Save); restart: the theme stays.
 - [ ] Settings → AI: **Download** a small model (Windows and Linux installer; nothing else is downloaded), then **Load AI**; the status bar chip changes.
 - [ ] One AI command with its review: select a sentence with a spelling mistake → **Fix**; the change is shown beside the original; **Accept** writes it, and **Undo last AI change** brings it back.
@@ -126,9 +126,9 @@ Check with `git log --oneline` in the vault folder.
 ### 7. Tasks and epics
 
 - [ ] `Ctrl/Cmd+Shift+T` or the Tasks icon: one outline of epics, each a box with "N of M" and a bar; the left panel lists the epics. There is no Today, Later, due date or "Moved from earlier" anywhere.
-- [ ] Tasks shows one epic at a time. Choose each epic at the left; restart: the last choice is kept. **Loose tasks** has the tasks of pages that are not epics, each with **Make an epic**. Finished epics are under **Finished areas · n**.
-- [ ] The **Now** card shows the task that is Doing (else the first open one) with its next step. **Step done** ticks the step (**Task done** when there is none); **I am waiting for someone** moves it under **Waiting for others** and shows it in the right panel; **Choose another** makes another task Doing. The lists **After that**, **Waiting for others** and **Done · n** are right, with no filter buttons and no struck-through text.
-- [ ] Press a task's name: the right panel's **Task** tab shows its status, steps and what happened; **Open as full page** opens the task page. **Start timer**, and everything in **More** (New epic, Rename, Open the page, Find tasks in a page, Move this area, Delete) work.
+- [ ] Tasks opens on **All epics**: a row per epic that is not done, with **Working on**, **Next** (two, then **+ n more**) and **Waiting** (what it waits for and how many days); **Loose tasks** has a row when it has open tasks. Press an epic's name: only that epic. Go to Pages and back: the epic is still chosen. Restart: **All epics** again. **Loose tasks** at the left has the tasks of pages that are not epics, each with **Make an epic**.
+- [ ] Tasks, an epic: groups **Working on**, **Next**, **Waiting**, and **Done · n** folded; no bar, nothing chosen for you. Press a task's dot: **To do**, **Working on**, **Waiting**, **Done** in words. **Working on** on two tasks: both are under **Working on**, the file has `status:doing` on both, and the left panel says "2 working on". **Waiting**: the quick look opens. **Done**: the task is ticked in the file and dimmed under **Done**.
+- [ ] Press a task's name: the quick look opens over the list at the right (status, steps, what happened, **Start timer**, **Open as full page**). **↓** / **↑** and **Next** / **Before** go through the tasks; writing in a box does not move. **Esc** closes it. The task list has no right panel until a timer runs (then **Timer**); in a narrow window the titles in **All epics** can be read; the panel is back as it was in Pages, also after a restart from Tasks; the epic page still has it. Everything in **More** (New epic, Rename, Open the page, Find tasks in a page, Move this area, Delete) works.
 - [ ] Task page, status **Waiting**: **Waiting for (optional)**, type "the customer: reply on the quote" and click away. The file has `status:waiting for:"the customer: reply on the quote"`, the log has "Waiting for: …", and the list shows the text next to **Waiting**. Change the status to Doing: the text and the link are gone from the line.
 - [ ] **Waiting for a task…**: type part of another task's title, choose it. The page shows it with its steps; the file has `after:"<note>#<title>"`. Tick that task: this one says **Ready** (page and list). Rename that task: the link still finds it. Open that other task: it says **Waiting for this task** with the task that waits, and the list shows "1 waiting for this". Press the cross: the link is gone.
 - [ ] **+ Add a task to …** at the bottom of an open epic: type "Print the guide tomorrow" and press Enter. The title is exactly that (no date is read from it) and the file has `made:<today>` at the end of the line; the list shows the day it was made.
@@ -258,6 +258,7 @@ Check with `git log --oneline` in the vault folder.
 
 ### 20. Help, About and reporting
 
+- [ ] The topics stand in groups; each starts with short steps and a sharp picture, **More details** unfolds the rest (and is open while you search). Tasks, Projects and Meetings have one **New …** button each, at the top of the panel.
 - [ ] The **?** in the top bar, **Help → How to use Nexmio Work** and **F1** open the guide; the search narrows the topics; Esc closes it. A **?** next to a setting explains it and **Read more in the guide** opens the right topic.
 - [ ] **Help → About Nexmio Work…** shows the picture, version, build date, the licence (Apache-2.0 with the Commons Clause) and who made it.
 - [ ] **Help → Report a bug…**, **Suggest a feature…** and **Report inappropriate AI content…** open GitHub with the form filled in (version and system).
@@ -299,7 +300,7 @@ Check with `git log --oneline` in the vault folder.
 ## Tab, status, Meetings and the start page
 
 - [ ] In a bullet list, **Tab** moves the item one level in, **Shift+Tab** out; a selection over several items moves them all; a numbered and a task item work too. **Enter** on an empty nested item takes it out one level; on an empty item at the left edge the list ends. A plain line with the caret at its start moves two spaces in and out; with the caret after some text, Tab puts a tab there and Shift+Tab takes it back; in a table cell Tab still moves between cells. The same in the meeting screen, the page box of a task, an epic and an idea, and the write-it-down box (there Tab no longer leaves the box: click away).
-- [ ] A task with the status Doing, Waiting or Dropped shows a label at the right end of its row in Tasks and in an epic; a task without a status shows none. The status is still set on the task page.
+- [ ] The status of a task (right panel and task page) is **To do** or **Waiting**; Waiting asks what for and offers a task to wait for. The task you work on counts as To do. Only Waiting and Dropped show a label at the end of a row. **New epic** at the top of the Tasks panel asks for a name and shows the new epic (it is also under **More**).
 - [ ] **Meetings** in the navigation opens the meetings. The calendar is folded to one line; press it and it has a dot on the days with a meeting. The search box narrows the list by title and people. Today lists the day's meetings with their time (no daily page); Coming and Earlier follow. A click on a day shows only that day; the cross shows everything again.
 - [ ] A click on a meeting shows it in the middle: agenda (ticking an item changes `- [ ]` in the page), tasks from the page, pages under each item. **Start meeting**, **Prepare next…** and **Open the page** work. **+ New** opens the meeting window. A page without the tag Meeting is not listed, also in the meetings folder.
 - [ ] The **house** opens the start page; so does closing the last page. **Continue** shows the last page with its first lines and **Open** opens it. Recent has the filters; **Show more** lists up to 20. **···** → **Pin to the start page** puts the page under Pinned (tag `pinned`); the cross on the start page unpins it. A new vault shows three buttons. Narrow the window: one column.
@@ -393,6 +394,7 @@ Check with `git log --oneline` in the vault folder.
 - [ ] Outline: fold a branch, click an idea, double-click to rename it, **···** has Break it down, Add a part, Link or make a task, Link or make a page, Write a note, Repeat, Move up and down, Under the one before, One level up, Delete, Rename. Open the page in the editor: the list is an ordinary list, and the properties, the heading and any text after the list are as they were.
 - [ ] A part linked to an epic in an older plan still shows **Epic · 0 of N**, and the chip opens it. **Link or make a task…**: pick an open task, or **Make a new task**: it goes in an epic with the plan's name (made if missing). The idea shows **Task**. **Link or make a page…** (pick, or **Make a new page…** → **Make the page**) shows **Page · name**.
 - [ ] In a plan in a project, link a page and a task inside the project and one of each outside it: house inside, arrow ↗ outside, on the map, in Outline and in the Part panel; the tooltip names the place. A task in the plan's own epic has a house. A plan in no project has no marks. Long page names still cut off neatly. Help → Projects has **The symbols on parts**.
+- [ ] The Part panel: a part with two or more pages and a linked task shows them all, each with a cross. The cross removes only the link (the page and task stay), **Undo** puts it back, the map follows. A task shown because it has the part's name has no cross.
 - [ ] **Suggest parts** (AI) shows a list to tick, nothing is written before; with no AI the button is greyed out with the reason.
 - [ ] **Repeat these steps for…** on a branch with sub-ideas: write two names; two new branches with the same steps, and in the plan's epic two tasks (one per name), each with the steps as its steps. No epic per name.
 - [ ] **A small place to start** shows the first open task; **Open the task** opens it.
@@ -451,7 +453,7 @@ Check with `git log --oneline` in the vault folder.
 
 - [ ] A new, empty vault: the start page has **Get started** with five steps and "0 of 5"; the first step has the main button. Make a plan with two parts, make a task of a part, start and stop a timer, make a meeting: each step ticks itself (go back to Start). **Close** hides it; it stays hidden after a restart.
 - [ ] A page with only `tags:` in its properties shows no Properties box; the tags are chips above the text, and a `#tag` written in the text shows as "#tag · in the text" (pressing it searches). A page with other properties still shows the box, without "tags". The Outline tab has no tags row.
-- [ ] Tasks: the epic's tags are next to its name at the top; Now is the first block. The same on the full epic page.
+- [ ] Tasks: the epic's tags are next to its name at the top. The same on the full epic page.
 - [ ] Meetings, with the right panel open: the tasks under **Actions** show their whole title, with the made date under it.
 - [ ] Plans show no Beta chip anywhere; the AI still does.
 - [ ] Ctrl/Cmd+Shift+N asks T or I (no N); File → New, the start page's New, the command palette and a meeting have no Quick page. The Pages panel has no New button; its ··· menu has New folder and New project. The section that was Landing is called **Inbox**. Settings → Vault calls the folder "Folder for pages made from ideas", and an idea's **To page** goes there.
@@ -467,14 +469,14 @@ Check with `git log --oneline` in the vault folder.
 
 ## Red thread, phase 4
 
-- [ ] An empty chat offers three questions. **What should I do next?** answers from your tasks (Doing first, then the first open one per epic) and names the epic; the activity line says "Read the tasks of all epics".
+- [ ] An empty chat offers three questions. **What should I do next?** answers from your tasks (the task you work on first, then the first open one per epic) and names the epic; the activity line says "Read the tasks of all epics".
 - [ ] Ask "What am I waiting for?": the waiting tasks with whom they wait for. Ask "How far is <project>?": the plan's tasks done of all.
 - [ ] Ask "How do I make a meeting part of a project?": the answer comes from the help ("Looked in the help: …") and a **Show me: New meeting** button opens the meeting window.
 - [ ] Ask "Make three tasks for packing in <epic>": a **Review changes** card with the epic page; accept it and the tasks are at the end of the epic. Reject it and nothing changes.
 - [ ] Ask "Add the parts Racks and Cables under Servers in <plan>": the review shows them indented under Servers, after its own parts.
 - [ ] In a project marked Local AI only, with a cloud AI chosen: ask about its tasks; they are not in the answer.
 - [ ] Projects: **AI ▾** → **Find what is missing** puts a job in the Queue; **Break down the chosen part** is grey until a part is chosen on the map. **Ask about this project** opens the chat and asks.
-- [ ] Tasks: **AI ▾** → **Break down the Now task**, **Find tasks in the open page** (grey without an open page), **Ask about this epic**. Loose tasks keeps **Find tasks in a page** in its ··· menu.
+- [ ] Tasks: **AI ▾** → **Break down a task**, **Find tasks in the open page** (grey without an open page), **Ask about this epic**. Loose tasks keeps **Find tasks in a page** in its ··· menu.
 - [ ] A meeting with notes: **AI ▾** → **Decisions and actions from the notes**: the Queue shows **Decisions** and **Actions** as two groups; Add writes the ticked decisions under Decisions and the actions as tasks, and turns those parts on.
 - [ ] **Suggest an agenda** in a meeting with an earlier meeting of the same name: the items come from its notes and open actions; Add puts them on the agenda.
 - [ ] Start: **AI ▾** has the three questions; each opens the chat and asks. Without an AI every AI button says why and nothing can be chosen.

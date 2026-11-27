@@ -1,3 +1,13 @@
+The AI only proposes. Nothing is written until you accept it.
+
+1. **Select text** and choose Fix, Rewrite or Shorten.
+2. For a question, press **AI** in the top bar (Ctrl/Cmd+L).
+3. Look at the answer, then press **Accept**.
+
+![The AI box over the right side](img/ai.png)
+
+<!-- more -->
+
 ## The AI
 
 **The AI** in Nexmio Work is a helper that runs on your computer. It is not one chat you have to type into: it is buttons where you work, and each one does one fixed thing. You never have to write a prompt.
@@ -10,7 +20,7 @@
 - **The whole page:** the **AI** button above the page: fix spelling and grammar (in the whole page), improve the structure, a short summary at the top, a title and tags, find tasks, split into pages, and an e-mail from the page. **Link related pages** opens the Links panel; it finds pages by the title and tags and needs no AI.
 - **A folder:** right-click it → **AI**: sort into folders, find duplicates, an index page and more. **Make an index page** right under it makes a list of links without AI.
 - **Search:** a search that reads like a question ("what is the service desk number?") shows **Answer from my pages**. Press **Get an answer**: the AI reads the pages that fit and answers, with the pages it used.
-- **A project, an epic, a meeting and the start page** have an **AI** button at the top, like the one above a page. In a project: **Find what is missing** (parts the plan may lack) and **Break down the chosen part**. In Tasks: **Break down the Now task** and **Find tasks in the open page**. In a meeting: **Decisions and actions from the notes** (you tick which decisions and which actions to add), **Suggest an agenda** (from the meeting before with the same name and its open actions) and **In short**. Each also has a question for the chat, such as **Ask about this project**; the start page has **What should I do next?**, **What am I waiting for?** and **Write my status for this week**.
+- **A project, an epic, a meeting and the start page** have an **AI** button at the top, like the one above a page. In a project: **Find what is missing** (parts the plan may lack) and **Break down the chosen part**. In Tasks: **Break down a task** (the first you work on, else the first to do) and **Find tasks in the open page**. In a meeting: **Decisions and actions from the notes** (you tick which decisions and which actions to add), **Suggest an agenda** (from the meeting before with the same name and its open actions) and **In short**. Each also has a question for the chat, such as **Ask about this project**; the start page has **What should I do next?**, **What am I waiting for?** and **Write my status for this week**.
 - **A task:** Break it down, **Write a status line from the log**.
 - **An idea:** **Think it through** (three questions) and **Suggest first steps** (they become one task with those steps).
 - **Any text box:** select text in a box (a task's note, the log, an idea, a project's text) and the same small bar appears, or press **Ctrl/Cmd+K** in the box. Name, search and password boxes have no AI.
@@ -22,7 +32,7 @@ Everything that is not AI works as always: pages, search, tasks, ideas, the outl
 
 ## Ask about my pages
 
-For a free question, press **Ctrl/Cmd+L**, or **AI** in the top bar. The AI opens as a box over the right side of the window, wherever you are (the start page, a page, a task), and what is under it stays as it was. **×** or **Esc** closes it, and the chat is kept. Type a question and press **Enter**, or press one of the questions an empty chat offers. Nexmio Work reads the open page (untick **Include the open page** for general questions) and searches your pages to answer. It also knows your work: the projects and how far their plans are, the tasks (what is doing, what waits and for whom), and the meetings with their decisions and open actions, so you can ask "What should I do next?" or "What did we decide about the van?". Ask how something is done in Nexmio Work and it answers from this help, with a **Show me** button that opens the place.
+For a free question, press **Ctrl/Cmd+L**, or **AI** in the top bar. The AI opens as a box over the right side of the window, wherever you are (the start page, a page, a task), and what is under it stays as it was. **×** or **Esc** closes it, and the chat is kept. Type a question and press **Enter**, or press one of the questions an empty chat offers. Nexmio Work reads the open page (untick **Include the open page** for general questions) and searches your pages to answer. It also knows your work: the projects and how far their plans are, the tasks (what you work on, what waits and for whom), and the meetings with their decisions and open actions, so you can ask "What should I do next?" or "What did we decide about the van?". Ask how something is done in Nexmio Work and it answers from this help, with a **Show me** button that opens the place.
 
 The chat never changes a page. It can **propose new tasks** in an epic and **new parts** in a plan: they come as a **Review changes** card, and nothing is written until you accept them. Inside a project's chat it only sees that project; with a cloud AI it never sees a project marked Local AI only. **History** in its header reopens earlier chats; **New chat** starts over.
 

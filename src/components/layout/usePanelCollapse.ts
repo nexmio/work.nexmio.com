@@ -8,9 +8,15 @@ import type { ImperativePanelHandle } from "react-resizable-panels";
 export function usePanelCollapse(
   ref: RefObject<ImperativePanelHandle | null>,
   collapsed: boolean,
+  /** False while the panel is not on the screen; when it comes back it is set again. */
+  present = true,
 ): void {
-  const previous = useRef(collapsed);
+  const previous = useRef<boolean | null>(collapsed);
   useEffect(() => {
+    if (!present) {
+      previous.current = null;
+      return;
+    }
     if (previous.current === collapsed) return;
     previous.current = collapsed;
     const panel = ref.current;
@@ -21,5 +27,5 @@ export function usePanelCollapse(
     } catch {
       /* layout not ready; the next toggle retries */
     }
-  }, [ref, collapsed]);
+  }, [ref, collapsed, present]);
 }

@@ -1,3 +1,9 @@
+1. Turn your OneNote notebook into a folder of Markdown files.
+2. Choose **File → Import pages from a folder…**.
+3. Check the preview and press **Import**.
+
+<!-- more -->
+
 ## Move your pages from OneNote or another app
 
 OneNote cannot save pages as Markdown, so it takes two steps:

@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PlainButton } from "@/components/ui/plain-button";
 import { MarkdownText } from "@/components/MarkdownText";
-import { shortDate, todayIso } from "@/lib/taskLogic";
+import { shortDate, todayIso, chosenStatus, STATUS_CHOICES } from "@/lib/taskLogic";
 import { cn } from "@/lib/utils";
 import { findTask, useTaskStore } from "@/stores/taskStore";
 import { useTimerStore } from "@/stores/timerStore";
@@ -13,12 +13,6 @@ import { MoveToEpic } from "./MoveToEpic";
 import { TaskTags } from "./TaskTags";
 import { WaitingFor } from "./WaitingFor";
 import { WaitingForTask } from "./WaitingForTask";
-
-const STATUSES: { id: string; label: string }[] = [
-  { id: "", label: "To do" },
-  { id: "doing", label: "Doing" },
-  { id: "waiting", label: "Waiting" },
-];
 
 /**
  * The chosen task in the right panel: its status, steps and what has happened. A shorter version
@@ -39,7 +33,7 @@ export function TaskDetail() {
     );
   }
   const store = useTaskStore.getState();
-  const status = task.status ?? "";
+  const status = chosenStatus(task.status);
   const today = todayIso();
   const firstOpen = task.steps.findIndex((s) => !s.done);
 
@@ -64,7 +58,7 @@ export function TaskDetail() {
         <h3 className="text-base font-semibold leading-snug">{task.title}</h3>
       </div>
       <div role="group" aria-label="Status" className="flex overflow-hidden rounded-md border">
-        {STATUSES.map((s, i) => (
+        {STATUS_CHOICES.map((s, i) => (
           <PlainButton
             key={s.id}
             type="button"

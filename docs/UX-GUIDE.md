@@ -38,7 +38,7 @@ Header (`sidebar`) on top, status bar at the bottom. At the top: the wordmark, t
 - **Full screen for the text:** hide both panels with the two buttons at the top right and fold the navigation; the text keeps its line width and stands in the middle.
 - **The start page** fills the window: both side panels hide while it is shown and come back as they were.
 - **Middle pages** start with a `ViewHeader`: title left, the page's buttons right, the main action last as the primary button. Small things that belong to the title (an epic's tags) stand right after it (`afterTitle`). Everything else about the page is in a `···` menu. The page below has the `space-5` gutter.
-- **Reading rules** (for dyslexia and for a short attention): small headings are in sentence case (`section-label`), a done item is dimmed with its tick and never struck through, an icon always has a word beside it except a checkbox, and a screen shows one thing to do at a time where it can (the Now card).
+- **Reading rules** (for dyslexia and for a short attention): small headings are in sentence case (`section-label`), a done item is dimmed with its tick and never struck through, an icon always has a word beside it except a checkbox and a task's status dot (its menu has the words), and a screen shows one thing to do at a time where it can (an epic's groups in Tasks).
 - **Narrow widths** stack to one column (start page under 640px and three columns from 1100px, the calendar's short names under 230px; `useNarrow`).
 
 ## Visual foundations
@@ -90,5 +90,5 @@ Every control comes from `src/components/ui`, so a change to how one looks is ma
 - **Text boxes for pages** take Tab and Shift+Tab to indent (`Textarea indent`), like the editor.
 - **Toasts** confirm a finished action, bottom right, with one action (Open, Undo) when it helps. Errors stay longer.
 - **A choice that needs setup shows the setup under its own row** (Settings → AI: the chosen row opens its model list or its address fields). Two places for one choice are not made. Things that are new say **Beta** in a small chip instead of "Recommended".
-- **Lists that grow sort themselves by what is open, not by moving lines:** open items first, done items last under a small **Done · n** label. The Tasks area shows one epic at a time instead of filters.
+- **Lists that grow sort themselves by what is open, not by moving lines:** open items first, done items last under a small **Done · n** label. The Tasks area shows every epic in rows, or one epic, instead of filters.
 - **Choices remembered per computer** (time format, start page layout, the start page at launch) are kept in browser storage, wrapped in try/catch, and the screen works without them.

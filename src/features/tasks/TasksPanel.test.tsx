@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeTask } from "@/test/taskFixtures";
@@ -7,6 +7,7 @@ const apiMock = vi.hoisted(() => ({
   listTasks: vi.fn(),
   listEpics: vi.fn(),
   getEpicOrder: vi.fn(() => Promise.resolve([])),
+  epicCreate: vi.fn(),
 }));
 vi.mock("@/lib/api", () => ({
   api: apiMock,
@@ -85,7 +86,6 @@ describe("TasksPanel", () => {
     render(<TasksPanel />);
     await userEvent.setup().click(await screen.findByRole("button", { name: /Alpha/ }));
     expect(useTaskStore.getState().chosenArea).toBe("Tasks/A.md");
-    expect(localStorage.getItem("nexmio.tasksArea:")).toBe("Tasks/A.md");
     expect(useUiStore.getState().centerView).toBe("tasks");
   });
 
@@ -100,6 +100,26 @@ describe("TasksPanel", () => {
     expect(row).toHaveTextContent("2");
     await userEvent.setup().click(row);
     expect(useTaskStore.getState().chosenArea).toBe("__loose__");
+  });
+
+  it("makes a new epic from the button at the top, and shows it", async () => {
+    apiMock.epicCreate.mockResolvedValue({
+      path: "Tasks/New one.md",
+      title: "New one",
+      source: null,
+      description: "",
+      tags: [],
+    });
+    useUiStore.setState({ centerView: "time" });
+    render(<TasksPanel />);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "New epic" }));
+    await user.type(screen.getByLabelText("Name"), "New one{Enter}");
+    expect(apiMock.epicCreate).toHaveBeenCalledWith("New one");
+    await waitFor(() => {
+      expect(useTaskStore.getState().chosenArea).toBe("Tasks/New one.md");
+    });
+    expect(useUiStore.getState().centerView).toBe("tasks");
   });
 
   it("has no filters and no box for writing a task", async () => {

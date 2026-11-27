@@ -1,3 +1,13 @@
+1. Write three backticks and the word `mermaid`.
+2. Write the diagram, then three backticks.
+3. Click outside it to see the drawing.
+
+![A diagram drawn from text](img/diagram.png)
+
+Copy an example from **More details**.
+
+<!-- more -->
+
 ## Draw a diagram yourself (Mermaid)
 
 You do not need the AI to make a diagram. A diagram is a block of text in a page, and Nexmio Work draws it while the cursor is somewhere else. Click the picture to edit the text again.
@@ -32,12 +42,12 @@ sequenceDiagram
 ````
 ```mermaid
 stateDiagram-v2
-  [*] --> Todo
-  Todo --> Doing
-  Doing --> Done
-  Doing --> Waiting
-  Waiting --> Doing
-  Done --> [*]
+  [*] --> Ordered
+  Ordered --> Packed
+  Packed --> Sent
+  Packed --> Waiting
+  Waiting --> Packed
+  Sent --> [*]
 ```
 ````
 

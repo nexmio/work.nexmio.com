@@ -1,3 +1,9 @@
+1. **Paste** a picture into a page (Ctrl/Cmd+V), or drag it in.
+2. Or press **Insert image** above the page.
+3. Point at the picture to choose its size.
+
+<!-- more -->
+
 ## Add a picture
 
 - **Paste** a screenshot or a copied picture (Ctrl/Cmd+V).
@@ -17,7 +23,7 @@ Point at a picture in a page and a small bar appears: **Small**, **Medium**, **L
 
 ## How pictures are written
 
-Settings → Vault → **Insert images as**:
+**Settings → Pages and backup → Insert images as**:
 
 - **Markdown link** `![](../attachments/photo.png)` works in every Markdown editor.
 - **Short name** `![[photo.png]]` is shorter and keeps working when you move the page, but only some other apps understand it.

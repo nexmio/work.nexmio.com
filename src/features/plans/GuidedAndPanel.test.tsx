@@ -300,15 +300,9 @@ describe("PlansPanel", () => {
     useVaultStore.setState({ projects: [] });
   });
 
-  it("starts a new project from the + button", async () => {
+  it("starts a new project from the one button at the top", async () => {
     render(<PlansPanel />);
-    // The + New button at the top and the row at the bottom of the list do the same.
-    const buttons = screen.getAllByRole("button", { name: "New project" });
-    expect(buttons).toHaveLength(2);
-    await userEvent.setup().click(buttons[0] as HTMLElement);
-    expect(usePlanStore.getState().guidedOpen).toBe(true);
-    usePlanStore.getState().setGuidedOpen(false);
-    await userEvent.setup().click(buttons[1] as HTMLElement);
+    await userEvent.setup().click(screen.getByRole("button", { name: "New project" }));
     expect(usePlanStore.getState().guidedOpen).toBe(true);
   });
 });

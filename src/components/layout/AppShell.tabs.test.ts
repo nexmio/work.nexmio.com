@@ -17,7 +17,7 @@ describe("the tabs of the right panel", () => {
   });
 
   it("adds Task for the task list and an epic, but not for a task page", () => {
-    expect(rightTabsFor("tasks")).toEqual(["task"]);
+    expect(rightTabsFor("tasks")).toEqual([]);
     expect(rightTabsFor("epic")).toEqual(["task"]);
     expect(rightTabsFor("task")).toEqual([]);
   });

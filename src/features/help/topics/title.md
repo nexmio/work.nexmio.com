@@ -1,3 +1,11 @@
+1. Press **Ctrl/Cmd+N**.
+2. Write the **name** of the page.
+3. Press **Create**.
+
+![The window that asks for the name](img/new-page.png)
+
+<!-- more -->
+
 ## Naming a page
 
 Every new page is named when you make it, the same way everywhere.

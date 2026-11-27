@@ -113,7 +113,7 @@ pub const PLACES: &[(&str, &str)] = &[
     ("new-task", "New task"),
     ("write-it-down", "Write it down"),
     ("settings-ai", "Settings → AI"),
-    ("settings-vault", "Settings → Vault"),
+    ("settings-vault", "Settings → Pages and backup"),
     ("help", "Help"),
 ];
 
@@ -522,13 +522,22 @@ pub fn search_help(query: &str) -> ToolOutcome {
         let mut sections = Vec::new();
         let mut current = String::new();
         for line in text.lines() {
-            if line.starts_with("## ") && !current.is_empty() {
+            // The pictures of the guide say nothing to the model.
+            if line.starts_with("![") {
+                continue;
+            }
+            // The short steps end at the "more" line; after it each heading starts a section.
+            let more = line == "<!-- more -->";
+            if (more || line.starts_with("## ")) && !current.trim().is_empty() {
                 sections.push(std::mem::take(&mut current));
+            }
+            if more {
+                continue;
             }
             current.push_str(line);
             current.push('\n');
         }
-        if !current.is_empty() {
+        if !current.trim().is_empty() {
             sections.push(current);
         }
         for s in sections {
@@ -872,6 +881,9 @@ mod tests {
     fn the_help_answers_how_to_questions_and_places_are_known() {
         let out = search_help("how do I make a plan");
         assert!(out.result.contains("[help: plans]"), "{}", out.result);
+        let steps = search_help("status dot quick look");
+        assert!(!steps.result.contains("img/"), "{}", steps.result);
+        assert!(!steps.result.contains("<!--"), "{}", steps.result);
         assert_eq!(
             place_of(&call("show_place", json!({"place": "New-Meeting"}))),
             Some(("new-meeting", "New meeting"))

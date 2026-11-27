@@ -2,7 +2,8 @@
 
 Tasks are `- [ ]` lines in pages; indented checklist lines are steps, indented text is the task's note, dated lines its log. Words in the line: `status:` (doing, waiting, dropped), `made:` and `#tags` (old `due:`, `plan:` and `est:` words stay in the file and out of the title, but nothing reads them); the first `[[link]]` is the task's note. An epic is a page with the tag `epic`. Frontend: the task list (`TasksView`), the epic and task pages, the timer, Time and Look back, the left panel; `src/stores/taskStore.ts`, `src/lib/taskLogic.ts`. Rust: `src-tauri/src/tasks/`, `commands/tasks.rs`, and Trace my work (`trace.rs`).
 
-- The Tasks area shows one epic at a time (`taskStore.chosenArea`, per vault): the task to do Now (`areaLists`: Doing, else the first open one that is not waiting), After that, Waiting for others and Done (folded). The right panel shows the chosen task (`TaskDetail`).
+- The Tasks area opens on every epic in rows (`ALL_AREA`, `EpicLanes`); a chosen epic (`taskStore.chosenArea`) shows Working on, Next (page order), Waiting and Done (folded). A task opens in the quick look over the list (`QuickLook`, `taskStore.looking`), which shows `TaskDetail`; the right panel's Task tab is only on the epic page.
+- **Status** is chosen from the dot at the start of a row (`StatusDot`): To do, Working on (`status:doing`, several at once), Waiting and Done (`STATUS_CHOICES`). Nothing is chosen automatically; a timer does not change the status.
 - There is no planning (no Today, no rescheduling): an outline of epics and steps with a made date.
 - A page without the tag `epic` is not an epic; its tasks are under "Loose tasks".
 - In a page tagged `meeting` the agenda is not tasks.

@@ -18,120 +18,154 @@ import titleMd from "./topics/title.md?raw";
 import vaultsMd from "./topics/vaults.md?raw";
 import writingMd from "./topics/writing.md?raw";
 
-/** One page of the how-to guide. `body` is Markdown. */
+/**
+ * One page of the how-to guide. `body` is Markdown: first the short steps, then, after the line
+ * `<!-- more -->`, the details that are folded away.
+ */
 export interface HelpTopic {
   id: string;
+  /** The heading it stands under in the list. */
+  group: string;
   title: string;
   /** One line shown under the title in the list. */
   summary: string;
   body: string;
 }
 
-/** The guide, in the order it is shown. The text of each topic is in `topics/<id>.md`. */
+/** The guide, in the order it is shown: group by group. The text of each topic is in `topics/<id>.md`. */
 export const HELP_TOPICS: readonly HelpTopic[] = [
   {
     id: "start",
+    group: "Get started",
     title: "Getting started",
     summary: "Vaults, the window and saving",
     body: startMd,
   },
   {
+    id: "vaults",
+    group: "Get started",
+    title: "Several vaults",
+    summary: "Keep things apart, switch fast",
+    body: vaultsMd,
+  },
+  {
+    id: "search",
+    group: "Get started",
+    title: "Finding pages",
+    summary: "Quick open, search and filters",
+    body: searchMd,
+  },
+  {
+    id: "shortcuts",
+    group: "Get started",
+    title: "Keyboard shortcuts",
+    summary: "All shortcuts in one list",
+    body: shortcutsMd,
+  },
+  {
     id: "writing",
+    group: "Write",
     title: "Writing pages",
     summary: "The toolbar, Markdown and tables",
     body: writingMd,
   },
   {
-    id: "mermaid",
-    title: "Diagrams (Mermaid)",
-    summary: "Draw a diagram yourself, with examples",
-    body: mermaidMd,
-  },
-  {
     id: "title",
+    group: "Write",
     title: "Naming a page",
     summary: "One name window, and names that clash",
     body: titleMd,
   },
   {
     id: "links",
+    group: "Write",
     title: "Links and index pages",
     summary: "Link pages, make an index",
     body: linksMd,
   },
-  { id: "images", title: "Images", summary: "Add, resize and tidy pictures", body: imagesMd },
+  {
+    id: "images",
+    group: "Write",
+    title: "Images",
+    summary: "Add, resize and tidy pictures",
+    body: imagesMd,
+  },
+  {
+    id: "mermaid",
+    group: "Write",
+    title: "Diagrams (Mermaid)",
+    summary: "Draw a diagram yourself, with examples",
+    body: mermaidMd,
+  },
+  {
+    id: "tasks",
+    group: "Plan and do",
+    title: "Tasks",
+    summary: "Epics, status, steps and time",
+    body: tasksMd,
+  },
+  {
+    id: "plans",
+    group: "Plan and do",
+    title: "Projects",
+    summary: "Break something big down into parts",
+    body: plansMd,
+  },
+  {
+    id: "templates",
+    group: "Plan and do",
+    title: "Meetings and daily pages",
+    summary: "Meetings, daily pages and templates",
+    body: templatesMd,
+  },
   {
     id: "ai",
+    group: "AI",
     title: "The AI",
     summary: "Ask, attach pages, review changes",
     body: aiMd,
   },
   {
     id: "builtin",
+    group: "AI",
     title: "The built-in AI",
     summary: "Nexmio Work without LM Studio: download, load, unload",
     body: builtinMd,
   },
   {
-    id: "plans",
-    title: "Plans",
-    summary: "Break something big down into ideas, epics and tasks",
-    body: plansMd,
-  },
-  {
-    id: "helper",
-    title: "The taskbar helper",
-    summary: "Windows: keys that work in every program",
-    body: helperMd,
-  },
-  {
-    id: "tasks",
-    title: "Tasks and focus",
-    summary: "One list from all pages, steps, a log, focus",
-    body: tasksMd,
-  },
-  {
     id: "projects",
-    title: "Projects",
-    summary: "Instructions for one area",
+    group: "AI",
+    title: "AI rules for a project",
+    summary: "What the AI may know and use",
     body: projectsMd,
   },
   {
-    id: "templates",
-    title: "Templates and quick pages",
-    summary: "Meetings, quick and daily pages",
-    body: templatesMd,
-  },
-  {
-    id: "vaults",
-    title: "Several vaults",
-    summary: "Keep things apart, switch fast",
-    body: vaultsMd,
-  },
-  {
     id: "history",
+    group: "Setup and safety",
     title: "Version history",
     summary: "Nothing is lost, restore anything",
     body: historyMd,
   },
   {
-    id: "search",
-    title: "Finding pages",
-    summary: "Quick open, search and filters",
-    body: searchMd,
-  },
-  {
     id: "import",
+    group: "Setup and safety",
     title: "Import from OneNote",
     summary: "Move your pages to Nexmio Work",
     body: importMd,
   },
-  { id: "export", title: "Export and share", summary: "HTML, Word and PDF", body: exportMd },
   {
-    id: "shortcuts",
-    title: "Keyboard shortcuts",
-    summary: "All shortcuts in one list",
-    body: shortcutsMd,
+    id: "export",
+    group: "Setup and safety",
+    title: "Export and share",
+    summary: "HTML, Word and PDF",
+    body: exportMd,
+  },
+  {
+    id: "helper",
+    group: "Setup and safety",
+    title: "The taskbar helper",
+    summary: "Windows: keys that work in every program",
+    body: helperMd,
   },
 ];
 
@@ -151,4 +185,13 @@ export function searchTopics(query: string): readonly HelpTopic[] {
     const text = `${t.title} ${t.summary} ${t.body}`.toLowerCase();
     return words.every((w) => text.includes(w));
   });
+}
+
+/** The line in a topic that the details start after. */
+const MORE = "<!-- more -->";
+
+/** A topic's short steps, and its details (empty when it has none). */
+export function topicParts(topic: Pick<HelpTopic, "body">): { steps: string; more: string } {
+  const [steps = "", more = ""] = topic.body.split(MORE);
+  return { steps: steps.trim(), more: more.trim() };
 }

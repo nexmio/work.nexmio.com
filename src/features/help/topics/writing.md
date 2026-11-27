@@ -1,3 +1,11 @@
+1. Open a page and write.
+2. Select text and press a button above the page: bold, heading, list or link.
+3. Press the **table** button to add a table.
+
+![The buttons above a page](img/toolbar.png)
+
+<!-- more -->
+
 ## The toolbar
 
 Above every page is a toolbar. Select some text and click a button, or click first and type after. Clicking the same button again removes the formatting.

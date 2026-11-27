@@ -9,6 +9,8 @@ Two editions, two workflows, nothing moved by hand, and nothing that waits for y
 
 Make as many Preview releases as you like. They are how you test on a Windows computer that can only get apps from the Store. When one is good enough, make that tag Stable. Until then only Preview exists.
 
+**Pictures of the guide.** If a screen shown in the in-app help changed, run `pnpm help:shots`, look at the pictures and commit them.
+
 ## A Preview release
 
 1. **Finish the changelog.** Rename `[Unreleased]` to `## [X.Y.Z] - <date>` in `CHANGELOG.md`. The top-level bullets under Added and Changed are the "What's new" in the app, on GitHub and in the Store. Write them for a person, not a developer.
