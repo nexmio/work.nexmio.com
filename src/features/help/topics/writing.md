@@ -59,3 +59,7 @@ flowchart LR
 ## Markdown in other boxes
 
 The boxes where you write more than one line (the page of a task, an epic or an idea, the log of a task, the notes of a meeting) work like a small page: `**bold**` shows as bold when the cursor leaves the line, lists continue with Enter, **Tab** and **Shift+Tab** indent, and **Ctrl+B** and **Ctrl+I** make the selection bold or italic. A log line stays one line. Boxes for one line (a title, a task, a step) are plain text.
+
+## Writing in a table
+
+Click a cell to write in it. **Enter** goes to the cell below and **Tab** to the next one. **Shift+Enter** makes a new line inside the cell, and lines that start with `-` become a bullet list; in the Markdown the new line is written `<br>`. Drag the right edge of a header cell to make a column wider or narrower: the column next to it gets or gives the room, and the last column's edge makes the whole table wider. Double-click an edge for automatic widths. The widths are kept by Nexmio Work, not in the page, so other programs share the room their own way. Ctrl/Cmd+click opens a link in a cell. The buttons over the table add and remove rows and columns, and **Markdown** shows the table as text.

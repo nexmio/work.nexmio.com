@@ -1,9 +1,11 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseTable, serializeTable } from "@/lib/markdownTable";
 import { insertTable } from "./commands";
+import { defaultPreviewConfig, previewConfig, type PreviewConfig } from "./previewConfig";
+import { caretToEnd, editCell, newLine, readCell } from "./tableCell";
 import { buildTableElement, commitTable, readTableFromDom } from "./tableWidget";
 import { tableAt, tableNodes } from "./tableRange";
 import { livePreview } from "./livePreview";
@@ -11,7 +13,7 @@ import { must } from "@/test/must";
 
 const doc = "intro\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\noutro";
 
-function view(text: string, cursor = 0): EditorView {
+function view(text: string, cursor = 0, config: Partial<PreviewConfig> = {}): EditorView {
   const parent = document.createElement("div");
   document.body.appendChild(parent);
   return new EditorView({
@@ -19,7 +21,11 @@ function view(text: string, cursor = 0): EditorView {
     state: EditorState.create({
       doc: text,
       selection: { anchor: cursor },
-      extensions: [markdown({ base: markdownLanguage }), livePreview()],
+      extensions: [
+        markdown({ base: markdownLanguage }),
+        livePreview(),
+        previewConfig.of({ ...defaultPreviewConfig, ...config }),
+      ],
     }),
   });
 }
@@ -41,13 +47,15 @@ describe("table widget DOM", () => {
     expect(el.querySelectorAll("th")).toHaveLength(2);
     expect(el.querySelector("th")?.textContent).toBe("<b>x</b>");
     expect(el.querySelector("th")?.querySelector("b")).toBeNull();
-    expect(el.querySelector("td")?.getAttribute("contenteditable")).toBe("plaintext-only");
+    expect(el.querySelector(".cm-cell")?.getAttribute("contenteditable")).toBe("plaintext-only");
   });
 
   it("reads edited cells back from the DOM", () => {
     const table = must(parseTable(doc.split("\n\n")[1] ?? ""));
     const el = buildTableElement(table);
-    must(el.querySelector("td")).textContent = "changed";
+    const cell = must(el.querySelector<HTMLElement>("td .cm-cell"));
+    editCell(cell);
+    cell.textContent = "changed";
     const back = readTableFromDom(el, table);
     expect(back.rows[0]).toEqual(["changed", "2"]);
     expect(serializeTable(back)).toContain("changed");
@@ -81,6 +89,76 @@ describe("table widget DOM", () => {
     const fresh = must(v.dom.querySelector<HTMLElement>(".cm-table-widget"));
     commitTable(v, fresh, { ...table, rows: [["x", "2"]] });
     expect(v.state.doc.toString()).toContain("| x   | 2   |");
+    v.destroy();
+  });
+});
+
+describe("lines, lists and widths in a table", () => {
+  const rich = "intro\n\n| a | b |\n| --- | --- |\n| - one<br>- **two** | [[Page\\|x]] |\n";
+  const send = (cell: HTMLElement, type: "focusin" | "focusout"): void => {
+    cell.dispatchEvent(new FocusEvent(type, { bubbles: true }));
+  };
+
+  it("shows lines that start with - as a list, with formatting and links", () => {
+    const v = view(rich, 0);
+    const cells = v.dom.querySelectorAll("td .cm-cell");
+    expect(cells[0]?.querySelectorAll("li")).toHaveLength(2);
+    expect(cells[0]?.querySelector("strong")?.textContent).toBe("two");
+    expect(cells[1]?.querySelector("[data-wikilink='Page']")?.textContent).toBe("x");
+    v.destroy();
+  });
+
+  it("shows the text while a cell is edited and keeps new lines when it is left", () => {
+    const v = view(rich, 0);
+    const cell = must(v.dom.querySelector<HTMLElement>("td .cm-cell"));
+    send(cell, "focusin");
+    expect(cell.textContent).toBe("- one\n- **two**");
+    cell.textContent = "- one\n- three";
+    send(cell, "focusout");
+    expect(v.state.doc.toString()).toContain("- one<br>- three");
+    v.destroy();
+  });
+
+  it("does not change a cell that was only looked at", () => {
+    const v = view(rich, 0);
+    const cell = must(v.dom.querySelector<HTMLElement>("td .cm-cell"));
+    send(cell, "focusin");
+    send(cell, "focusout");
+    expect(v.state.doc.toString()).toContain("- one<br>- **two**");
+    v.destroy();
+  });
+
+  it("gives the columns the widths that are kept, and keeps them when the header changes", () => {
+    const save = vi.fn();
+    const v = view(doc, 0, { tableWidths: () => [100, 200], saveTableWidths: save });
+    const table = must(v.dom.querySelector("table"));
+    expect(table.style.width).toBe("300px");
+    expect(table.querySelectorAll("col")).toHaveLength(2);
+    expect(table.querySelectorAll(".cm-col-handle")).toHaveLength(2);
+    const head = must(v.dom.querySelector<HTMLElement>("th .cm-cell"));
+    send(head, "focusin");
+    head.textContent = "name";
+    send(head, "focusout");
+    expect(save).toHaveBeenCalledWith("name | b", [100, 200]);
+    v.destroy();
+  });
+
+  it("starts the next line with a bullet, also after a line the browser made as <br>", () => {
+    const v = view(rich, 0);
+    const cell = must(v.dom.querySelector<HTMLElement>("td .cm-cell"));
+    editCell(cell);
+    cell.replaceChildren("Me", document.createElement("br"), "- first");
+    document.body.appendChild(v.dom);
+    caretToEnd(cell);
+    newLine(cell);
+    expect(readCell(cell)).toBe("Me<br>- first");
+    expect(cell.textContent).toContain("\n- ");
+    v.destroy();
+  });
+
+  it("has no handles where widths cannot be kept", () => {
+    const v = view(doc, 0);
+    expect(v.dom.querySelector(".cm-col-handle")).toBeNull();
     v.destroy();
   });
 });

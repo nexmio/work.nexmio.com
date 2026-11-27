@@ -198,15 +198,41 @@ export const editorStyles = {
   ".cm-table-widget table": { borderCollapse: "collapse", width: "100%", fontSize: "0.95em" },
   ".cm-table-widget th, .cm-table-widget td": {
     border: "1px solid var(--border)",
-    padding: "4px 8px",
-    minWidth: "4ch",
-    outline: "none",
+    padding: "0",
+    minWidth: "6ch",
     verticalAlign: "top",
+    position: "relative",
+    lineHeight: "1.5",
   },
   ".cm-table-widget th": { background: "var(--muted)", fontWeight: "600" },
-  ".cm-table-widget td:focus, .cm-table-widget th:focus": {
-    boxShadow: "inset 0 0 0 2px var(--ring)",
+  ".cm-table-widget tbody tr:nth-child(even)": {
+    background: "color-mix(in oklab, var(--muted) 45%, transparent)",
   },
+  // The cell fills its place, so a click anywhere in it starts writing there.
+  ".cm-cell": {
+    padding: "7px 12px",
+    minHeight: "1.5em",
+    outline: "none",
+    // A word is only broken when it cannot fit; short columns stay wide enough for their words.
+    // The editor lets a line break anywhere; a cell must not, or the column is squeezed.
+    wordBreak: "normal",
+    overflowWrap: "break-word",
+  },
+  ".cm-cell[data-editing]": { whiteSpace: "pre-wrap" },
+  ".cm-cell:focus": { boxShadow: "inset 0 0 0 2px var(--ring)", borderRadius: "2px" },
+  ".cm-cell-list": { margin: "0", paddingLeft: "1.3em", listStyle: "disc" },
+  ".cm-cell-list li::marker": { color: "var(--primary)" },
+  ".cm-col-handle": {
+    position: "absolute",
+    top: "0",
+    bottom: "0",
+    right: "-4px",
+    width: "8px",
+    cursor: "col-resize",
+    zIndex: "1",
+    touchAction: "none",
+  },
+  ".cm-col-handle:hover": { background: "color-mix(in oklab, var(--primary) 45%, transparent)" },
   ".cm-table-widget pre": { whiteSpace: "pre-wrap", fontFamily: "ui-monospace, monospace" },
   ".cm-tooltip": {
     backgroundColor: "var(--card)",

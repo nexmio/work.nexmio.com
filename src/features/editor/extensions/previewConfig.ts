@@ -15,6 +15,10 @@ export interface PreviewConfig {
   openTag: (tag: string) => void;
   /** Ctrl/Cmd+click on a standard Markdown link. */
   openHref: (href: string, notePath: string) => void;
+  /** The column widths kept for the table with this header (`widthsKey`), if any. */
+  tableWidths?: (key: string) => readonly number[] | undefined;
+  /** Keeps a table's column widths (an empty list forgets them). Left out: widths cannot be set. */
+  saveTableWidths?: (key: string, widths: number[]) => void;
 }
 
 const noop = (): void => undefined;

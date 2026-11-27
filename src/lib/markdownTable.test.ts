@@ -4,6 +4,8 @@ import {
   deleteColumn,
   deleteRow,
   emptyTable,
+  cellSource,
+  cellText,
   escapeCell,
   insertColumn,
   insertRow,
@@ -81,9 +83,29 @@ describe("serializeTable", () => {
     expect(text.split("\n")[1]).toBe("| :-- | :-: | --: |");
   });
   it("escapes pipes and newlines", () => {
-    expect(escapeCell("a|b\nc")).toBe("a\\|b c");
+    expect(escapeCell("a|b\nc")).toBe("a\\|b<br>c");
     const text = serializeTable({ header: ["x"], align: [null], rows: [["a|b"]] });
     expect(parseTable(text)?.rows[0]?.[0]).toBe("a|b");
+  });
+});
+
+describe("lines inside a cell", () => {
+  it("keeps new lines as <br> and gives them back for editing", () => {
+    expect(cellSource("- one\n- two\n")).toBe("- one<br>- two");
+    expect(cellText("- one<br>- two<BR />three")).toBe("- one\n- two\nthree");
+  });
+  it("leaves <br> in code, and a lone dash, as they are", () => {
+    expect(cellText("`<br>` is a break")).toBe("`<br>` is a break");
+    expect(cellSource("-")).toBe("-");
+  });
+  it("drops empty bullets at the end", () => {
+    expect(cellSource("- one\n- \n\n")).toBe("- one");
+  });
+  it("survives saving the table twice", () => {
+    const table = { header: ["a"], align: [null], rows: [["- x<br>- y"]] };
+    const once = serializeTable(table);
+    expect(parseTable(once)?.rows[0]).toEqual(["- x<br>- y"]);
+    expect(serializeTable(must(parseTable(once)))).toBe(once);
   });
 });
 
