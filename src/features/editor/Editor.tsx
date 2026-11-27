@@ -11,6 +11,7 @@ import { SelectionBubble } from "./SelectionBubble";
 import { useAiBlocked } from "@/lib/useAiBlocked";
 import { askAi } from "@/lib/askAi";
 import { SpellPopover } from "./SpellPopover";
+import { useTableWidths } from "./useTableWidths";
 import {
   clearSpelling,
   parseFixes,
@@ -91,6 +92,7 @@ export function Editor({ paneId }: { paneId: PaneId }) {
     },
   };
 
+  const tables = useTableWidths(activePath);
   const previewCfg = useMemo<PreviewConfig>(
     () => ({
       notePath: activePath ?? "",
@@ -104,8 +106,10 @@ export function Editor({ paneId }: { paneId: PaneId }) {
       openHref: (h, n) => {
         void openHref(h, n);
       },
+      tableWidths: (key) => tables.widths[key],
+      saveTableWidths: tables.save,
     }),
-    [activePath, resolver],
+    [activePath, resolver, tables.widths, tables.save],
   );
 
   /** Shows the inline AI popup at the selection, or at the given screen position. */

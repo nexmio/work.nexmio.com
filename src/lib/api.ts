@@ -140,6 +140,9 @@ export const api = {
   previewRename: (from: string, to: string) => call<RenamePreview>("preview_rename", { from, to }),
   renamePath: (from: string, to: string, updateLinks: boolean) =>
     call<RenameResult>("rename_path", { from, to, updateLinks }),
+  tableWidths: (path: string) => call<Partial<Record<string, number[]>>>("table_widths", { path }),
+  setTableWidths: (path: string, key: string, widths: number[]) =>
+    call<undefined>("set_table_widths", { path, key, widths }),
   movePages: (moves: PageMove[]) => call<RenameResult>("move_pages", { moves }),
   deletePath: (path: string) => call<undefined>("delete_path", { path }),
   renameNoteQuietly: (from: string, to: string) =>

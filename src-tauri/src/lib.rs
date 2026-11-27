@@ -178,6 +178,8 @@ pub fn run() {
             commands::tasks::task_set_pinned,
             commands::meta::meta_migration_status,
             commands::meta::meta_migrate,
+            commands::meta::table_widths,
+            commands::meta::set_table_widths,
             commands::helper::helper_status,
             commands::helper::helper_check_key,
             commands::helper::quick_close,

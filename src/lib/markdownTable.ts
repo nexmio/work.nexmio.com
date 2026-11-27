@@ -45,15 +45,39 @@ export function splitRow(line: string): string[] {
   return cells;
 }
 
+/** A line break inside a cell, as it is written in the file (a table row is one line). */
+const BREAK = /<br\s*\/?>/gi;
+
+/** The text of a cell as it is edited: `<br>` is a new line, except inside `code`. */
+export function cellText(source: string): string {
+  return source
+    .split(/(`[^`]*`)/)
+    .map((piece, i) => (i % 2 === 1 ? piece : piece.replace(BREAK, "\n")))
+    .join("");
+}
+
 /**
- * Makes cell text safe for one table line: no newlines, pipes escaped, and the backslashes right
- * before a pipe doubled. Other backslashes are left as they are written.
+ * Edited text as the cell keeps it: each new line as `<br>`, lines trimmed, and empty lines or
+ * bullets left at the end dropped.
+ */
+export function cellSource(text: string): string {
+  const lines = text.trim().split(/\r\n|\r|\n/);
+  const empty = /^\s*[-*]?\s*$/;
+  while (lines.length > 1 && empty.test(lines[lines.length - 1] ?? "")) lines.pop();
+  return lines.map((l) => l.trim()).join("<br>");
+}
+
+/**
+ * Makes cell text safe for one table line: new lines as `<br>`, pipes escaped, and the
+ * backslashes right before a pipe doubled. Other backslashes are left as they are written.
  */
 export function escapeCell(text: string): string {
-  return text
-    .replace(/\r?\n|\r/g, " ")
-    .replace(/(\\*)\|/g, (_, before: string) => `${before}${before}\\|`)
-    .trim();
+  return cellSource(text).replace(/(\\*)\|/g, (_, before: string) => `${before}${before}\\|`);
+}
+
+/** What names a table when its column widths are kept: the words of its header. */
+export function widthsKey(t: Table): string {
+  return t.header.map((h) => cellSource(h)).join(" | ");
 }
 
 function alignOf(cell: string): Align {

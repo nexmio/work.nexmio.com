@@ -355,6 +355,12 @@ pub fn preview_html(v: &OpenVault, req: &ExportRequest) -> AppResult<String> {
     Ok(html::render_html(v, &docs, opts))
 }
 
+/// Whether a piece of raw HTML is a line break (`<br>`, `<br/>` or `<br />`).
+fn is_break(html: &str) -> bool {
+    let tag: String = html.chars().filter(|c| !c.is_whitespace()).collect();
+    tag.eq_ignore_ascii_case("<br>") || tag.eq_ignore_ascii_case("<br/>")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -470,5 +476,18 @@ mod tests {
         assert_eq!(res.notes_included, 1);
         let html = std::fs::read_to_string(out_dir.path().join("note.html")).unwrap();
         assert!(html.contains("<h1>Hello</h1>"));
+    }
+}
+
+#[cfg(test)]
+mod break_tests {
+    #[test]
+    fn only_a_br_tag_is_a_line_break() {
+        for yes in ["<br>", "<BR/>", "<br />"] {
+            assert!(super::is_break(yes), "{yes}");
+        }
+        for no in ["<b>", "<brx>", "<br class=a>", "<script>"] {
+            assert!(!super::is_break(no), "{no}");
+        }
     }
 }

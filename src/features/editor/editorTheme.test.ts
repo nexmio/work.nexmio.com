@@ -5,6 +5,7 @@ const BLOCKS = [
   ".cm-properties-wrap",
   ".cm-properties",
   ".cm-table-widget",
+  ".cm-cell",
   ".cm-mermaid-wrap",
   ".cm-mermaid",
 ];

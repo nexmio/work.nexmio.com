@@ -1,6 +1,6 @@
 import { splitText, type NodePath, type PlanNode } from "@/lib/planTree";
 
-export const BOX_W = 176;
+export const BOX_W = 192;
 export const BOX_H = 58;
 const COL_GAP = 20;
 const ROW_GAP = 48;

@@ -20,6 +20,17 @@ A project that is already there can be made a plan: press **Plan from a project�
 
 Pages made before the folder per part are shown by a line above the plan: **Move to the new folder structure (0.31)…** (also in the plan's **···** menu). The window lists each page and where it goes: `Pages`, with a folder for each part above, and the name of its part with `_page`. Pages in the project's own folder, `Notes` or `Pages` are ticked; a page in a folder you chose is only moved if you tick it. Epics, meetings, pages outside the project and pages no part links to stay. Links are updated, the text is not changed, History gets one version, and **Undo** moves everything back.
 
+### The symbols on parts
+
+On the parts of a project, a small symbol on **Page**, **Task** and **Epic** shows where the thing is kept:
+
+| Symbol                    | Means                | For example                                                                            |
+| ------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
+| A house                   | In this project      | A page in the project's folder, or a task in the plan's epic or an epic in that folder |
+| An arrow pointing out (↗) | Outside this project | A page in another folder or project, or a task in another epic, such as Loose tasks    |
+
+The folder decides, not the tag. Hold the pointer over the symbol's label to see where it is. A plan that is in no project has no symbols.
+
 ### Make a plan
 
 A new project is made the same way from everywhere: **New project** at the top of the navigation when Projects is open, the arrow ▾ next to the New button (it lists a page, a task, a project, a meeting and an idea, wherever you are), **+ New project** at the bottom of the projects list, **New project…** when you right-click an empty place in the projects list or the Pages panel, **File → New**, and the Pages panel's **···** menu. Press **New project**, or **New** at the top of the plans list. With no plan open, the page offers **Empty plan** and **Plan from a project**. **Break it down** takes you through three short steps, and everything is saved as you go, so you can stop and come back:

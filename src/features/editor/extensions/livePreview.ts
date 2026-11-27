@@ -9,7 +9,7 @@ import {
 } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
 import { parseSizedAlt } from "@/lib/imageMarkdown";
-import { parseTable } from "@/lib/markdownTable";
+import { parseTable, widthsKey } from "@/lib/markdownTable";
 import { imageSrc, ImageWidget } from "./images";
 import { MermaidWidget, mermaidSource } from "./mermaidWidget";
 import { TableWidget } from "./tableWidget";
@@ -301,13 +301,14 @@ export function buildDecorations(state: EditorState): DecorationSet {
           return;
         case "Table": {
           const source = doc.sliceString(node.from, node.to);
-          if (!lineActive(node.from, node.to) && parseTable(source) !== null) {
+          const table = lineActive(node.from, node.to) ? null : parseTable(source);
+          if (table !== null) {
             renderedTables.push([node.from, node.to]);
             ranges.push(
-              Decoration.replace({ widget: new TableWidget(source), block: true }).range(
-                node.from,
-                node.to,
-              ),
+              Decoration.replace({
+                widget: new TableWidget(source, cfg.tableWidths?.(widthsKey(table)) ?? null),
+                block: true,
+              }).range(node.from, node.to),
             );
           } else {
             addLines(node.from, node.to, "cm-table");

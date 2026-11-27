@@ -21,6 +21,7 @@ const ctx: InfoContext = {
     [],
   ),
   planEpic: "Tasks/Move.md",
+  projectFolder: null,
   tasks,
 };
 

@@ -7,9 +7,13 @@ import {
   parseTable,
   serializeTable,
   setAlign,
+  widthsKey,
   type Align,
   type Table,
 } from "@/lib/markdownTable";
+import { previewConfig } from "./previewConfig";
+import { caretToEnd, editCell, makeCell, newLine, readCell, showCell, typeText } from "./tableCell";
+import { addHandles, applyWidths, NEW_WIDTH } from "./tableColumns";
 import { tableAt } from "./tableRange";
 
 interface CellPos {
@@ -22,10 +26,10 @@ let pendingFocus: CellPos | null = null;
 
 /** Reads the table as the user sees it in the DOM. */
 export function readTableFromDom(dom: HTMLElement, base: Table): Table {
-  const headerCells = Array.from(dom.querySelectorAll("thead th"));
-  const header = headerCells.map((c) => (c.textContent as string | null) ?? "");
+  const headerCells = Array.from(dom.querySelectorAll<HTMLElement>("thead .cm-cell"));
+  const header = headerCells.map(readCell);
   const rows = Array.from(dom.querySelectorAll("tbody tr")).map((tr) =>
-    Array.from(tr.querySelectorAll("td")).map((td) => (td.textContent as string | null) ?? ""),
+    Array.from(tr.querySelectorAll<HTMLElement>(".cm-cell")).map(readCell),
   );
   return {
     header: header.length > 0 ? header : base.header,
@@ -61,11 +65,8 @@ export function buildTableElement(table: Table): HTMLTableElement {
   const headRow = document.createElement("tr");
   table.header.forEach((text, col) => {
     const th = document.createElement("th");
-    th.setAttribute("contenteditable", "plaintext-only");
-    th.dataset.row = "-1";
-    th.dataset.col = String(col);
     th.style.textAlign = alignToCss(table.align[col] ?? null);
-    th.textContent = text;
+    th.appendChild(makeCell(text, -1, col));
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
@@ -75,11 +76,8 @@ export function buildTableElement(table: Table): HTMLTableElement {
     const tr = document.createElement("tr");
     cells.forEach((text, col) => {
       const td = document.createElement("td");
-      td.setAttribute("contenteditable", "plaintext-only");
-      td.dataset.row = String(row);
-      td.dataset.col = String(col);
       td.style.textAlign = alignToCss(table.align[col] ?? null);
-      td.textContent = text;
+      td.appendChild(makeCell(text, row, col));
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -94,12 +92,16 @@ function alignToCss(a: Align): string {
 
 /** The rendered table shown in place of Markdown when the cursor is outside it. */
 export class TableWidget extends WidgetType {
-  constructor(readonly source: string) {
+  constructor(
+    readonly source: string,
+    /** The column widths kept for this table, or null when the browser shares the room. */
+    readonly widths: readonly number[] | null = null,
+  ) {
     super();
   }
 
   override eq(other: TableWidget): boolean {
-    return other.source === this.source;
+    return other.source === this.source && String(other.widths) === String(this.widths);
   }
 
   override ignoreEvent(): boolean {
@@ -125,12 +127,40 @@ export class TableWidget extends WidgetType {
     const el = buildTableElement(table);
     scroll.appendChild(el);
 
+    const cfg = view.state.facet(previewConfig);
+    const saver = cfg.saveTableWidths;
+    let widths =
+      this.widths !== null && this.widths.length === table.header.length ? [...this.widths] : null;
+    applyWidths(el, widths);
+    if (saver) {
+      addHandles(el, (next) => {
+        widths = next;
+        saver(widthsKey(readTableFromDom(el, table)), next ?? []);
+      });
+    }
+    // Writes the table, and keeps its widths when the header (which names it) changes.
+    const write = (next: Table, focus?: CellPos, columns: number[] | null = widths): void => {
+      const key = widthsKey(next);
+      if (saver && columns !== null && (key !== widthsKey(table) || columns !== widths)) {
+        saver(key, columns);
+      }
+      commitTable(view, root, next, focus);
+    };
+
     // Applies a structural edit to the table as currently shown (edits typed but not yet
     // committed are included), then commits it.
     const edit = (fn: (t: Table, at: CellPos) => { table: Table; focus?: CellPos }): void => {
       const current = readTableFromDom(el, table);
       const result = fn(current, last);
-      commitTable(view, root, result.table, result.focus);
+      let columns = widths;
+      const added = result.table.header.length - current.header.length;
+      if (columns !== null && added !== 0) {
+        const at = Math.max(0, last.col);
+        columns = [...columns];
+        if (added < 0) columns.splice(at, 1);
+        else columns.splice(at, 0, NEW_WIDTH);
+      }
+      write(result.table, result.focus, columns);
     };
 
     const button = (label: string, title: string, run: () => void): HTMLButtonElement => {
@@ -224,16 +254,34 @@ export class TableWidget extends WidgetType {
     root.appendChild(toolbar);
     root.appendChild(scroll);
 
+    // The text is shown before the browser places the cursor, so it lands where you clicked.
+    el.addEventListener("mousedown", (e) => {
+      const target = e.target as HTMLElement;
+      const cell = target.closest<HTMLElement>(".cm-cell");
+      if (!cell || e.button !== 0) return;
+      const link = target.closest<HTMLElement>("[data-wikilink], [data-href]");
+      if (link && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        const wiki = link.dataset.wikilink;
+        if (wiki !== undefined) cfg.openWikiLink(wiki, cfg.resolveLink(wiki));
+        else cfg.openHref(link.dataset.href ?? "", cfg.notePath);
+        return;
+      }
+      editCell(cell);
+    });
     el.addEventListener("focusin", (e) => {
       const target = e.target as HTMLElement;
-      if (target.dataset.col !== undefined) {
-        last = { row: Number(target.dataset.row), col: Number(target.dataset.col) };
-      }
+      if (target.dataset.col === undefined) return;
+      last = { row: Number(target.dataset.row), col: Number(target.dataset.col) };
+      if (editCell(target)) caretToEnd(target);
+      view.requestMeasure();
     });
     el.addEventListener("focusout", (e) => {
       const next = e.relatedTarget as Node | null;
+      showCell(e.target as HTMLElement);
+      view.requestMeasure();
       if (next && root.contains(next)) return; // still inside the widget
-      commitTable(view, root, readTableFromDom(el, table));
+      write(readTableFromDom(el, table));
     });
     el.addEventListener("keydown", (e) => {
       const target = e.target as HTMLElement;
@@ -246,7 +294,10 @@ export class TableWidget extends WidgetType {
         e.preventDefault();
         target.blur();
         view.focus();
-      } else if (e.key === "Enter" && !e.shiftKey) {
+      } else if (e.key === "Enter" && e.shiftKey) {
+        e.preventDefault();
+        newLine(target);
+      } else if (e.key === "Enter") {
         e.preventDefault();
         if (row + 1 < bodyRows) focusCell(el, row + 1, col);
         else target.blur();
@@ -265,7 +316,7 @@ export class TableWidget extends WidgetType {
         if (nextRow > bodyRows - 1 && forward) {
           // Tab in the last cell adds a row and moves into it.
           const current = readTableFromDom(el, table);
-          commitTable(view, root, insertRow(current, bodyRows - 1), { row: bodyRows, col: 0 });
+          write(insertRow(current, bodyRows - 1), { row: bodyRows, col: 0 });
           return;
         }
         if (nextRow < -1) return;
@@ -274,13 +325,7 @@ export class TableWidget extends WidgetType {
     });
     el.addEventListener("paste", (e) => {
       e.preventDefault();
-      const text = (e.clipboardData?.getData("text/plain") ?? "").replace(/\r?\n|\r/g, " ");
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0) {
-        sel.deleteFromDocument();
-        sel.getRangeAt(0).insertNode(document.createTextNode(text));
-        sel.collapseToEnd();
-      }
+      typeText((e.clipboardData?.getData("text/plain") ?? "").replace(/\r\n|\r/g, "\n"));
     });
 
     if (pendingFocus) {

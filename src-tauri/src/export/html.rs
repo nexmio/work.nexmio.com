@@ -47,7 +47,9 @@ pub fn markdown_to_html(v: &OpenVault, note_path: &str, markdown: &str) -> Strin
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_FOOTNOTES;
     let events = Parser::new_ext(markdown, opts).map(|ev| match ev {
-        // Raw HTML is written as escaped text, never as markup.
+        // A `<br>` is a new line (how a table cell is given more than one line).
+        Event::InlineHtml(s) if super::is_break(&s) => Event::HardBreak,
+        // Other raw HTML is written as escaped text, never as markup.
         Event::Html(s) | Event::InlineHtml(s) => Event::Text(s),
         Event::Start(Tag::Image {
             link_type,

@@ -8,8 +8,17 @@ This list is kept short: it tells what Nexmio Work can do in each version. A sma
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-11-27
+
+### Added
+
+- **See where a linked thing is.** On the parts of a project, a page, task or epic has a house when it is in the project and an arrow pointing out (↗) when it is outside it. Hold the pointer over it to see where it is; the guide in the app explains the symbols.
+- **More than one line in a table cell.** Press Shift+Enter for a new line; lines that start with `-` are shown as a bullet list.
+- **Column widths in tables.** Drag the right edge of a header cell; double-click it for automatic widths.
+
 ### Changed
 
+- **Tables are easier to read.** More room in the cells, every other row shaded, and bold text and links are shown as such. Click a cell to edit its text.
 - **The privacy policy and Store texts are up to date.** They say that only the AI model is downloaded, what the built-in AI needs, and how you control your data.
 
 ## [0.31.0] - 2026-11-26

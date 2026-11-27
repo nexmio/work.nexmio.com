@@ -72,6 +72,9 @@ pub struct Meta {
     pub tasks: BTreeMap<String, TaskMeta>,
     /// Tags made in Your tags before anything has them. A tag in use needs no entry here.
     pub tags: Vec<String>,
+    /// Column widths of tables (pixels), by page path and then by the words of the header.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub tables: BTreeMap<String, BTreeMap<String, Vec<u32>>>,
 }
 
 /// The words that name a task: the note's path without `.md`, `#`, and the title.
@@ -113,12 +116,17 @@ fn write(root: &Path, mut meta: Meta) -> AppResult<()> {
     meta.tags.dedup();
     meta.pinned.truncate(MAX_PINNED);
     meta.tasks.retain(|_, t| !t.is_empty());
+    meta.tables.retain(|_, t| !t.is_empty());
     for t in meta.tasks.values_mut() {
         let extra = t.history.len().saturating_sub(MAX_HISTORY);
         t.history.drain(..extra);
     }
     let abs = paths::resolve_internal(root, FILE)?;
-    if meta.pinned.is_empty() && meta.tasks.is_empty() && meta.tags.is_empty() && !abs.exists() {
+    let nothing = meta.pinned.is_empty()
+        && meta.tasks.is_empty()
+        && meta.tags.is_empty()
+        && meta.tables.is_empty();
+    if nothing && !abs.exists() {
         return Ok(()); // nothing to keep, and no file yet: do not make one
     }
     fs_ops::write_atomic(&abs, serde_json::to_string_pretty(&meta)?.as_bytes())
@@ -313,6 +321,17 @@ pub fn rename_path(root: &Path, from: &str, to: &str) -> bool {
                 changed = true;
             }
         }
+        let tables = std::mem::take(&mut m.tables);
+        for (path, widths) in tables {
+            let key = match moved(&path, from, to) {
+                Some(n) => {
+                    changed = true;
+                    n
+                }
+                None => path,
+            };
+            m.tables.insert(key, widths);
+        }
         let old = std::mem::take(&mut m.tasks);
         for (k, mut e) in old {
             if let Some(a) = e.after.as_deref().and_then(|a| moved_ref(a, from, to)) {
@@ -331,6 +350,41 @@ pub fn rename_path(root: &Path, from: &str, to: &str) -> bool {
         changed
     })
     .unwrap_or(false)
+}
+
+/// Most tables per page and columns per table whose widths are kept, and the widest a column can be.
+const MAX_TABLES: usize = 100;
+const MAX_COLUMNS: usize = 100;
+const MAX_WIDTH: u32 = 4_000;
+
+/// The column widths kept for the tables of a page.
+pub fn table_widths(root: &Path, path: &str) -> BTreeMap<String, Vec<u32>> {
+    load(root).tables.remove(path).unwrap_or_default()
+}
+
+/// Keeps the column widths of the table with the header `key` on a page. No widths forgets them.
+pub fn set_table_widths(root: &Path, path: &str, key: &str, widths: Vec<u32>) -> AppResult<()> {
+    if widths.len() > MAX_COLUMNS || widths.iter().any(|w| *w == 0 || *w > MAX_WIDTH) {
+        return Err(AppError::InvalidPath("These are not column widths".into()));
+    }
+    change(root, |m| {
+        if widths.is_empty() {
+            return m
+                .tables
+                .get_mut(path)
+                .is_some_and(|t| t.remove(key).is_some());
+        }
+        let tables = m.tables.entry(path.to_string()).or_default();
+        if tables.get(key) == Some(&widths) {
+            return false;
+        }
+        if tables.len() >= MAX_TABLES && !tables.contains_key(key) {
+            tables.pop_first();
+        }
+        tables.insert(key.to_string(), widths);
+        true
+    })
+    .map(|_| ())
 }
 
 /// Makes a tag, or forgets one made before (a tag in use is kept by the pages that have it).
@@ -378,6 +432,24 @@ pub fn is_pinned(root: &Path, path: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn column_widths_are_kept_follow_a_rename_and_can_be_forgotten() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path();
+        std::fs::create_dir_all(root.join(".vault")).unwrap();
+        super::set_table_widths(root, "A/Page.md", "x | y", vec![100, 200]).unwrap();
+        assert_eq!(
+            super::table_widths(root, "A/Page.md").get("x | y"),
+            Some(&vec![100, 200])
+        );
+        assert!(super::rename_path(root, "A", "B"));
+        assert!(super::table_widths(root, "A/Page.md").is_empty());
+        assert_eq!(super::table_widths(root, "B/Page.md").len(), 1);
+        super::set_table_widths(root, "B/Page.md", "x | y", Vec::new()).unwrap();
+        assert!(super::table_widths(root, "B/Page.md").is_empty());
+        assert!(super::set_table_widths(root, "B/Page.md", "x", vec![0]).is_err());
+    }
+
     use super::*;
 
     fn vault() -> tempfile::TempDir {

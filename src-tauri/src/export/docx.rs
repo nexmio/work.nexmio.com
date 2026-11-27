@@ -248,6 +248,13 @@ impl<'a> Walker<'a> {
                     self.push_run(run);
                 }
             }
+            Event::InlineHtml(text) if super::is_break(&text) => {
+                if let Some(c) = self.cell.as_mut() {
+                    c.push('\n');
+                } else if self.skip_text == 0 {
+                    self.push_run(Run::new().add_break(BreakType::TextWrapping));
+                }
+            }
             Event::Html(text) | Event::InlineHtml(text) => {
                 // Shown as literal text (Word escapes it), never interpreted.
                 if self.skip_text == 0 {
@@ -269,7 +276,13 @@ impl<'a> Walker<'a> {
 }
 
 fn cell_of(text: &str, bold: bool) -> TableCell {
-    let mut run = Run::new().add_text(text);
+    let mut run = Run::new();
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            run = run.add_break(BreakType::TextWrapping);
+        }
+        run = run.add_text(line);
+    }
     if bold {
         run = run.bold();
     }
